@@ -38,6 +38,14 @@ public class TdegData {
         }    
     }
     
+    void addRange(int ix1, int iy1, int ix2, int iy2, double ...params){
+        for(int ix = ix1; ix<=ix2; ix++){
+            for(int iy = iy1; iy<=iy2; iy++){
+                addCrystal0(ix, iy, params);
+            }
+        }
+    }
+    
     void setGlobal(double...params){
         TdegFunc func = new TdegFunc(params);
         for(int ix = -23; ix<= 23; ix ++){
