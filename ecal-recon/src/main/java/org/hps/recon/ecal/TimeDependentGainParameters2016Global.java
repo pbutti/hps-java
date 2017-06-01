@@ -5,7 +5,7 @@ package org.hps.recon.ecal;
  * @author spaul
  *
  */
-public class TimeDependentGains2016Constant extends TimeDependentGainData{
+public class TimeDependentGainParameters2016Global extends TimeDependentGainParameters{
     protected void setup(){ 
         this.beamEnergy = 2.306;
         setGlobal(new double[]{

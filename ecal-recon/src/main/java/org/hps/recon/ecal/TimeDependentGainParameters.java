@@ -9,8 +9,9 @@ import java.util.Map;
  * @author spaul
  *
  */
-public class TimeDependentGainData {
-    public TimeDependentGainData(){
+public class TimeDependentGainParameters {
+    
+    public TimeDependentGainParameters(){
         setup();
     }
     protected void setup(){
@@ -21,9 +22,9 @@ public class TimeDependentGainData {
     
     double beamEnergy;
     
-    private void addCrystal0(int ix, int iy, double ...params){
+    private void addCrystal0(int ix, int iy,  TimeDependentGainFunc func){
         //System.out.println(ix + " " +  iy);
-        funcs.put(encode(ix,iy), new TimeDependentGainFunc(params));
+        funcs.put(encode(ix,iy),func);
     }
     /**
      * sets the tdeg parameters for an individual crystals with at (ix, iy).  
@@ -34,19 +35,21 @@ public class TimeDependentGainData {
      * @param params
      */
     protected void addCrystal(int ix, int iy, double ... params){
-        addCrystal0(ix,iy, params);
+        TimeDependentGainFunc func = new TimeDependentGainFunc(params);
+        addCrystal0(ix,iy, func);
         if(iy == 2 || iy == -4){
-            addCrystal0(ix, iy-1, params);
+            addCrystal0(ix, iy-1, func);
         }
         if(iy == -2 || iy == 4){
-            addCrystal0(ix, iy+1, params);
+            addCrystal0(ix, iy+1, func);
         }    
     }
     
     protected void addRange(int ix1, int iy1, int ix2, int iy2, double ...params){
+        TimeDependentGainFunc func = new TimeDependentGainFunc(params);
         for(int ix = ix1; ix<=ix2; ix++){
             for(int iy = iy1; iy<=iy2; iy++){
-                addCrystal0(ix, iy, params);
+                addCrystal0(ix, iy, func);
             }
         }
     }
@@ -57,7 +60,7 @@ public class TimeDependentGainData {
             for (int iy = -5; iy <=5; iy++){
                 if(iy*ix == 0)
                     continue;
-                funcs.put(encode(ix,iy), func);
+                addCrystal0(ix, iy, func);
             }
         }
     }
@@ -72,7 +75,7 @@ public class TimeDependentGainData {
             for (int iy = -5; iy <=5; iy++){
                 if(iy*ix == 0)
                     continue;
-                funcs.put(encode(ix,iy), func);
+                addCrystal0(ix,iy, func);
             }
         }
     }
@@ -87,7 +90,7 @@ public class TimeDependentGainData {
             for (int iy = -5; iy <=5; iy++){
                 if(iy*ix == 0)
                     continue;
-                funcs.put(encode(ix,iy), func);
+                addCrystal0(ix,iy, func);
             }
         }
     }

@@ -1,5 +1,5 @@
 package org.hps.recon.ecal;
-public class TimeDependentGains2015 extends TimeDependentGainData {
+public class TimeDependentGainParameters2015 extends TimeDependentGainParameters {
     public void setup(){
         this.beamEnergy = 1.056;
         addCrystal(-12, -4, 1.43084e+09, 1.43093e+09, 1.06017, 0.319751, 9000, 1.4312e+09, 1.43133e+09, 1.06582, 0.0813822, 40000, 1.43138e+09, 1.43163e+09, 1.06742, 0.0545297, 31364.8, 1.43163e+09, 1.432e+09, 1.06673, 0.0437621, 40000);

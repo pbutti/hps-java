@@ -78,7 +78,7 @@
         	<inputHitsCollectionName>EcalUncalHits</inputHitsCollectionName>
         	<outputHitsCollectionName>EcalTimeCorrHits</outputHitsCollectionName>
         </driver>
-        <driver name="TimeDependentEcalGains" type="org.hps.recon.ecal.TimeDependentGainDriver2016">
+        <driver name="TimeDependentEcalGains" type="org.hps.recon.ecal.TimeDependentGainDriver">
         	<inputHitsCollectionName>EcalTimeCorrHits</inputHitsCollectionName>
         	<outputHitsCollectionName>EcalCalHits</outputHitsCollectionName>
         </driver>

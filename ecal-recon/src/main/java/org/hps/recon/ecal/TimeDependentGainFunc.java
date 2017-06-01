@@ -35,4 +35,5 @@ public class TimeDependentGainFunc {
         }
         return 1;
     }
+
 }
