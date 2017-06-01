@@ -1,4 +1,4 @@
-package org.hps.recon.ecal.tdeg;
+package org.hps.recon.ecal;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,16 +9,12 @@ import org.lcsim.event.EventHeader;
 import org.lcsim.event.base.BaseCalorimeterHit;
 import org.lcsim.geometry.Detector;
 import org.lcsim.util.Driver;
-/**
- * This is the version to use during recon passes, to correct the energy of the individual hits (rather than post-recon corrections of the cluster energy).  
- * @author spaul
- *
- */
-public class TdegGainDriver extends Driver{
-    String inputHitsCollectionName;
-    String outputHitsCollectionName;
+
+public abstract class TimeDependentGainDriver extends Driver{
+    private String inputHitsCollectionName;
+    private String outputHitsCollectionName;
     
-    TdegData tdeg = new Tdeg2016();
+    TimeDependentGainData tdeg;
     
     @Override
     public void detectorChanged(Detector det){
@@ -30,7 +26,7 @@ public class TdegGainDriver extends Driver{
     public void process(EventHeader event){
         List<CalorimeterHit> hits = event.get(CalorimeterHit.class, inputHitsCollectionName);
         int flags = event.getMetaData(hits).getFlags();
-        double timestamp = event.getTimeStamp();
+        double timestamp = event.getTimeStamp()/1e9; //convert to ns.  
         List<CalorimeterHit> outhits = new ArrayList();
         for(CalorimeterHit inhit : hits){
             double corrFactor = tdeg.getCorrectionFactor(inhit.getIdentifierFieldValue("ix"), inhit.getIdentifierFieldValue("iy"), timestamp);
@@ -47,5 +43,12 @@ public class TdegGainDriver extends Driver{
             outhits.add(corrhit);
         }
         event.put(outputHitsCollectionName, outhits, CalorimeterHit.class, flags);
+    }
+    
+    public void setInputHitsCollectionName(String val){
+        this.inputHitsCollectionName = val;
+    }
+    public void setOutputHitsCollectionName(String val){
+        this.outputHitsCollectionName = val;
     }
 }

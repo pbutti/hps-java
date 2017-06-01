@@ -1,7 +1,13 @@
-package org.hps.recon.ecal.tdeg;
-
-public class Tdeg2016Const extends TdegData{
+package org.hps.recon.ecal;
+/**
+ * version of the time dependent ecal gains where a constant factor is used for the corrections
+ * to the energy.  
+ * @author spaul
+ *
+ */
+public class TimeDependentGains2016Constant extends TimeDependentGainData{
     protected void setup(){ 
+        this.beamEnergy = 2.306;
         setGlobal(new double[]{
             1457140000, 1457230000, 2.2585, .399416,      6.574,
             1457250000, 1457350000, 2.29357, .0388658,    30863,

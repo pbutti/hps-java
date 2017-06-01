@@ -14,6 +14,7 @@
         <driver name="EcalRunningPedestal"/>
         <driver name="EcalRawConverter" />
         <driver name="EcalTimeCorrection"/>
+        <driver name="TimeDependentEcalGains"/>
         <driver name="ReconClusterer" />
         <driver name="CopyCluster" />
         <driver name="EventMarkerDriver"/>
@@ -73,7 +74,15 @@
         </driver>
         <driver name="EcalRawConverter" type="org.hps.recon.ecal.EcalRawConverter2Driver">
         </driver> 
-        <driver name="EcalTimeCorrection" type="org.hps.recon.ecal.EcalTimeCorrectionDriver"/> 
+        <driver name="EcalTimeCorrection" type="org.hps.recon.ecal.EcalTimeCorrectionDriver">
+        	<inputHitsCollectionName>EcalUncalHits</inputHitsCollectionName>
+        	<outputHitsCollectionName>EcalTimeCorrHits</outputHitsCollectionName>
+        </driver>
+        <driver name="TimeDependentEcalGains" type="org.hps.recon.ecal.TimeDependentGainDriver2016">
+        	<inputHitsCollectionName>EcalTimeCorrHits</inputHitsCollectionName>
+        	<outputHitsCollectionName>EcalCalHits</outputHitsCollectionName>
+        </driver>
+        
         <driver name="ReconClusterer" type="org.hps.recon.ecal.cluster.ReconClusterDriver">
             <logLevel>WARNING</logLevel>
             <outputClusterCollectionName>EcalClusters</outputClusterCollectionName>

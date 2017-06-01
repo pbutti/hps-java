@@ -1,21 +1,21 @@
-package org.hps.recon.ecal.tdeg;
+package org.hps.recon.ecal;
 
-public class TdegFunc {
+public class TimeDependentGainFunc {
     
     private static final int iSTART = 0;
     private static final int iEND = 1;
     private static final int iA = 2;
     private static final int iB = 3;
     private static final int iC = 4; 
-    public TdegFunc(double[] params){
+    public TimeDependentGainFunc(double[] params){
         this.values = params;
     }
-    double[] values;
+    private double[] values;
     
-    double getFittedFunction(double timestamp){
+    public double getFittedFunction(double timestamp){
         //System.out.println(timestamp);
         for(int i = 0; i<= values.length/5; i++){
-            if(i == values.length/5){
+            /*if(i == values.length/5){
                 
                 String message = "timestamp out of range:" + timestamp;
                 message += "\nacceptable ranges are";
@@ -23,7 +23,7 @@ public class TdegFunc {
                     message+= "\n" + values[j*5+iSTART] + " - " + values[j*5+iEND];
                 }
                 throw new RuntimeException(message);
-            }
+            }*/
             double start = values[i*5+iSTART];
             double end = values[i*5+iEND];
             if(timestamp < end && timestamp > start){

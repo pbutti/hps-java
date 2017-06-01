@@ -1,4 +1,4 @@
-package org.hps.recon.ecal.tdeg;
+package org.hps.recon.ecal;
 
 import java.util.ArrayList;
 //import java.lang.reflect.Modifier;;
@@ -20,8 +20,12 @@ import org.lcsim.util.Driver;
 
 import hep.physics.vec.BasicHepLorentzVector;
 import hep.physics.vec.Hep3Vector;
-
-public abstract class TdegTweakDriver extends Driver {
+/**
+ * Driver for tweaking precooked data with time dependent gains on the ecal.  
+ * @author spaul
+ *
+ */
+public abstract class TimeDependentGainTweakDriver extends Driver {
 
 
 
@@ -29,7 +33,7 @@ public abstract class TdegTweakDriver extends Driver {
     private String ecalClusterCollection = "EcalClustersCorr";
     //temporary patch for a bug that affects the timestamps in the files.  
     long ts_start[] = new long[8101];
-    TdegTweakDriver(){
+    TimeDependentGainTweakDriver(){
         ts_start[5254] = 1430531592;
         ts_start[5255] = 1430532260;
         ts_start[5256] = 1430533541;
@@ -686,7 +690,7 @@ public abstract class TdegTweakDriver extends Driver {
 
 
     }
-    Logger LOGGER = Logger.getLogger(TdegTweakDriver.class.getPackage().getName());
+    Logger LOGGER = Logger.getLogger(TimeDependentGainTweakDriver.class.getPackage().getName());
 
 
     private final long timestampCycle = 24 * 6 * 35;
