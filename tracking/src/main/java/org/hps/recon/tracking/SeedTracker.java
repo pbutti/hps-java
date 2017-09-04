@@ -11,6 +11,7 @@ import java.util.Set;
 import org.lcsim.event.EventHeader;
 import org.lcsim.event.MCParticle;
 import org.lcsim.fit.helicaltrack.HelicalTrackHit;
+import org.lcsim.geometry.Detector;
 import org.lcsim.recon.tracking.seedtracker.SeedCandidate;
 import org.lcsim.recon.tracking.seedtracker.SeedStrategy;
 import org.lcsim.recon.tracking.seedtracker.SeedTrackFinder;
@@ -25,14 +26,56 @@ public class SeedTracker extends org.lcsim.recon.tracking.seedtracker.SeedTracke
     private int _iterativeConfirmedFits = 0;
     private boolean doIterativeHelix = false;
     private boolean debug;
+    private int _nphiSectors;
+    private double _dzSectors;
 
     public SeedTracker(List<SeedStrategy> strategylist) {
         // use base class only if this constructor is called!
         super(strategylist);
     }
-    
+
     public void setIterativeHelix(boolean value) {
         doIterativeHelix = value;
+    }
+
+    public void setNphiSectors(int input) {
+        _nphiSectors = input;
+    }
+
+    public void setDzSectors(double input) {
+        _dzSectors = input;
+    }
+
+    public int getNphiSectors() {
+        return _nphiSectors;
+    }
+
+    public double getDzSectors() {
+        return _dzSectors;
+    }
+
+    @Override
+    protected void detectorChanged(Detector detector) {
+
+        //  Only build the model when the detector is changed
+        _materialmanager.buildModel(detector);
+
+        //  Find the bfield and pass it to the helix fitter and diagnostic package
+        if (!_forceBField)
+            _bfield = detector.getFieldMap().getField(_IP).z();
+
+        if (_diag != null)
+            _diag.setBField(_bfield);
+        _helixfitter.setBField(_bfield);
+
+        //  Get the tracking radius
+        _rtrk = _materialmanager.getRMax();
+
+        //  Set the sectoring parameters
+        if (_autosectoring)
+            _hitmanager.setSectorParams(_strategylist, _bfield, _rtrk);
+        //else
+        //    _hitmanager.setSectorParams(_nphiSectors, _dzSectors);
     }
 
     private void initialize(List<SeedStrategy> strategylist, boolean useHPSMaterialManager, boolean includeMS) {
@@ -71,7 +114,7 @@ public class SeedTracker extends org.lcsim.recon.tracking.seedtracker.SeedTracke
         setIterativeHelix(doIterative);
         initialize(strategylist, useHPSMaterialManager, includeMS);
     }
-    
+
     public void setIterativeConfirmed(int maxfits) {
         this._iterativeConfirmedFits = maxfits;
         super.setIterativeConfirmed(maxfits);
