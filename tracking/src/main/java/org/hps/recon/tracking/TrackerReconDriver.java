@@ -69,7 +69,7 @@ public final class TrackerReconDriver extends Driver {
     private boolean _useHPSMaterialManager = true;
 
     // enable the use of sectoring using sector binning in SeedTracker
-    private boolean _applySectorBinning = true;
+    private boolean _applySectorBinning = false;
 
     private double rmsTimeCut = -1;
 

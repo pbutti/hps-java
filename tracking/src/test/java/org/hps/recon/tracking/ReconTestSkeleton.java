@@ -26,7 +26,7 @@ public class ReconTestSkeleton extends TestCase {
     static {
         System.getProperties().setProperty("hep.aida.IAnalysisFactory", "hep.aida.ref.BatchAnalysisFactory");
     }
-    protected String testInputFileName = "ap_prompt_raw.slcio";
+    protected String testInputFileName = "hps_005772.0_recon_Rv4657-0-10000_raw.slcio";
     protected String testOutputFileName;
     protected String testURLBase = "http://www.lcsim.org/test/hps-java";
     protected long nEvents = -1;
@@ -117,17 +117,17 @@ public class ReconTestSkeleton extends TestCase {
             trd2.setTrackCollectionName("s123_c5_e56");
             add(trd2);
 
-            org.hps.recon.tracking.TrackerReconDriver trd3 = new org.hps.recon.tracking.TrackerReconDriver();
-            trd3.setStrategyResource("HPS_s456_c3_e21.xml");
-            trd3.setRmsTimeCut(8.0);
-            trd3.setTrackCollectionName("s456_c3_e21");
-            add(trd3);
-
-            org.hps.recon.tracking.TrackerReconDriver trd4 = new org.hps.recon.tracking.TrackerReconDriver();
-            trd4.setStrategyResource("HPS_s345_c2_e16.xml");
-            trd4.setRmsTimeCut(8.0);
-            trd4.setTrackCollectionName("s345_c2_e16");
-            add(trd4);
+            //            org.hps.recon.tracking.TrackerReconDriver trd3 = new org.hps.recon.tracking.TrackerReconDriver();
+            //            trd3.setStrategyResource("HPS_s456_c3_e21.xml");
+            //            trd3.setRmsTimeCut(8.0);
+            //            trd3.setTrackCollectionName("s456_c3_e21");
+            //            add(trd3);
+            //
+            //            org.hps.recon.tracking.TrackerReconDriver trd4 = new org.hps.recon.tracking.TrackerReconDriver();
+            //            trd4.setStrategyResource("HPS_s345_c2_e16.xml");
+            //            trd4.setRmsTimeCut(8.0);
+            //            trd4.setTrackCollectionName("s345_c2_e16");
+            //            add(trd4);
 
             org.hps.recon.tracking.MergeTrackCollections mtc = new org.hps.recon.tracking.MergeTrackCollections();
             mtc.setInputTrackCollectionName("");

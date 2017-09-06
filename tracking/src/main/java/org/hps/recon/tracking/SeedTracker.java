@@ -13,7 +13,6 @@ import org.lcsim.event.MCParticle;
 import org.lcsim.fit.helicaltrack.HelicalTrackHit;
 import org.lcsim.recon.tracking.seedtracker.SeedCandidate;
 import org.lcsim.recon.tracking.seedtracker.SeedStrategy;
-import org.lcsim.recon.tracking.seedtracker.SeedTrackFinder;
 
 /**
  * Class extending lcsim version to allow extra flexibility
@@ -25,12 +24,13 @@ public class SeedTracker extends org.lcsim.recon.tracking.seedtracker.SeedTracke
     private int _iterativeConfirmedFits = 0;
     private boolean doIterativeHelix = false;
     private boolean debug;
+    private boolean doSectoring = false;
 
     public SeedTracker(List<SeedStrategy> strategylist) {
         // use base class only if this constructor is called!
         super(strategylist);
     }
-    
+
     public void setIterativeHelix(boolean value) {
         doIterativeHelix = value;
     }
@@ -71,7 +71,7 @@ public class SeedTracker extends org.lcsim.recon.tracking.seedtracker.SeedTracke
         setIterativeHelix(doIterative);
         initialize(strategylist, useHPSMaterialManager, includeMS);
     }
-    
+
     public void setIterativeConfirmed(int maxfits) {
         this._iterativeConfirmedFits = maxfits;
         super.setIterativeConfirmed(maxfits);
@@ -98,6 +98,7 @@ public class SeedTracker extends org.lcsim.recon.tracking.seedtracker.SeedTracke
     public void setApplySectorBinning(boolean applySectorBinning) {
         _finder.setApplySectorBinning(applySectorBinning);
         _finder.getConfirmer().setApplySectorBinning(applySectorBinning);
+        doSectoring = false;
     }
 
     public void setSubdetectorName(String subdetectorName) {
@@ -106,30 +107,15 @@ public class SeedTracker extends org.lcsim.recon.tracking.seedtracker.SeedTracke
 
     @Override
     protected void process(EventHeader event) {
-
-        // System.out.println("New event");
         // Pass the event to the diagnostics package
         if (_diag != null)
             _diag.setEvent(event);
-
-        // Initialize timing
-        long last_time = System.currentTimeMillis();
-        long start_time = 0;
-        double dtime = 0;
 
         // Get the hit collection from the event
         List<HelicalTrackHit> hitcol = event.get(HelicalTrackHit.class, _inputCol);
 
         // Sort the hits for this event
         _hitmanager.OrganizeHits(hitcol);
-
-        // Make the timing plots if requested
-        if (_timing) {
-            start_time = System.currentTimeMillis();
-            dtime = ((double) (start_time - last_time)) / 1000.;
-            last_time = start_time;
-            aida.cloud1D("Organize Hits").fill(dtime);
-        }
 
         // Make sure that we have cleared the list of track seeds in the finder
         _finder.clearTrackSeedList();
@@ -143,14 +129,10 @@ public class SeedTracker extends org.lcsim.recon.tracking.seedtracker.SeedTracke
 
             FastCheck checker = new FastCheck(strategy, _bfield, _diag);
             // Perform track finding under this strategy
-            _finder.FindTracks(strategy, _bfield, checker);
-
-            // Make the timing plots if requested
-            if (_timing) {
-                long time = System.currentTimeMillis();
-                dtime = ((double) (time - last_time)) / 1000.;
-                last_time = time;
-                aida.cloud1D("Tracking time for strategy " + strategy.getName()).fill(dtime);
+            if (doSectoring)
+                ((SeedTrackFinder) _finder).FindTracks(strategy, _bfield, checker);
+            else {
+                ((SeedTrackFinder) _finder).FindTracks(strategy, _bfield, checker, hitcol);
             }
         }
 
@@ -196,13 +178,6 @@ public class SeedTracker extends org.lcsim.recon.tracking.seedtracker.SeedTracke
 
         // Clear the list of track seeds accumulated in the track finder
         _finder.clearTrackSeedList();
-
-        // Make the total time plot if requested
-        if (_timing) {
-            long end_time = System.currentTimeMillis();
-            dtime = ((double) (end_time - start_time)) / 1000.;
-            aida.cloud1D("Total tracking time").fill(dtime);
-        }
 
         return;
     }
