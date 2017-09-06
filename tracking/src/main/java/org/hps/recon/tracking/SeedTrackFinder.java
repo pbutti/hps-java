@@ -7,6 +7,7 @@ import org.lcsim.recon.tracking.seedtracker.FastCheck;
 import org.lcsim.recon.tracking.seedtracker.HelixFitter;
 import org.lcsim.recon.tracking.seedtracker.HitManager;
 import org.lcsim.recon.tracking.seedtracker.SeedCandidate;
+import org.lcsim.recon.tracking.seedtracker.SeedLayer;
 import org.lcsim.recon.tracking.seedtracker.SeedStrategy;
 
 public class SeedTrackFinder extends org.lcsim.recon.tracking.seedtracker.SeedTrackFinder {
@@ -19,23 +20,30 @@ public class SeedTrackFinder extends org.lcsim.recon.tracking.seedtracker.SeedTr
     }
 
     public boolean FindTracks(SeedStrategy strategy, double bfield, FastCheck checker, List<HelicalTrackHit> hitcol) {
+        List<SeedLayer> layers = strategy.getLayers(SeedLayer.SeedType.Seed);
         //  Loop over the first seed layer
         for (HelicalTrackHit hit1 : hitcol) {
+            if (hit1.Layer() != layers.get(0).getLayer())
+                continue;
 
             //  Loop over the second seed layer and check that we have a hit pair consistent with our strategy
             for (HelicalTrackHit hit2 : hitcol) {
+                if (hit2.Layer() != layers.get(1).getLayer())
+                    continue;
 
                 //  Check if the pair of hits is consistent with the current strategy
                 if (!checker.TwoPointCircleCheck(hit1, hit2, null)) {
                     continue;
                 }
-                if (hit1.z() * hit2.z() <= 0)
+                if (hit1.z() * hit2.z() < 0)
                     continue;
 
                 //  Loop over the third seed layer and check that we have a hit triplet consistent with our strategy
                 for (HelicalTrackHit hit3 : hitcol) {
+                    if (hit3.Layer() != layers.get(2).getLayer())
+                        continue;
 
-                    if (hit1.z() * hit3.z() <= 0)
+                    if (hit1.z() * hit3.z() < 0)
                         continue;
 
                     //  Form a seed candidate from the seed hits
