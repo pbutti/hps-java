@@ -220,7 +220,8 @@ public class DrawDetector extends Driver {
             System.out.println("    return P;");
             System.out.println("}");
 
-            // Ecal crystal frustum volume
+            // ECal crystal frustum volume
+            // use volumes for hit crystals in event data
             System.out.println("void drawvolume(triple p1, triple p2, triple p3, triple p4, triple p5, triple p6, triple p7, triple p8, pen surfpen)");
             System.out.println("{");
             System.out.println("surface[] surfs;");
@@ -236,6 +237,20 @@ public class DrawDetector extends Driver {
             System.out.println("        draw(surfs[i], surfpen);");
             System.out.println("    }");
             System.out.println("");
+            System.out.println("}");
+
+            //ECal crystal frustum edges
+            // Use edges to draw detector
+            // this causes out-of-memory crashes.
+            // keep this here, but don't use it for now.
+            System.out.println("void drawEdges(triple p1, triple p2, triple p3, triple p4, triple p5, triple p6, triple p7, triple p8, pen edgepen)");
+            System.out.println("{");
+            System.out.println("draw(p1--p2--p3--p4--cycle, edgepen);");
+            System.out.println("draw(p2--p6--p7--p3--cycle, edgepen);");
+            System.out.println("draw(p3--p7--p8--p4--cycle, edgepen);");
+            System.out.println("draw(p1--p4--p8--p5--cycle, edgepen);");
+            System.out.println("draw(p1--p5--p6--p2--cycle, edgepen);");
+            System.out.println("draw(p5--p8--p7--p6--cycle, edgepen);");
             System.out.println("}");
 
             DecimalFormat df = new DecimalFormat("###.######");
@@ -376,12 +391,11 @@ public class DrawDetector extends Driver {
     }
 
     private void addcell(StringBuffer sbcal, List<Hep3Vector> vertices) {
-        sbcal.append("drawvolume ( ");
-        for (Hep3Vector v : vertices)
-        {
-            sbcal.append("( "+v.x()+", "+v.y()+", "+v.z()+ "),");
+        sbcal.append("drawvolume( ");
+        for (Hep3Vector v : vertices) {
+            sbcal.append("( " + v.x() + ", " + v.y() + ", " + v.z() + "),");
         }
-        sbcal.append(" gray(0.2)+opacity(0.1));"+"\n");
+        sbcal.append(" gray(0.2)+opacity(0.1));" + "\n");
     }
 
     private void drawAsy(LineSegment3D line) {
