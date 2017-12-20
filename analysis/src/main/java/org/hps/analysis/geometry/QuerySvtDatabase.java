@@ -22,16 +22,17 @@ public class QuerySvtDatabase {
             runNum = Integer.getInteger(args[1]);
         }
         try {
-            testSvtAlignment(detectorName, runNum);
+            querySvtAlignmentDatabase(detectorName, runNum);
         } catch (Exception e) {
             e.printStackTrace();
 
         }
     }
 
-    public static void testSvtAlignment(String detectorName, int runNum) throws Exception {
+    public static void querySvtAlignmentDatabase(String detectorName, int runNum) throws Exception {
 
         final DatabaseConditionsManager manager = new DatabaseConditionsManager();
+        System.out.println("Querying database for detector "+detectorName+" and run "+runNum);
         manager.setDetector(detectorName, runNum);
 
         final List<MilleParameter> milleParameters = new ArrayList<MilleParameter>();
