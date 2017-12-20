@@ -42,7 +42,7 @@ public class SvtAlignmentTest extends TestCase {
     };
 
     public void testSvtAlignment() throws Exception {
-        final DatabaseConditionsManager manager = DatabaseConditionsManager.getInstance();
+        final DatabaseConditionsManager manager = new DatabaseConditionsManager();
         int runIndex = 0;
         for (int run : RUNS) {
             
