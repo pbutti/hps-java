@@ -30,6 +30,8 @@ public class FEEFilterDriver extends EventReconFilter {
         this.minHits = minHits;
     }
 
+    private boolean isMC = false;
+
     /**
      * Set the cut value for seed energy in GeV
      * 
@@ -48,29 +50,42 @@ public class FEEFilterDriver extends EventReconFilter {
         this.clusterCut = clusterCut;
     }
 
+    /**
+    * Sets MC flag
+    *
+    * @param isMC                   
+    */
+    public void setIsMC(boolean isMC) {
+        this.isMC = isMC;
+    }
+
+
     public void process(EventHeader event) {
 
         // don't drop any events with EPICS data:
         // (could also do this via event tag=31)
+        incrementEventProcessed();
         final EpicsData data = EpicsData.read(event);
         if (data != null)
             return;
 
-        // only keep singles triggers:
-        if (!event.hasCollection(GenericObject.class, "TriggerBank"))
-            skipEvent();
-        boolean isSingles = false;
-        for (GenericObject gob : event.get(GenericObject.class, "TriggerBank")) {
-            if (!(AbstractIntData.getTag(gob) == TIData.BANK_TAG))
-                continue;
-            TIData tid = new TIData(gob);
-            if (tid.isSingle0Trigger() || tid.isSingle1Trigger()) {
-                isSingles = true;
-                break;
+        if(!isMC){
+            // only keep singles triggers:
+            if (!event.hasCollection(GenericObject.class, "TriggerBank"))
+                skipEvent();
+            boolean isSingles = false;
+            for (GenericObject gob : event.get(GenericObject.class, "TriggerBank")) {
+                if (!(AbstractIntData.getTag(gob) == TIData.BANK_TAG))
+                    continue;
+                TIData tid = new TIData(gob);
+                if (tid.isSingle0Trigger() || tid.isSingle1Trigger()) {
+                    isSingles = true;
+                    break;
+                }
             }
-        }
-        if (!isSingles)
-            skipEvent();
+            if (!isSingles)
+                skipEvent();
+        }    
 
         if (!event.hasCollection(Cluster.class, clusterCollection))
             skipEvent();
@@ -84,8 +99,10 @@ public class FEEFilterDriver extends EventReconFilter {
             // keep events with a cluster over 600 MeV with seed over 400 MeV (for 2015 running).
             // keep events with cluster over 1.2 GeV and seed over 650 MeV for 2016 running.
             if (cc.getEnergy() > clusterCut && ClusterUtilities.findSeedHit(cc).getCorrectedEnergy() > seedCut
-                    && cc.getCalorimeterHits().size() >= minHits)
+                    && cc.getCalorimeterHits().size() >= minHits){
+                incrementEventPassed();
                 return;
+            }
         }
 
         skipEvent();
