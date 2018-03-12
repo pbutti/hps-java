@@ -18,7 +18,7 @@ public class TrackReconWithPlotsTest extends ReconTestSkeleton {
 
         testInputFileName = inputFileName;
         aida = AIDA.defaultInstance();
-        String aidaOutputName = "target/test-output/TestPlots_" + inputFileName.replaceAll("slcio", "aida");
+        String aidaOutputName = "target/test-output/OccupancyPlots_" + inputFileName.replaceAll("slcio", "root");
         nEvents = -1;
         testTrackingDriver = new TrackingReconstructionPlots();
         ((TrackingReconstructionPlots) testTrackingDriver).setOutputPlots(aidaOutputName);

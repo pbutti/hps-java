@@ -10,13 +10,14 @@ import org.hps.detector.svt.SvtDetectorSetup;
 //import org.lcsim.util.cache.FileCache;
 //import org.hps.job.DatabaseConditionsManagerSetup;
 //import org.lcsim.util.cache.FileCache;
-import org.lcsim.util.loop.LCIODriver;
+//import org.lcsim.util.loop.LCIODriver;
 import org.lcsim.util.loop.LCSimLoop;
 import org.lcsim.recon.tracking.digitization.sisim.config.RawTrackerHitSensorSetup;
 //import org.lcsim.recon.tracking.digitization.sisim.config.RawTrackerHitSensorSetup;
 //import org.lcsim.job.ConditionsSetup;
 import org.lcsim.recon.tracking.digitization.sisim.config.ReadoutCleanupDriver;
-import org.lcsim.util.test.TestUtil.TestOutputFile;
+
+//import org.lcsim.util.test.TestUtil.TestOutputFile;
 
 /**
  * Test class to create set of histograms (aida/root) from reco LCIO.
@@ -25,10 +26,10 @@ import org.lcsim.util.test.TestUtil.TestOutputFile;
  */
 public class TrackingReconstructionPlotsTest extends TestCase {
 
-    static final String testInput = "tst_3-9_noCond.slcio";
+    static final String testInput = "hps_twoClusters.slcio";
     static final String testURLBase = "http://www.lcsim.org/test/hps-java";
     static final String testOutput = "RecoCopy_" + testInput;
-    static final String aidaOutput = "target/test-output/TestPlots2_" + testInput.replaceAll("slcio", "aida");
+    static final String aidaOutput = "target/test-output/TestPlots2Cluster_TB_TimeMatched_" + testInput.replaceAll("slcio", "aida");
 
     private final int nEvents = -1;
 
