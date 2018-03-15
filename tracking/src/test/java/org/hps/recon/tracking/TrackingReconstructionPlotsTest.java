@@ -29,7 +29,7 @@ public class TrackingReconstructionPlotsTest extends TestCase {
     static final String testInput = "hps_twoClusters.slcio";
     static final String testURLBase = "http://www.lcsim.org/test/hps-java";
     static final String testOutput = "RecoCopy_" + testInput;
-    static final String aidaOutput = "target/test-output/TestPlots2Cluster_TB_TimeMatched_" + testInput.replaceAll("slcio", "aida");
+    static final String aidaOutput = "target/test-output/TestPlots2Cluster_TB_TimeMatched_" + testInput.replaceAll("slcio", "root");
 
     private final int nEvents = -1;
 

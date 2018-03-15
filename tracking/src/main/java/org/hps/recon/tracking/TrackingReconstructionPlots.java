@@ -379,17 +379,25 @@ public class TrackingReconstructionPlots extends Driver {
     private void doMissingHits(List<Track> GBLTrackList, List<TrackerHit> hthList, List<TrackerHit> sthList) {
         int ntracksTop = 0;
         int ntracksBot = 0;
+        int ntracksPos = 0;
+        int ntracksEle = 0;
         for (Track trk : GBLTrackList) {
             boolean isTop = trk.getTrackerHits().get(0).getPosition()[2] > 0;
+            int charge = -(int) Math.signum(TrackUtils.getR(trk.getTrackStates().get(0)));
             if (isTop)
                 ntracksTop++;
             else
                 ntracksBot++;
+            if (charge == -1)
+                ntracksEle++;
+            else if (charge == 1)
+                ntracksPos++;
         }
         aida.histogram1D("Tracks per Event Bot").fill(ntracksBot);
         aida.histogram1D("Tracks per Event Top").fill(ntracksTop);
 
         Map<Integer, Integer> HitsInLayer = new HashMap<Integer, Integer>();
+        //System.out.println("Starting 3D hits in event:");
         for (TrackerHit hth : hthList) {
             HpsSiSensor sensor = ((HpsSiSensor) ((RawTrackerHit) hth.getRawHits().get(0)).getDetectorElement());
             int lay = sensor.getLayerNumber() / 2 + 1;
@@ -400,8 +408,16 @@ public class TrackingReconstructionPlots extends Driver {
                 n = 0;
             }
             //System.out.printf("lay %d pos %f %f %f \n", lay, hth.getPosition()[0], hth.getPosition()[1], hth.getPosition()[2]);
-            if ((hth.getPosition()[1] > 0 && ntracksTop == 0) || (hth.getPosition()[1] < 0 && ntracksBot == 0))
+            if ((hth.getPosition()[1] > 0 && ntracksTop == 0) || (hth.getPosition()[1] < 0 && ntracksBot == 0)) {
+                //System.out.printf("lay %d time %f \n", lay, hth.getTime());
+                if (ntracksBot == 0) {
+                    aida.histogram1D("Times of Bottom 3D-Hits in Events with No Bottom Track").fill(hth.getTime());
+                }
+                if (ntracksTop == 0) {
+                    aida.histogram1D("Times of Top 3D-Hits in Events with No Top Track").fill(hth.getTime());
+                }
                 n++;
+            }
             HitsInLayer.put(lay, n);
         }
         int numLayHit = 0;
@@ -416,9 +432,10 @@ public class TrackingReconstructionPlots extends Driver {
             aida.histogram1D("Bottom Layers with 3D-Hits in Events with No Bottom Track").fill(numLayHit);
         }
 
+        //        System.out.println("Starting 2D hits in event:");
         HitsInLayer.clear();
         for (TrackerHit stripHit : sthList) {
-            //getTime()
+
             HpsSiSensor sensor = ((HpsSiSensor) ((RawTrackerHit) stripHit.getRawHits().get(0)).getDetectorElement());
             int lay = sensor.getLayerNumber();
             int n;
@@ -428,8 +445,29 @@ public class TrackingReconstructionPlots extends Driver {
                 n = 0;
             }
             //System.out.printf("lay %d pos %f %f %f \n", lay, stripHit.getPosition()[0], stripHit.getPosition()[1], stripHit.getPosition()[2]);
-            if ((stripHit.getPosition()[1] > 0 && ntracksTop == 0) || (stripHit.getPosition()[1] < 0 && ntracksBot == 0))
-                n++;
+            if ((stripHit.getPosition()[1] > 0 && ntracksTop == 0) || (stripHit.getPosition()[1] < 0 && ntracksBot == 0)) {
+                if (ntracksBot == 0) {
+                    aida.histogram1D("Times of Bottom 2D-Hits in Events with No Bottom Track").fill(stripHit.getTime());
+                    String temp = String.format("Times of Bottom 2D-Hits in Events with No Bottom Track - Layer %d", lay);
+                    aida.histogram1D(temp).fill(stripHit.getTime());
+                    if (ntracksEle > 0)
+                        aida.histogram1D("Times of Bottom 2D-Hits in Electron Events with No Bottom Track").fill(stripHit.getTime());
+                    else if (ntracksPos > 0)
+                        aida.histogram1D("Times of Bottom 2D-Hits in Positron Events with No Bottom Track").fill(stripHit.getTime());
+                }
+                if (ntracksTop == 0) {
+                    aida.histogram1D("Times of Top 2D-Hits in Events with No Top Track").fill(stripHit.getTime());
+                    String temp = String.format("Times of Top 2D-Hits in Events with No Top Track - Layer %d", lay);
+                    aida.histogram1D(temp).fill(stripHit.getTime());
+                    if (ntracksEle > 0)
+                        aida.histogram1D("Times of Top 2D-Hits in Electron Events with No Top Track").fill(stripHit.getTime());
+                    else if (ntracksPos > 0)
+                        aida.histogram1D("Times of Top 2D-Hits in Positron Events with No Top Track").fill(stripHit.getTime());
+                }
+                if (Math.abs(stripHit.getTime()) <= 12.0)
+                    n++;
+                //System.out.printf("lay %d time %f \n", lay, stripHit.getTime());
+            }
             HitsInLayer.put(lay, n);
         }
         numLayHit = 0;
@@ -1555,6 +1593,21 @@ public class TrackingReconstructionPlots extends Driver {
             IHistogram1D bot3DHitSVTlayers = aida.histogram1D("Bottom Layers with 3D-Hits in Events with No Bottom Track", 7, -0.5, 6.5);
             IHistogram1D top2DHitSVTlayers = aida.histogram1D("Top Layers with 2D-Hits in Events with No Top Track", 13, -0.5, 12.5);
             IHistogram1D bot2DHitSVTlayers = aida.histogram1D("Bottom Layers with 2D-Hits in Events with No Bottom Track", 13, -0.5, 12.5);
+
+            IHistogram1D top3DHitSVTtimes = aida.histogram1D("Times of Top 3D-Hits in Events with No Top Track", 30, -15, 15);
+            IHistogram1D bot3DHitSVTtimes = aida.histogram1D("Times of Bottom 3D-Hits in Events with No Bottom Track", 30, -15, 15);
+            IHistogram1D top2DHitSVTtimes = aida.histogram1D("Times of Top 2D-Hits in Events with No Top Track", 100, -100, 100);
+            IHistogram1D bot2DHitSVTtimes = aida.histogram1D("Times of Bottom 2D-Hits in Events with No Bottom Track", 100, -100, 100);
+            IHistogram1D top2DHitSVTtimes_ele = aida.histogram1D("Times of Top 2D-Hits in Electron Events with No Top Track", 100, -100, 100);
+            IHistogram1D bot2DHitSVTtimes_ele = aida.histogram1D("Times of Bottom 2D-Hits in Electron Events with No Bottom Track", 100, -100, 100);
+            IHistogram1D top2DHitSVTtimes_pos = aida.histogram1D("Times of Top 2D-Hits in Positron Events with No Top Track", 100, -100, 100);
+            IHistogram1D bot2DHitSVTtimes_pos = aida.histogram1D("Times of Bottom 2D-Hits in Positron Events with No Bottom Track", 100, -100, 100);
+            for (int i = 1; i <= 12; i++) {
+                String temp = String.format("Times of Top 2D-Hits in Events with No Top Track - Layer %d", i);
+                aida.histogram1D(temp, 100, -100, 100);
+                temp = String.format("Times of Bottom 2D-Hits in Events with No Bottom Track - Layer %d", i);
+                aida.histogram1D(temp, 100, -100, 100);
+            }
 
             IHistogram2D clusE_2D_both = aida.histogram2D("Top vs Bottom ClusE with tracks in both", 25, 0, 0.75, 25, 0, 0.75);
             IHistogram2D clusE_2D_top = aida.histogram2D("Top vs Bottom ClusE with track in top", 25, 0, 0.75, 25, 0, 0.75);
