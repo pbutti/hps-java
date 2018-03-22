@@ -383,7 +383,13 @@ public class TrackingReconstructionPlots extends Driver {
         int ntracksEle = 0;
 
         double maxClusE = 0;
+        Cluster topClus = null;
+        Cluster botClus = null;
         for (Cluster clus : clusterList) {
+            if (clus.getPosition()[1] > 0)
+                topClus = clus;
+            else
+                botClus = clus;
             if (clus.getEnergy() > maxClusE)
                 maxClusE = clus.getEnergy();
         }
@@ -467,6 +473,10 @@ public class TrackingReconstructionPlots extends Driver {
                         aida.histogram1D("Times of Bottom 2D-Hits in HighMaxClusE Events with No Bottom Track").fill(stripHit.getTime());
                     else
                         aida.histogram1D("Times of Bottom 2D-Hits in LowMaxClusE Events with No Bottom Track").fill(stripHit.getTime());
+                    if (botClus != null && topClus != null) {
+                        if ((botClus.getEnergy() < 0.3) && (topClus.getEnergy() > 0.3))
+                            aida.histogram1D("Times of Bottom 2D-Hits in LowMaxClusEBot Events with No Bottom Track").fill(stripHit.getTime());
+                    }
                 }
                 if (ntracksTop == 0) {
                     aida.histogram1D("Times of Top 2D-Hits in Events with No Top Track").fill(stripHit.getTime());
@@ -482,6 +492,10 @@ public class TrackingReconstructionPlots extends Driver {
                         aida.histogram1D("Times of Top 2D-Hits in HighMaxClusE Events with No Top Track").fill(stripHit.getTime());
                     else
                         aida.histogram1D("Times of Top 2D-Hits in LowMaxClusE Events with No Top Track").fill(stripHit.getTime());
+                    if (botClus != null && topClus != null) {
+                        if ((botClus.getEnergy() < 0.3) && (topClus.getEnergy() > 0.3))
+                            aida.histogram1D("Times of Top 2D-Hits in LowMaxClusEBot Events with No Top Track").fill(stripHit.getTime());
+                    }
                 }
                 if (Math.abs(stripHit.getTime()) <= 12.0)
                     n++;
@@ -1625,6 +1639,8 @@ public class TrackingReconstructionPlots extends Driver {
             IHistogram1D bot2DHitSVTtimes_high = aida.histogram1D("Times of Bottom 2D-Hits in HighMaxClusE Events with No Bottom Track", 100, -100, 100);
             IHistogram1D top2DHitSVTtimes_low = aida.histogram1D("Times of Top 2D-Hits in LowMaxClusE Events with No Top Track", 100, -100, 100);
             IHistogram1D bot2DHitSVTtimes_low = aida.histogram1D("Times of Bottom 2D-Hits in LowMaxClusE Events with No Bottom Track", 100, -100, 100);
+            IHistogram1D top2DHitSVTtimes_lowBot = aida.histogram1D("Times of Top 2D-Hits in LowMaxClusEBot Events with No Top Track", 100, -100, 100);
+            IHistogram1D bot2DHitSVTtimes_lowBot = aida.histogram1D("Times of Bottom 2D-Hits in LowMaxClusEBot Events with No Bottom Track", 100, -100, 100);
 
             for (int i = 1; i <= 12; i++) {
                 String temp = String.format("Times of Top 2D-Hits in Events with No Top Track - Layer %d", i);
