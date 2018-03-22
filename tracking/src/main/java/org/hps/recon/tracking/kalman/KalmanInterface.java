@@ -15,25 +15,62 @@ import org.hps.recon.tracking.MaterialSupervisor.SiStripPlane;
 import org.lcsim.detector.tracker.silicon.HpsSiSensor;
 import org.lcsim.event.RawTrackerHit;
 import org.lcsim.event.TrackerHit;
+import org.lcsim.event.LCIOParameters.ParameterName;
+import org.lcsim.event.base.BaseTrack;
 
 public class KalmanInterface {
+
+    public Map<Measurement, TrackerHit> hitMap;
+
+    public BaseTrack createTrack(SeedTrack trk, List<Measurement> measList) {
+        // private double drho, phi0, K, dz, tanl
+
+        //public static final int D0 = ParameterName.d0.ordinal();
+        //public static final int PHI = ParameterName.phi0.ordinal();
+        //public static final int OMEGA = ParameterName.omega.ordinal();
+        //public static final int TANLAMBDA = ParameterName.tanLambda.ordinal();
+        //public static final int Z0 = ParameterName.z0.ordinal();
+        BaseTrack newTrack = new BaseTrack();
+        double[] oldParams = trk.helixParams().v;
+        //Vec(drho, phi0, K, dz, tanl);
+        double[] params = new double[5];
+        SquareMatrix oldCov = trk.covariance();
+        SymmetricMatrix cov = new SymmetricMatrix(5);
+
+        // convert params
+        params[ParameterName.phi0.ordinal()] = oldParams[1];
+        params[ParameterName.tanLambda.ordinal()] = oldParams[4];
+
+        // convert cov matrix
+
+        newTrack.setTrackParameters(params, trk.B());
+        newTrack.setCovarianceMatrix(cov);
+        newTrack.setFitSuccess(trk.success);
+        for (Measurement meas : measList) {
+            TrackerHit hit = hitMap.get(meas);
+            if (hit != null)
+                newTrack.addHit(hit);
+        }
+
+        return newTrack;
+    }
 
     public static SiModule createSiModule(SiStripPlane inputPlane, FieldMap fm) {
         // SiModule(int Layer, Plane p, double stereo, double width, double height, double thickness, FieldMap Bfield) {
 
-        //FIXME
-        double stereo = 0;
-        HpsSiSensor temp = (HpsSiSensor) (inputPlane.getSensor());
-        //if (!temp.isAxial())
-        // get stereo angle
-
         Vec pointOnPlane = new Vec(3, inputPlane.origin().v());
         Vec normalToPlane = new Vec(3, VecOp.cross(inputPlane.getMeasuredCoordinate(), inputPlane.getUnmeasuredCoordinate()).v());
+
+        double stereo = 0;
+        HpsSiSensor temp = (HpsSiSensor) (inputPlane.getSensor());
+        if (!temp.isAxial()) {
+            stereo = Math.acos(normalToPlane.v[2]);
+        }
 
         return new SiModule(temp.getLayerNumber(), new Plane(pointOnPlane, normalToPlane), stereo, inputPlane.getWidth(), inputPlane.getLength(), inputPlane.getThickness(), fm);
     }
 
-    public static void fillMeasurements(List<SiModule> mods, List<TrackerHit> hits1D) {
+    public void fillMeasurements(List<SiModule> mods, List<TrackerHit> hits1D) {
         Map<Integer, ArrayList<TrackerHit>> stripHits = new HashMap<Integer, ArrayList<TrackerHit>>();
 
         for (TrackerHit stripHit : hits1D) {
@@ -71,6 +108,7 @@ public class KalmanInterface {
                 Measurement m = new Measurement(hitPosTransformed.v[0], Math.sqrt(sigma2), null, 0);
 
                 mod.addMeasurement(m);
+                hitMap.put(m, hit);
             }
         }
 
