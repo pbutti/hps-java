@@ -22,26 +22,37 @@ public class KalmanInterface {
 
     public Map<Measurement, TrackerHit> hitMap;
 
-    public BaseTrack createTrack(SeedTrack trk, List<Measurement> measList) {
-        // private double drho, phi0, K, dz, tanl
+    public KalmanInterface() {
 
-        //public static final int D0 = ParameterName.d0.ordinal();
-        //public static final int PHI = ParameterName.phi0.ordinal();
-        //public static final int OMEGA = ParameterName.omega.ordinal();
-        //public static final int TANLAMBDA = ParameterName.tanLambda.ordinal();
-        //public static final int Z0 = ParameterName.z0.ordinal();
+    }
+
+    public BaseTrack createTrack(SeedTrack trk, List<Measurement> measList) {
+
         BaseTrack newTrack = new BaseTrack();
         double[] oldParams = trk.helixParams().v;
-        //Vec(drho, phi0, K, dz, tanl);
         double[] params = new double[5];
         SquareMatrix oldCov = trk.covariance();
         SymmetricMatrix cov = new SymmetricMatrix(5);
 
         // convert params
+        params[ParameterName.d0.ordinal()] = oldParams[0];
         params[ParameterName.phi0.ordinal()] = oldParams[1];
+        params[ParameterName.omega.ordinal()] = oldParams[2];
         params[ParameterName.tanLambda.ordinal()] = oldParams[4];
+        params[ParameterName.z0.ordinal()] = oldParams[3];
 
         // convert cov matrix
+        for (int i = 0; i <= 2; i++) {
+            for (int j = 0; j <= 2; i++) {
+                cov.setElement(i, j, oldCov.M[i][j]);
+            }
+        }
+        for (int i = 3; i <= 4; i++) {
+            for (int j = 0; j <= 4; i++) {
+                cov.setElement(i, j, oldCov.M[j][i]);
+                cov.setElement(j, i, oldCov.M[i][j]);
+            }
+        }
 
         newTrack.setTrackParameters(params, trk.B());
         newTrack.setCovarianceMatrix(cov);
@@ -51,6 +62,7 @@ public class KalmanInterface {
             if (hit != null)
                 newTrack.addHit(hit);
         }
+        newTrack.setNDF(measList.size());
 
         return newTrack;
     }
