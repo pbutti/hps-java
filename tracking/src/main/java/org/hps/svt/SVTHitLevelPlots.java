@@ -231,6 +231,11 @@ public class SVTHitLevelPlots extends Driver {
     Map<String, IHistogram1D> Phi0_err = new HashMap<String,IHistogram1D>();
     Map<String, IHistogram1D> Omega_err = new HashMap<String,IHistogram1D>();
     
+    Map<String, IHistogram1D> residualExtrpX = new HashMap<String,IHistogram1D>();
+    Map<String, IHistogram1D> residualExtrpY = new HashMap<String,IHistogram1D>();
+    Map<String, IHistogram1D> ratioerrorX = new HashMap<String,IHistogram1D>();
+    Map<String, IHistogram1D> ratioerrorY = new HashMap<String,IHistogram1D>();
+    
     //Histogram Settings
     int nBins = 50;
     double maxPull = 7;
@@ -511,6 +516,11 @@ public class SVTHitLevelPlots extends Driver {
             Tanlambda_err.put(sensorName,histogramFactory.createHistogram1D("TanLambda Error " + sensorName, nBins, minTLambdaErr, maxTLambdaErr));
             Phi0_err.put(sensorName,histogramFactory.createHistogram1D("Phi0 Error " + sensorName, nBins, minPhi0Err, maxPhi0Err));
             Omega_err.put(sensorName,histogramFactory.createHistogram1D("Omega Error " + sensorName, nBins, minOmegaErr, maxOmegaErr));
+            
+            residualExtrpX.put(sensorName,histogramFactory.createHistogram1D("Extrapolation Residual X " + sensorName, nBins, -10, 10));
+            residualExtrpY.put(sensorName,histogramFactory.createHistogram1D("Extrapolation Residual Y " + sensorName, nBins, -10, 10));
+            ratioerrorX.put(sensorName,histogramFactory.createHistogram1D("Ratio Error X " + sensorName, nBins, 0, 2.1));
+            ratioerrorY.put(sensorName,histogramFactory.createHistogram1D("Ratio Error Y " + sensorName, nBins, 0, 2.1));
         }
     }
 
@@ -588,7 +598,33 @@ public class SVTHitLevelPlots extends Driver {
             //TODO this needs to be done correctly
             double yErrorAxial = computeExtrapErrorY(track,tState,axialSensor,unusedLay)[0];
             double yErrorStereo = computeExtrapErrorY(track,tState,stereoSensor,unusedLay)[0];
-        
+            
+            TrackState tStateNext = getTrackStateNext(track,unusedLay);
+            
+            HelicalTrackFit htfNext = TrackUtils.getHTF(tStateNext);
+            
+            Hep3Vector axialExtrapPosSensorNext = TrackStateUtils.getLocationAtSensor(htfNext,axialSensor,bfield);
+            Hep3Vector stereoExtrapPosSensorNext = TrackStateUtils.getLocationAtSensor(htfNext,stereoSensor,bfield);
+            
+            double yErrorAxialNext = computeExtrapErrorYNext(track, tStateNext, axialSensor,unusedLay)[0];
+            double yErrorStereoNext = computeExtrapErrorYNext(track, tStateNext, stereoSensor,unusedLay)[0];
+            
+            residualExtrpX.get(sensorAxialName).fill(axialExtrapPosSensor.x() - axialExtrapPosSensorNext.x());
+            residualExtrpX.get(sensorStereoName).fill(stereoExtrapPosSensor.x() - stereoExtrapPosSensorNext.x());
+            residualExtrpY.get(sensorAxialName).fill(axialExtrapPosSensor.y() - axialExtrapPosSensorNext.y());
+            residualExtrpY.get(sensorStereoName).fill(stereoExtrapPosSensor.y() - stereoExtrapPosSensorNext.y());
+            
+            ratioerrorY.get(sensorAxialName).fill(yErrorAxialNext/yErrorAxial);
+            ratioerrorY.get(sensorStereoName).fill(yErrorStereoNext/yErrorStereo);
+            ratioerrorX.get(sensorAxialName).fill(computeExtrapErrorYNext(track, tStateNext, axialSensor,unusedLay)[1]/computeExtrapErrorY(track,tState,axialSensor,unusedLay)[1]);
+            ratioerrorX.get(sensorStereoName).fill(computeExtrapErrorYNext(track, tStateNext, stereoSensor,unusedLay)[1]/computeExtrapErrorY(track,tState,stereoSensor,unusedLay)[1]);
+            
+            //yErrorAxial = Math.sqrt(yErrorAxial*yErrorAxial+yErrorAxialNext*yErrorAxialNext);
+            //yErrorStereo = Math.sqrt(yErrorStereo*yErrorStereo+yErrorStereoNext*yErrorStereoNext);
+            
+            yErrorAxial = (yErrorAxial+yErrorAxialNext)/(2);
+            yErrorStereo = (yErrorStereo+yErrorStereoNext)/(2);
+            
             //Compute the channel where the track extrapolates to in each sensor
             int chanAxial = axialSensorPair.getSecond().getFirst();
             int chanStereo = stereoSensorPair.getSecond().getFirst();
@@ -893,6 +929,25 @@ public class SVTHitLevelPlots extends Driver {
         return tState;
     }
     
+    private TrackState getTrackStateNext(Track track, int unusedLay){
+        int layer = -1;
+        boolean isTop = track.getTrackStates().get(0).getTanLambda() > 0;
+        //If unused layer is L1, then get trackstate at IP
+        if(unusedLay == 6){
+            return track.getTrackStates().get(0);
+        }
+        else{
+            layer = unusedLay + 1;
+        }
+        HpsSiSensor sensorHole = getSensor(track,layer,isTop,true);
+        HpsSiSensor sensorSlot = getSensor(track,layer,isTop,false);
+        TrackState tState = TrackStateUtils.getTrackStateAtSensor(track,sensorHole.getMillepedeId());
+        if(tState == null){
+            tState = TrackStateUtils.getTrackStateAtSensor(track,sensorSlot.getMillepedeId());
+        }
+        return tState;
+    }
+    
     //Returns channel number of a given position in the sensor frame
     private int getChan(Hep3Vector pos, HpsSiSensor sensor){
         double readoutPitch = sensor.getReadoutStripPitch();
@@ -1001,6 +1056,85 @@ public class SVTHitLevelPlots extends Driver {
         Tanlambda_err.get(sensorName).fill(tanlambda_err);
         Phi0_err.get(sensorName).fill(phi0_err);
         Omega_err.get(sensorName).fill(omega_err);
+    
+        //Calculate errors in the u and v directions
+        return new double[]{Math.sqrt(measMsCov.get(0, 0)),Math.sqrt(measMsCov.get(1,1))};
+    }
+    
+    private double[] computeExtrapErrorYNext(Track track, TrackState tState, HpsSiSensor sensor, int unusedLay){
+        Hep3Vector sensorPos = sensor.getGeometry().getPosition();
+        double bfac = Constants.fieldConversion * bfield;
+        //Grab array of covariance matrix and build 5x5 covariance matrix of track parameters
+        double[] cov = tState.getCovMatrix();
+        HelicalTrackFit htf = TrackUtils.getHTF(tState);
+        SymmetricMatrix LocCov = new SymmetricMatrix(5,cov,true);
+        Matrix locCov = new Matrix(5,5);
+        for(int i = 0; i < 5; i++){
+            for(int j = 0; j < 5; j++){
+                locCov.set(i, j, LocCov.e(i, j));
+            }
+        }
+
+        // Track direction
+        double sinLambda = sin(htf.slope());
+        double cosLambda = sqrt(1.0 - sinLambda * sinLambda);
+        
+        Hep3Vector hitPos = new BasicHep3Vector(0,0,0);
+        
+        if(unusedLay != 6){
+            boolean isTop = sensor.isTopLayer();
+            boolean isHole = sensor.getSide().matches("ELECTRON");
+            HpsSiSensor prevSensor = getSensor(track,unusedLay+1,isTop,isHole);
+            hitPos = prevSensor.getGeometry().getPosition();
+        }
+        
+        //Calculate the distance s the particle travels from track state to sensor of interest
+        double step1 =  HelixUtils.PathToXPlane(htf,hitPos.z(),0,0).get(0);
+        double step2 =  HelixUtils.PathToXPlane(htf,sensorPos.z(),0,0).get(0);
+        double step = Math.abs(step2 - step1);
+        
+        //Grab simple jacobian in lambda phi coordinates
+        BasicMatrix jacPointToPoint = GblUtils.gblSimpleJacobianLambdaPhi(step, cosLambda, abs(bfac));
+    
+        Matrix jacobian = new Matrix(5,5);
+        for(int i = 0; i < 5; i++){
+            for(int j = 0; j < 5; j++){
+                jacobian.set(i, j, jacPointToPoint.e(i,j));
+            }
+        }
+    
+        //Grab jacobian to convert from CL to perigee coordinates and vice-versa
+        Matrix ClToPerJac = GblUtils.getCLToPerigeeJacobian(htf,new HpsHelicalTrackFit(TrackUtils.getHTF(tState)),bfield);
+        Matrix PerToClJac = ClToPerJac.inverse();
+        //First convert perigee covariance to CL coordinates, then compute the new covariance matrix propagated to the sensor of interest
+        Matrix MsCov = jacobian.times(PerToClJac.times(locCov.times(PerToClJac.transpose())).times(jacobian.transpose()));
+        //Transform this covariance matrix back to perigee coordinates to get the new errors of the track parameters
+        Matrix helixCovariance = ClToPerJac.times(MsCov.times(ClToPerJac.transpose()));
+        //Fill new covariance matrix with covariances in x and y directions (z can be ignored)
+        Matrix MsCov2 = new Matrix(3,3);
+        MsCov2.set(0,0,MsCov.get(3,3));
+        MsCov2.set(0,1,MsCov.get(3,4));
+        MsCov2.set(1,0,MsCov.get(4,3));
+        MsCov2.set(1,1,MsCov.get(4,4));
+    
+        //Tranform the covariance matrix into the sensor frame u,v to get the final covariance matrix
+        SiSensorElectrodes electrodes = sensor.getReadoutElectrodes(ChargeCarrier.HOLE);
+        Matrix rot = Hep3ToMatrix(electrodes.getGlobalToLocal().getRotation().getRotationMatrix());
+        Matrix measMsCov = rot.times(MsCov2.times(rot.transpose()));
+    
+        //Fill histograms of track parameter errors
+        //double d0_err = Math.sqrt(helixCovariance.get(HelicalTrackFit.dcaIndex,HelicalTrackFit.dcaIndex));
+        //double z0_err = Math.sqrt(helixCovariance.get(HelicalTrackFit.z0Index,HelicalTrackFit.z0Index));
+        //double tanlambda_err = Math.sqrt(helixCovariance.get(HelicalTrackFit.slopeIndex,HelicalTrackFit.slopeIndex));
+        //double phi0_err = Math.sqrt(helixCovariance.get(HelicalTrackFit.phi0Index,HelicalTrackFit.phi0Index));
+        //double omega_err = Math.sqrt(helixCovariance.get(HelicalTrackFit.curvatureIndex,HelicalTrackFit.curvatureIndex));
+
+        //String sensorName = sensor.getName();
+        //D0_err.get(sensorName).fill(d0_err);
+        //Z0_err.get(sensorName).fill(z0_err);
+        //Tanlambda_err.get(sensorName).fill(tanlambda_err);
+        //Phi0_err.get(sensorName).fill(phi0_err);
+        //Omega_err.get(sensorName).fill(omega_err);
     
         //Calculate errors in the u and v directions
         return new double[]{Math.sqrt(measMsCov.get(0, 0)),Math.sqrt(measMsCov.get(1,1))};
