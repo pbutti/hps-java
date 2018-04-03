@@ -1,4 +1,4 @@
-package kalman;
+package org.hps.recon.tracking.kalman;
 
 //Kalman fit measurement site, one for each silicon-strip detector that the track crosses
 class MeasurementSite {
@@ -172,8 +172,7 @@ class MeasurementSite {
                 H2.print("H made using old statevector");
                 aP.C.print("covariance");
                 double exRes = m.hits.get(0).sigma * m.hits.get(0).sigma - H2.dot(H2.leftMultiply(pS.C));
-                System.out.format("MeasurementSite.makePrediction: expected residual = %12.5e; from old state vector = %12.5e, sigma=%12.5e\n", aP.R, exRes,
-                                                m.hits.get(0).sigma);
+                System.out.format("MeasurementSite.makePrediction: expected residual = %12.5e; from old state vector = %12.5e, sigma=%12.5e\n", aP.R, exRes, m.hits.get(0).sigma);
             }
 
             if (aP.R > 0.) {
@@ -187,8 +186,7 @@ class MeasurementSite {
                 chi2inc = 0.;
             }
             if (verbose) {
-                System.out.format("MeasurementSite.makePrediction: chi2 increment=%12.5e, hitID=%d, theHit=%d, mxResid=%12.5e\n", chi2inc, hitID, theHit,
-                                                mxResid);
+                System.out.format("MeasurementSite.makePrediction: chi2 increment=%12.5e, hitID=%d, theHit=%d, mxResid=%12.5e\n", chi2inc, hitID, theHit, mxResid);
             }
         }
 

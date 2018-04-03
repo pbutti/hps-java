@@ -1,4 +1,4 @@
-package kalman;
+package org.hps.recon.tracking.kalman;
 
 class HelixPlaneIntersect { // Calculates intersection of a helix with a nearly arbitrary plane
     // Coordinates: the beam is ~ in the y direction
@@ -134,8 +134,7 @@ class HelixPlaneIntersect { // Calculates intersection of a helix with a nearly 
         fl = S(x1);
         fh = S(x2);
         if ((fl > 0.0 && fh > 0.0) || (fl < 0.0 && fh < 0.0)) {
-            System.out.format("ZeroFind.rtsafe: root is not bracketed in zero finding, fl=%12.5e, fh=%12.5e, alpha=%10.6f\n", fl, fh,
-                                            alpha);
+            System.out.format("ZeroFind.rtsafe: root is not bracketed in zero finding, fl=%12.5e, fh=%12.5e, alpha=%10.6f\n", fl, fh, alpha);
             // p.print("internal plane");
             // a.print("internal helix parameters");
             // X0.print("internal pivot");
@@ -190,8 +189,7 @@ class HelixPlaneIntersect { // Calculates intersection of a helix with a nearly 
     }
 
     private double dSdPhi(double phi) {
-        Vec dXdPhi = new Vec((alpha / a.v[2]) * Math.sin(a.v[1] + phi), -(alpha / a.v[2]) * Math.cos(a.v[1] + phi),
-                                        -(alpha / a.v[2]) * a.v[4]);
+        Vec dXdPhi = new Vec((alpha / a.v[2]) * Math.sin(a.v[1] + phi), -(alpha / a.v[2]) * Math.cos(a.v[1] + phi), -(alpha / a.v[2]) * a.v[4]);
         return p.T().dot(dXdPhi);
     }
 

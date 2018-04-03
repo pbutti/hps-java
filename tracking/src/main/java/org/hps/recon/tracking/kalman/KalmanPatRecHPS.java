@@ -1,4 +1,4 @@
-package kalman;
+package org.hps.recon.tracking.kalman;
 
 // Tracking pattern recognition for the HPS experiment based on an extended Kalman filter
 // Algorithm:

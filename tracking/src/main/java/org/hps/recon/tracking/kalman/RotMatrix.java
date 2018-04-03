@@ -1,4 +1,4 @@
-package kalman;
+package org.hps.recon.tracking.kalman;
 
 class RotMatrix { // 3 by 3 rotation matrix for the Kalman filter
     double[][] M = null;

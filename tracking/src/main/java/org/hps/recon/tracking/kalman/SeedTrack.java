@@ -1,4 +1,4 @@
-package kalman;
+package org.hps.recon.tracking.kalman;
 
 import java.util.ArrayList;
 
@@ -31,10 +31,10 @@ class SeedTrack {
     // *****NOTE, THIS NEEDS TO BE MODIFIED TO USE AN ARBITRARY LIST OF MODULES, WITH A HIT SELECTION FOR EACH (DO COMBINATORICS IN THE CALLING
     // ROUTINE)
     SeedTrack(ArrayList<SiModule> data, // List of Si modules with data
-                                    double yOrigin, // New origin along beam to use for the fit
-                                    int frst, // First Si module to use
-                                    int Npnt, // Number of modules to use (starting with the first)
-                                    boolean verbose // Set true for lots of debug printout
+            double yOrigin, // New origin along beam to use for the fit
+            int frst, // First Si module to use
+            int Npnt, // Number of modules to use (starting with the first)
+            boolean verbose // Set true for lots of debug printout
     ) {
 
         this.verbose = verbose;

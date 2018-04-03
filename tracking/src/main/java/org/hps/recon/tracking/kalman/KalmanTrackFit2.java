@@ -1,4 +1,4 @@
-package kalman;
+package org.hps.recon.tracking.kalman;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -15,12 +15,12 @@ public class KalmanTrackFit2 {
     boolean success;
 
     public KalmanTrackFit2(ArrayList<SiModule> data, // List of Si modules with data points to be included in the fit
-                                    int start, // Starting point in the list
-                                    int nIterations, // Number of fit iterations requested
-                                    Vec pivot, // Pivot point for the starting "guess" helix
-                                    Vec helixParams, // 5 helix parameters for the starting "guess" helix
-                                    SquareMatrix C, // Full covariance matrix for the starting "guess" helix
-                                    FieldMap fM, boolean verbose) {
+            int start, // Starting point in the list
+            int nIterations, // Number of fit iterations requested
+            Vec pivot, // Pivot point for the starting "guess" helix
+            Vec helixParams, // 5 helix parameters for the starting "guess" helix
+            SquareMatrix C, // Full covariance matrix for the starting "guess" helix
+            FieldMap fM, boolean verbose) {
 
         success = true;
 

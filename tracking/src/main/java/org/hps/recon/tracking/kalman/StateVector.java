@@ -1,4 +1,4 @@
-package kalman;
+package org.hps.recon.tracking.kalman;
 
 //State vector (projected, filtered, or smoothed) for the Kalman filter
 class StateVector {
@@ -260,8 +260,7 @@ class StateVector {
     // Create a smoothed state vector from the filtered state vector
     StateVector smooth(StateVector snS, StateVector snP) {
         if (verbose) {
-            System.out.format("StateVector.smooth of filtered state %d %d, using smoothed state %d %d and predicted state %d %d\n", kLow, kUp, snS.kLow,
-                                            snS.kUp, snP.kLow, snP.kUp);
+            System.out.format("StateVector.smooth of filtered state %d %d, using smoothed state %d %d and predicted state %d %d\n", kLow, kUp, snS.kLow, snS.kUp, snP.kLow, snP.kUp);
         }
         StateVector sS = this.copy();
 

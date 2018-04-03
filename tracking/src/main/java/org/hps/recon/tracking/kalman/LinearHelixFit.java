@@ -1,4 +1,4 @@
-package kalman;
+package org.hps.recon.tracking.kalman;
 
 public class LinearHelixFit { // Simultaneous fit to a line in the non-bending plane and a parabola in the
                               // bending plane

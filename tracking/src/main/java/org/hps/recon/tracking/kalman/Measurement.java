@@ -1,4 +1,4 @@
-package kalman;
+package org.hps.recon.tracking.kalman;
 
 class Measurement { // Holds a single silicon-strip measurement (single-sided), to interface with
                     // the Kalman fit

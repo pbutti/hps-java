@@ -1,4 +1,4 @@
-package kalman;
+package org.hps.recon.tracking.kalman;
 
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
@@ -55,8 +55,7 @@ public class FieldMap {
                         bY[ix][iy][iz] = dis.readFloat();
                         bZ[ix][iy][iz] = dis.readFloat();
                         if (nEcho < 10) {
-                            System.out.format("x=%12.4e, y=%12.4e, z=%12.4e, Bx=%12.4e, By=%12.4e, Bz=%12.4e\n", X[ix], Y[iy], Z[iz],
-                                                            bX[ix][iy][iz], bY[ix][iy][iz], bZ[ix][iy][iz]);
+                            System.out.format("x=%12.4e, y=%12.4e, z=%12.4e, Bx=%12.4e, By=%12.4e, Bz=%12.4e\n", X[ix], Y[iy], Z[iz], bX[ix][iy][iz], bY[ix][iy][iz], bZ[ix][iy][iz]);
                             nEcho++;
                         }
                     }
@@ -107,8 +106,7 @@ public class FieldMap {
                         }
                         scan.nextLine();
                         if (nEcho < 10) {
-                            System.out.format("x=%12.4e, y=%12.4e, z=%12.4e, Bx=%12.4e, By=%12.4e, Bz=%12.4e\n", X[ix], Y[iy], Z[iz],
-                                                            bX[ix][iy][iz], bY[ix][iy][iz], bZ[ix][iy][iz]);
+                            System.out.format("x=%12.4e, y=%12.4e, z=%12.4e, Bx=%12.4e, By=%12.4e, Bz=%12.4e\n", X[ix], Y[iy], Z[iz], bX[ix][iy][iz], bY[ix][iy][iz], bZ[ix][iy][iz]);
                             nEcho++;
                         }
                     }
@@ -174,7 +172,7 @@ public class FieldMap {
         // double Byc = bY[iX][iY][iZ]*1000.;
         // double Bzc = bZ[iX][iY][iZ]*1000.;
         // new Vec(-Bxc,Bzc,Byc).print("B on grid");  
-        return new Vec(Bx, Bz, -By);  // correct HPS field
+        return new Vec(Bx, Bz, -By); // correct HPS field
         //return new Vec(0.,0.,0.24); // constant field
         // return new Vec(-Bx, -Bz, +By); // reversed field
     }

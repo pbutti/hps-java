@@ -1,4 +1,4 @@
-package kalman;
+package org.hps.recon.tracking.kalman;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -509,8 +509,7 @@ public class HelixTest { // Main program for testing the Kalman fitting code
         Instant timestamp = Instant.now();
         System.out.format("Beginning time = %s\n", timestamp.toString());
         LocalDateTime ldt = LocalDateTime.ofInstant(timestamp, ZoneId.systemDefault());
-        System.out.format("%s %d %d at %d:%d %d.%d seconds\n", ldt.getMonth(), ldt.getDayOfMonth(), ldt.getYear(), ldt.getHour(), ldt.getMinute(),
-                                        ldt.getSecond(), ldt.getNano());
+        System.out.format("%s %d %d at %d:%d %d.%d seconds\n", ldt.getMonth(), ldt.getDayOfMonth(), ldt.getYear(), ldt.getHour(), ldt.getMinute(), ldt.getSecond(), ldt.getNano());
 
         Vec[] helixSaved = new Vec[2 * nPlanes];
         Helix helixBegin = TkInitial[0].copy();
@@ -754,16 +753,11 @@ public class HelixTest { // Main program for testing the Kalman fitting code
                 gErr[i] = gErrVec.v[i] / GuessErrors.v[i];
             }
             if (verbose) {
-                System.out.format("Guess drho=%12.5e, true=%12.5e, uncertainty=%12.5e, sigmas=%12.5e\n", initialHelixGuess.v[0], helixSaved[frstLyr].v[0],
-                                                GuessErrors.v[0], gErr[0]);
-                System.out.format("Guess phi0=%12.5e, true=%12.5e, uncertainty=%12.5e, sigmas=%12.5e\n", initialHelixGuess.v[1], helixSaved[frstLyr].v[1],
-                                                GuessErrors.v[1], gErr[1]);
-                System.out.format("Guess K=%12.5e, true=%12.5e, uncertainty=%12.5e, sigmas=%12.5e\n", initialHelixGuess.v[2], helixSaved[frstLyr].v[2],
-                                                GuessErrors.v[2], gErr[2]);
-                System.out.format("Guess dz=%12.5e, true=%12.5e, uncertainty=%12.5e, sigmas=%12.5e\n", initialHelixGuess.v[3], helixSaved[frstLyr].v[3],
-                                                GuessErrors.v[3], gErr[3]);
-                System.out.format("Guess tanl=%12.5e, true=%12.5e, uncertainty=%12.5e, sigmas=%12.5e\n", initialHelixGuess.v[4], helixSaved[frstLyr].v[4],
-                                                GuessErrors.v[4], gErr[4]);
+                System.out.format("Guess drho=%12.5e, true=%12.5e, uncertainty=%12.5e, sigmas=%12.5e\n", initialHelixGuess.v[0], helixSaved[frstLyr].v[0], GuessErrors.v[0], gErr[0]);
+                System.out.format("Guess phi0=%12.5e, true=%12.5e, uncertainty=%12.5e, sigmas=%12.5e\n", initialHelixGuess.v[1], helixSaved[frstLyr].v[1], GuessErrors.v[1], gErr[1]);
+                System.out.format("Guess K=%12.5e, true=%12.5e, uncertainty=%12.5e, sigmas=%12.5e\n", initialHelixGuess.v[2], helixSaved[frstLyr].v[2], GuessErrors.v[2], gErr[2]);
+                System.out.format("Guess dz=%12.5e, true=%12.5e, uncertainty=%12.5e, sigmas=%12.5e\n", initialHelixGuess.v[3], helixSaved[frstLyr].v[3], GuessErrors.v[3], gErr[3]);
+                System.out.format("Guess tanl=%12.5e, true=%12.5e, uncertainty=%12.5e, sigmas=%12.5e\n", initialHelixGuess.v[4], helixSaved[frstLyr].v[4], GuessErrors.v[4], gErr[4]);
             }
             hEdrhoG.entry(gErr[0]);
             hEphi0G.entry(gErr[1]);
@@ -828,8 +822,7 @@ public class HelixTest { // Main program for testing the Kalman fitting code
                 initialCovariance.print("initial covariance guess");
             }
             // Run the Kalman fit
-            KalmanTrackFit2 kF = new KalmanTrackFit2(SiModules, startModule, nIteration, new Vec(0., location[frstLyr / 2], 0.), initialHelixGuess,
-                                            initialCovariance, fM, verbose);
+            KalmanTrackFit2 kF = new KalmanTrackFit2(SiModules, startModule, nIteration, new Vec(0., location[frstLyr / 2], 0.), initialHelixGuess, initialCovariance, fM, verbose);
             if (!kF.success) {
                 continue;
             }
@@ -960,8 +953,7 @@ public class HelixTest { // Main program for testing the Kalman fitting code
         timestamp = Instant.now();
         System.out.format("Ending time = %s\n", timestamp.toString());
         ldt = LocalDateTime.ofInstant(timestamp, ZoneId.systemDefault());
-        System.out.format("%s %d %d at %d:%d %d.%d seconds\n", ldt.getMonth(), ldt.getDayOfMonth(), ldt.getYear(), ldt.getHour(), ldt.getMinute(),
-                                        ldt.getSecond(), ldt.getNano());
+        System.out.format("%s %d %d at %d:%d %d.%d seconds\n", ldt.getMonth(), ldt.getDayOfMonth(), ldt.getYear(), ldt.getHour(), ldt.getMinute(), ldt.getSecond(), ldt.getNano());
 
         hps1.plot(path + "phiScat1.gp", true, " ", " ");
         hsp1theta.plot(path + "projScat1.gp", true, " ", " ");
