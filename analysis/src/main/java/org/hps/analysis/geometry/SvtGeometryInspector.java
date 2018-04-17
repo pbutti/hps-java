@@ -38,7 +38,12 @@ public class SvtGeometryInspector {
             }
         }
         if (!foundIt) {
-            throw new RuntimeException("Detector name " + detectorName + " not found.");
+            System.out.println("Detector name " + detectorName + " not found.");
+            System.out.println("Please pick from one of the following supported detectors: ");
+            for (String s : availableDetectors) {
+                System.out.println(s);
+            }
+            throw new RuntimeException();
         }
         final DatabaseConditionsManager manager = new DatabaseConditionsManager();
         manager.setDetector(detectorName, 5772);
