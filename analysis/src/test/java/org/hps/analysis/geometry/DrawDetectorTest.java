@@ -3,7 +3,9 @@ package org.hps.analysis.geometry;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.util.Set;
 import junit.framework.TestCase;
+import org.hps.data.detectors.DetectorDataResources;
 import org.lcsim.util.cache.FileCache;
 import org.lcsim.util.loop.LCSimLoop;
 import org.lcsim.util.test.TestUtil;
@@ -13,10 +15,14 @@ import org.lcsim.util.test.TestUtil;
  * @author ngraf
  */
 public class DrawDetectorTest extends TestCase {
-int nEvents = 1;
 
-    public void testIt() throws Exception
-    {
+    int nEvents = 1;
+
+    public void testIt() throws Exception {
+        Set<String> availableDetectors = DetectorDataResources.getDetectorNames();
+        for (String s : availableDetectors) {
+            System.out.println(s);
+        }
         new TestUtil.TestOutputFile(this.getClass().getSimpleName()).mkdir();
 
         FileCache cache = new FileCache();
