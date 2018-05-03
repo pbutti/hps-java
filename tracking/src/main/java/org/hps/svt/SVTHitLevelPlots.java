@@ -34,6 +34,7 @@ import hep.physics.matrix.SymmetricMatrix;
 import hep.physics.vec.BasicHep3Vector;
 import hep.physics.vec.Hep3Matrix;
 import hep.physics.vec.Hep3Vector;
+
 import org.lcsim.constants.Constants;
 import org.lcsim.detector.solids.Box;
 import org.lcsim.detector.solids.LineSegment3D;
@@ -573,6 +574,21 @@ public class SVTHitLevelPlots extends Driver {
             Tanlambda_err.get(atIP).fill(Math.sqrt(LocCovAtIP.e(HelicalTrackFit.slopeIndex,HelicalTrackFit.slopeIndex)));
             Phi0_err.get(atIP).fill(Math.sqrt(LocCovAtIP.e(HelicalTrackFit.phi0Index,HelicalTrackFit.phi0Index)));
             Omega_err.get(atIP).fill(Math.sqrt(LocCovAtIP.e(HelicalTrackFit.curvatureIndex,HelicalTrackFit.curvatureIndex)));
+
+            for(HpsSiSensor sensor:sensors){
+                TrackState ts = TrackStateUtils.getTrackStateAtSensor(track,sensor.getMillepedeId());
+                if(ts == null){
+                    continue;
+                }
+                double[] cov = ts.getCovMatrix();
+                SymmetricMatrix LocCov = new SymmetricMatrix(5,cov,true);
+                String sensorName = sensor.getName();
+                D0_err.get(sensorName).fill(Math.sqrt(LocCov.e(HelicalTrackFit.dcaIndex,HelicalTrackFit.dcaIndex)));
+                Z0_err.get(sensorName).fill(Math.sqrt(LocCov.e(HelicalTrackFit.z0Index,HelicalTrackFit.z0Index)));
+                Tanlambda_err.get(sensorName).fill(Math.sqrt(LocCov.e(HelicalTrackFit.slopeIndex,HelicalTrackFit.slopeIndex)));
+                Phi0_err.get(sensorName).fill(Math.sqrt(LocCov.e(HelicalTrackFit.phi0Index,HelicalTrackFit.phi0Index)));
+                Omega_err.get(sensorName).fill(Math.sqrt(LocCov.e(HelicalTrackFit.curvatureIndex,HelicalTrackFit.curvatureIndex)));
+            }
         
             Hep3Vector p = toHep3(tState.getMomentum());
             
@@ -622,8 +638,18 @@ public class SVTHitLevelPlots extends Driver {
             //yErrorAxial = Math.sqrt(yErrorAxial*yErrorAxial+yErrorAxialNext*yErrorAxialNext);
             //yErrorStereo = Math.sqrt(yErrorStereo*yErrorStereo+yErrorStereoNext*yErrorStereoNext);
             
-            yErrorAxial = (yErrorAxial+yErrorAxialNext)/(2);
-            yErrorStereo = (yErrorStereo+yErrorStereoNext)/(2);
+            //yErrorAxial = (yErrorAxial+yErrorAxialNext)/(2);
+            //yErrorStereo = (yErrorStereo+yErrorStereoNext)/(2);
+            
+            if(unusedLay == 2 || unusedLay == 3){
+                yErrorAxial = Math.sqrt((yErrorAxial*yErrorAxial+yErrorAxialNext*yErrorAxialNext)/2.);
+                yErrorStereo = Math.sqrt((yErrorStereo*yErrorStereo+yErrorStereoNext*yErrorStereoNext)/2.);
+            }
+            
+            if(unusedLay == 4 || unusedLay == 5){
+                yErrorAxial = Math.sqrt((yErrorAxial*yErrorAxial+yErrorAxialNext*yErrorAxialNext));
+                yErrorStereo = Math.sqrt((yErrorStereo*yErrorStereo+yErrorStereoNext*yErrorStereoNext));
+            }
             
             //Compute the channel where the track extrapolates to in each sensor
             int chanAxial = axialSensorPair.getSecond().getFirst();
@@ -901,12 +927,14 @@ public class SVTHitLevelPlots extends Driver {
     
     //Converts position into sensor frame
     private Hep3Vector globalToSensor(Hep3Vector trkpos, HpsSiSensor sensor){
+        //ITransform3D globalToLocal = sensor.getGeometry().getGlobalToLocal();
         SiSensorElectrodes electrodes = sensor.getReadoutElectrodes(ChargeCarrier.HOLE);
         if(electrodes == null){
             electrodes = sensor.getReadoutElectrodes(ChargeCarrier.ELECTRON);
             System.out.println("Charge Carrier is NULL");
         }
         return electrodes.getGlobalToLocal().transformed(trkpos);
+        //return globalToLocal.transformed(trkpos);
     }
     
     //Get the track state at the previous sensor
@@ -1051,11 +1079,11 @@ public class SVTHitLevelPlots extends Driver {
         double omega_err = Math.sqrt(helixCovariance.get(HelicalTrackFit.curvatureIndex,HelicalTrackFit.curvatureIndex));
 
         String sensorName = sensor.getName();
-        D0_err.get(sensorName).fill(d0_err);
-        Z0_err.get(sensorName).fill(z0_err);
-        Tanlambda_err.get(sensorName).fill(tanlambda_err);
-        Phi0_err.get(sensorName).fill(phi0_err);
-        Omega_err.get(sensorName).fill(omega_err);
+        //D0_err.get(sensorName).fill(d0_err);
+        //Z0_err.get(sensorName).fill(z0_err);
+        //Tanlambda_err.get(sensorName).fill(tanlambda_err);
+        //Phi0_err.get(sensorName).fill(phi0_err);
+        //Omega_err.get(sensorName).fill(omega_err);
     
         //Calculate errors in the u and v directions
         return new double[]{Math.sqrt(measMsCov.get(0, 0)),Math.sqrt(measMsCov.get(1,1))};
