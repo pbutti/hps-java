@@ -36,6 +36,7 @@ class SiModule {
         RotMatrix R2 = new RotMatrix(stereo); // Rotation by stereo angle in detector plane
         Rinv = R2.multiply(R1);
         R = Rinv.invert();
+
         hits = new ArrayList<Measurement>();
     }
 

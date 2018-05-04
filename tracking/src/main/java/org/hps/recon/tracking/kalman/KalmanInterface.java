@@ -8,8 +8,11 @@ import java.util.Map;
 //import hep.physics.matrix.MatrixOp;
 import hep.physics.matrix.SymmetricMatrix;
 import hep.physics.vec.BasicHep3Matrix;
+import hep.physics.vec.Hep3Vector;
 //import hep.physics.vec.BasicHep3Vector;
 //import hep.physics.vec.Hep3Matrix;
+//import hep.physics.vec.VecOp;
+
 import hep.physics.vec.VecOp;
 
 //import org.hps.recon.tracking.CoordinateTransformations;
@@ -28,13 +31,13 @@ import org.lcsim.recon.tracking.digitization.sisim.TrackerHitType;
 public class KalmanInterface {
 
     public Map<Measurement, TrackerHit> hitMap;
-    public Map<SiModule, HpsSiSensor> moduleMap;
+    public Map<SiModule, SiStripPlane> moduleMap;
     public static SquareMatrix HpsToKalman;
     public static BasicHep3Matrix HpsToKalmanMatrix;
 
     public KalmanInterface() {
         hitMap = new HashMap<Measurement, TrackerHit>();
-        moduleMap = new HashMap<SiModule, HpsSiSensor>();
+        moduleMap = new HashMap<SiModule, SiStripPlane>();
         double[][] HpsToKalmanVals = { { 0, 1, 0 }, { 1, 0, 0 }, { 0, 0, -1 } };
         HpsToKalman = new SquareMatrix(3, HpsToKalmanVals);
         HpsToKalmanMatrix = new BasicHep3Matrix();
@@ -44,9 +47,8 @@ public class KalmanInterface {
         }
     }
 
-    public void clearMaps() {
+    public void clearHitMap() {
         hitMap.clear();
-        moduleMap.clear();
     }
 
     public BaseTrack createTrack(SeedTrack trk, List<Measurement> measList) {
@@ -58,13 +60,14 @@ public class KalmanInterface {
         SymmetricMatrix cov = new SymmetricMatrix(5);
 
         // convert params
-        params[ParameterName.d0.ordinal()] = oldParams[0];
-        params[ParameterName.phi0.ordinal()] = oldParams[1];
-        params[ParameterName.omega.ordinal()] = oldParams[2];
+        params[ParameterName.d0.ordinal()] = -1.0 * oldParams[0];
+        params[ParameterName.phi0.ordinal()] = Math.abs(oldParams[1]);
+        params[ParameterName.omega.ordinal()] = trk.helixParams().v[2] / trk.getAlpha();
         params[ParameterName.tanLambda.ordinal()] = oldParams[4];
         params[ParameterName.z0.ordinal()] = oldParams[3];
 
         // convert cov matrix
+        // TODO: fix omega cov
         for (int i = 0; i <= 2; i++) {
             for (int j = 0; j <= 2; j++) {
                 cov.setElement(i, j, oldCov.M[i][j]);
@@ -95,30 +98,43 @@ public class KalmanInterface {
         return newTrack;
     }
 
-    public SiModule createSiModule(SiStripPlane inputPlane, FieldMap fm) {
+    public ArrayList<SiModule> createSiModules(List<SiStripPlane> inputPlanes, FieldMap fm) {
         // SiModule(int Layer, Plane p, double stereo, double width, double height, double thickness, FieldMap Bfield) {
+        ArrayList<SiModule> returnMe = new ArrayList<SiModule>();
+        //double stereo = 0;
 
-        Vec pointOnPlane = new Vec(3, inputPlane.origin().v());
-        Vec normalToPlane = new Vec(3, VecOp.cross(inputPlane.getMeasuredCoordinate(), inputPlane.getUnmeasuredCoordinate()).v());
+        for (SiStripPlane inputPlane : inputPlanes) {
 
-        Vec normalToPlaneTransformed = normalToPlane.leftMultiply(HpsToKalman);
-        Vec pointOnPlaneTransformed = pointOnPlane.leftMultiply(HpsToKalman);
+            HpsSiSensor temp = (HpsSiSensor) (inputPlane.getSensor());
 
-        double stereo = 0;
-        HpsSiSensor temp = (HpsSiSensor) (inputPlane.getSensor());
-        if (temp.isAxial()) {
-            stereo = Math.acos(normalToPlane.v[0] / normalToPlane.mag());
-            if (stereo > (Math.PI / 2))
-                stereo = Math.PI - stereo;
-            //pointOnPlaneTransformed = pointOnPlaneTransformed.scale(-1.0);
-            normalToPlaneTransformed = normalToPlaneTransformed.scale(-1.0);
+            // u and v are reversed in hps compared to kalman
+            //Hep3Vector u = inputPlane.getMeasuredCoordinate();
+            Hep3Vector v = inputPlane.getUnmeasuredCoordinate();
+            if (temp.getName().contains("slot"))
+                VecOp.mult(-1.0, v);
+            Hep3Vector w = inputPlane.normal();
+
+            double stereo = 0;
+            if (temp.isStereo()) {
+                stereo = Math.abs(Math.acos(v.y()));
+                stereo *= -1.0 * Math.signum(v.z());
+            }
+
+            Vec pointOnPlane = new Vec(3, inputPlane.origin().v());
+            Vec normalToPlane = new Vec(3, w.v());
+            if (normalToPlane.v[0] < 0)
+                normalToPlane = normalToPlane.scale(-1.0);
+            Vec normalToPlaneTransformed = normalToPlane.leftMultiply(HpsToKalman);
+            Vec pointOnPlaneTransformed = pointOnPlane.leftMultiply(HpsToKalman);
+
+            //System.out.printf("sensor %s : u %s v %s, stereo %f \n", temp.getName(), u.toString(), v.toString(), stereo);
+            Plane p = new Plane(pointOnPlaneTransformed, normalToPlaneTransformed);
+            SiModule newMod = new SiModule(temp.getLayerNumber(), p, stereo, inputPlane.getWidth(), inputPlane.getLength(), inputPlane.getThickness(), fm);
+            //p.print("plane");
+            moduleMap.put(newMod, inputPlane);
+            returnMe.add(newMod);
         }
-
-        Plane p = new Plane(pointOnPlaneTransformed, normalToPlaneTransformed);
-        //        System.out.printf("normalToPlaneT: %f %f %f \n", normalToPlaneTransformed.v[0], normalToPlaneTransformed.v[1], normalToPlaneTransformed.v[2]);
-        SiModule newMod = new SiModule(temp.getLayerNumber(), p, stereo, inputPlane.getWidth(), inputPlane.getLength(), inputPlane.getThickness(), fm);
-        moduleMap.put(newMod, temp);
-        return newMod;
+        return returnMe;
     }
 
     public void fillMeasurements(List<SiModule> mods, Track track, RelationalTable hitToStrips, RelationalTable hitToRotated) {
@@ -151,9 +167,11 @@ public class KalmanInterface {
         }
 
         for (SiModule mod : mods) {
-            if (!hitsMap.containsKey(moduleMap.get(mod)))
+            mod.hits.clear();
+            SiStripPlane plane = moduleMap.get(mod);
+            if (!hitsMap.containsKey(plane.getSensor()))
                 continue;
-            ArrayList<TrackerHit> temp = hitsMap.get(moduleMap.get(mod));
+            ArrayList<TrackerHit> temp = hitsMap.get(plane.getSensor());
             if (temp == null)
                 continue;
             for (int i = 0; i < temp.size(); i++) {
@@ -161,10 +179,17 @@ public class KalmanInterface {
 
                 SiTrackerHitStrip1D local = (new SiTrackerHitStrip1D(hit)).getTransformedHit(TrackerHitType.CoordinateSystem.SENSOR);
                 //SiTrackerHitStrip1D global = (new SiTrackerHitStrip1D(hit)).getTransformedHit(TrackerHitType.CoordinateSystem.GLOBAL);
+
                 double umeas = local.getPosition()[0];
                 double du = Math.sqrt(local.getCovarianceAsMatrix().diagonal(0));
-                if (mod.Layer % 2 == 0)
+
+                // if hps measured coord axis is opposite to flipped kalman measured coord axis
+                if (plane.getMeasuredCoordinate().z() * mod.p.V().v[2] > 0)
                     umeas *= -1.0;
+
+                Vec pnt = new Vec(0., umeas, 0.);
+                pnt = mod.toGlobal(pnt);
+                umeas = pnt.v[2];
                 //                System.out.printf("hit local umeas %f du %f \n", umeas, du);
                 //                System.out.printf("hit global position: %f %f %f \n", global.getPosition()[0], global.getPosition()[1], global.getPosition()[2]);
                 // hit position

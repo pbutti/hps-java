@@ -10,6 +10,9 @@ import java.util.ArrayList;
 class SeedTrack {
     boolean success;
     private double drho, phi0, K, dz, tanl; // Helix parameters derived from the line/parabola fits
+    // divide drho and dz by 100
+    // divide phi0 by two
+
     private RotMatrix Rot; // Orthogonal transformation from global to helix coordinates
     private SquareMatrix C; // Covariance of helix parameters
     private boolean verbose; // Set true to generate lots of debug printout
@@ -18,6 +21,10 @@ class SeedTrack {
     private Vec sol; // Fitted polynomial coefficients
     private SquareMatrix Csol; // Covariance matrix of the fitted polynomial coefficients
     private double Bavg; // Average B field
+
+    double getAlpha() {
+        return alpha;
+    }
 
     void print(String s) {
         if (success) {
@@ -88,6 +95,8 @@ class SeedTrack {
             s[N] = m.sigma;
             t[N] = thisSi.stereo;
             N++;
+
+            //System.out.printf("pnt %f %f %f . yOrigin %f \n", pnt.v[0], pnt.v[1], pnt.v[2], yOrigin);
         }
         if (Nnonbending < 2) {
             System.out.format("SeedTrack: not enough points in the non-bending plane; N=%d\n", Nnonbending);
@@ -106,6 +115,7 @@ class SeedTrack {
                 System.out.format("%d  %10.6f   %10.6f   %10.6f   %10.6f   %10.6f   %10.6f   %8.5f\n", i, y[i], z[i], x[i], v[i], vcheck, s[i], t[i]);
             }
         }
+        // why isn't this passing z instead of v?
         LinearHelixFit fit = new LinearHelixFit(N, y, v, s, t, verbose);
         if (verbose) {
             fit.print(N, y, v, s, t);
@@ -128,7 +138,11 @@ class SeedTrack {
 
         double slope = sol.v[1];
         double intercept = sol.v[0];
+
         tanl = slope * Math.cos(phi0);
+
+        System.out.printf("intercept %f  slope %f  cosphi0 %f \n ", intercept, slope, Math.cos(phi0));
+
         dz = intercept + drho * tanl * Math.tan(phi0);
         if (verbose) {
             System.out.format("SeedTrack: dz=%12.5e   tanl=%12.5e\n", dz, tanl);
