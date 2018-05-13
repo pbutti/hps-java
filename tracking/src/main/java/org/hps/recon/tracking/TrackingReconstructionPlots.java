@@ -16,6 +16,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.hps.recon.ecal.cluster.ClusterUtilities;
+import org.hps.recon.tracking.SimpleAmbiguityResolver.AmbiMode;
 import org.hps.record.triggerbank.AbstractIntData;
 import org.hps.record.triggerbank.SSPCluster;
 import org.hps.record.triggerbank.SSPData;
@@ -56,14 +57,15 @@ public class TrackingReconstructionPlots extends Driver {
     private String helicalTrackHitCollectionName = "HelicalTrackHits";
     private String stripClusterCollectionName = "StripClusterer_SiTrackerHitStrip1D";
     private boolean doAmplitudePlots = false;
-    private boolean doECalClusterPlots = true;
+    private boolean doECalClusterPlots = false;
     private boolean doHitsOnTrackPlots = false;
     private boolean doResidualPlots = false;
     private boolean doMatchedClusterPlots = false;
     private boolean doElectronPositronPlots = false;
     private boolean doStripHitPlots = false;
-    private boolean doReconParticlePlots = true;
+    private boolean doReconParticlePlots = false;
     private boolean doOccupancyPlots = false;
+    private boolean doComparisonPlots = true;
 
     private String trackCollectionName = "GBLTracks";
     String ecalSubdetectorName = "Ecal";
@@ -289,8 +291,8 @@ public class TrackingReconstructionPlots extends Driver {
             }
         }
 
-        //        aida.histogram1D("Tracks per Event Bot").fill(ntracksBot);
-        //        aida.histogram1D("Tracks per Event Top").fill(ntracksTop);
+        aida.histogram1D("Tracks per Event Bot").fill(ntracksBot);
+        aida.histogram1D("Tracks per Event Top").fill(ntracksTop);
     }
 
     private void doHitsOnTrack(Track trk) {
@@ -1209,6 +1211,75 @@ public class TrackingReconstructionPlots extends Driver {
         }
     }
 
+    private void doComparison(List<Track> tracks, List<TrackerHit> hthList, List<Track> extraTracks, List<TrackerHit> extraHits) {
+        //        System.out.println("Printing first track set");
+        //        for (Track trk : tracks) {
+        //            System.out.printf("%s \n", trk.toString());
+        //        }
+        //        System.out.println("Printing second track set");
+        //        for (Track trk : extraTracks) {
+        //            System.out.printf("%s \n", trk.toString());
+        //        }
+
+        //doBasicTracks(extraTracks);
+        aida.histogram2D("HelicalTrackHits Per Event New vs Old").fill(hthList.size(), extraHits.size());
+
+        List<List<Track>> temp = new ArrayList<List<Track>>();
+        ArrayList<Track> temp1 = new ArrayList<Track>();
+        temp1.addAll(extraTracks);
+        temp.add(temp1);
+
+        // new tracks shared amongst themselves
+        DualAmbiguityResolver dar = new DualAmbiguityResolver(temp, AmbiMode.SHARED, 4, 0);
+        dar.resolve();
+        List<Track> sharedNew = new ArrayList<Track>();
+        sharedNew.addAll(dar.getSharedTracks());
+        dar.addToTrackList(tracks);
+        dar.setMode(AmbiMode.DUPS);
+        dar.resolve();
+        List<Track> dupsNew = dar.getDuplicateTracks();
+        aida.histogram1D("New Duplicate Tracks Per Event").fill(dupsNew.size());
+
+        // with duplicates removed... find partials
+        temp.get(0).removeAll(dupsNew);
+        List<Track> temp2 = new ArrayList<Track>();
+        temp2.addAll(tracks);
+        temp2.removeAll(dupsNew);
+        dar.resetResolver();
+        dar.setMode(AmbiMode.PARTIALS);
+        dar.initializeFromCollection(temp);
+        List<Track> partialsNew = new ArrayList<Track>();
+        partialsNew.addAll(dar.getPartialTracks());
+        dar.addToTrackList(temp2);
+        dar.resolve();
+        List<Track> partialsDual = new ArrayList<Track>();
+        partialsDual.addAll(dar.getPartialTracks());
+
+        // with shared-new removed... find shared-old
+        temp.get(0).removeAll(sharedNew);
+        dar.resetResolver();
+        dar.setMode(AmbiMode.SHARED);
+        dar.initializeFromCollection(temp);
+        dar.addToTrackList(temp2);
+        dar.resolve();
+        List<Track> sharedDual = new ArrayList<Track>();
+        sharedDual.addAll(dar.getSharedTracks());
+
+        // System.out.printf("shared with new %d old %d \n", sharedDual.size(), sharedNew.size());
+        aida.histogram2D("New Shared Tracks with New vs Old - Per Event").fill(sharedDual.size(), sharedNew.size());
+        aida.histogram2D("New Partial Tracks with New vs Old - Per Event").fill(partialsDual.size(), partialsNew.size());
+
+        //temp.add(tracks);
+        //        dar.resetResolver();
+        //        dar.setMode(AmbiMode.DUPS);
+        //        dar.initializeFromCollection(temp);
+        //        dar.addToTrackList(tracks);
+        //        dar.resolve();
+
+        extraTracks.removeAll(dupsNew);
+        doBasicTracks(extraTracks);
+    }
+
     @Override
     public void process(EventHeader event) {
         aida.tree().cd("/");
@@ -1290,20 +1361,57 @@ public class TrackingReconstructionPlots extends Driver {
         // Get RawTrackerHit collection from event.
         rawHits = event.get(RawTrackerHit.class, "SVTRawTrackerHits");
 
-        doBasicTracks(tracks);
+        //        doBasicTracks(tracks);
 
         if (doOccupancyPlots)
             doOccupancy(rawHits, tb);
 
-        //        if (doECalClusterPlots)
-        //            doECalClusters(clusters, tracks.size() > 0);
+        // if (doECalClusterPlots)
+        //     doECalClusters(clusters, tracks.size() > 0);
 
         if (doElectronPositronPlots) {
             eCanditates = new HashMap<Track, Cluster>();
             pCanditates = new HashMap<Track, Cluster>();
         }
 
+        String extraHitCollection = "RotatedHelicalTrackHits-20s";
+        List<TrackerHit> extraHits = null;
+        if (event.hasCollection(TrackerHit.class, extraHitCollection)) {
+            extraHits = event.get(TrackerHit.class, extraHitCollection);
+        } else {
+            doComparisonPlots = false;
+        }
+        String extraTracksCollection = "GBLTracks-20s";
+        List<Track> extraTracks = null;
+        if (event.hasCollection(Track.class, extraTracksCollection)) {
+            extraTracks = event.get(Track.class, extraTracksCollection);
+            //            System.out.println("Printing first track set");
+            //            for (Track trk : tracks) {
+            //                System.out.printf("%s \n", trk.toString());
+            //            }
+            //            //          
+            //            System.out.printf("tracks size %d extratracks size %d \n", tracks.size(), extraTracks.size());
+            //            System.out.println("Printing second track set");
+            //            for (Track trk : extraTracks) {
+            //                System.out.printf("%s \n", trk.toString());
+            //            }
+        } else {
+            doComparisonPlots = false;
+        }
+        if (doComparisonPlots) {
+            // partials test
+            //if (!extraTracks.isEmpty())
+            //    extraTracks.get(0).getTrackerHits().remove(0);
+
+            doComparison(tracks, hthList, extraTracks, extraHits);
+        }
+
         for (Track trk : tracks) {
+            //            List<TrackerHit> temp = trk.getTrackerHits();
+            //            for (TrackerHit hit : temp) {
+            //                System.out.printf("%f \n", hit.getPosition()[0]);
+            //            }
+
             if (doStripHitPlots)
                 doStripHits(stripClusters, trk, trackDataTable);
 
@@ -1413,7 +1521,7 @@ public class TrackingReconstructionPlots extends Driver {
         IHistogram1D trkPx = aida.histogram1D("Track Momentum (Px)", 100, -0.15, 0.15);
         IHistogram1D trkPy = aida.histogram1D("Track Momentum (Py)", 100, -0.15, 0.15);
         IHistogram1D trkPz = aida.histogram1D("Track Momentum (Pz)", 100, 0, 1.5);
-        IHistogram1D trkChi2 = aida.histogram1D("Track Chi2", 25, 0, 25.0);
+        IHistogram1D trkChi2 = aida.histogram1D("Track Chi2", 100, 0, 100.0);
 
         IHistogram1D toptrkPx = aida.histogram1D("Top Track Momentum (Px)", 100, -0.15, 0.15);
         IHistogram1D toptrkPy = aida.histogram1D("Top Track Momentum (Py)", 100, -0.15, 0.15);
@@ -1589,6 +1697,15 @@ public class TrackingReconstructionPlots extends Driver {
                 IHistogram1D resX = aida.histogram1D(sensor.getName() + " strip hits on track", 50, 0, 5);
                 i++;
             }
+        }
+
+        if (doComparisonPlots) {
+            aida.histogram2D("HelicalTrackHits Per Event New vs Old", 50, 0, 50, 50, 0, 50);
+            aida.histogram2D("New Shared Tracks with New vs Old - Per Event", 10, 0, 10, 10, 0, 10);
+            aida.histogram2D("New Partial Tracks with New vs Old - Per Event", 10, 0, 10, 10, 0, 10);
+            //            aida.histogram1D("New Shared Tracks Per Event", 5, 0, 5);
+            //           aida.histogram1D("New Partial Tracks Per Event", 5, 0, 5);
+            aida.histogram1D("New Duplicate Tracks Per Event", 10, 0, 10);
         }
 
         if (doReconParticlePlots) {

@@ -26,12 +26,12 @@ import org.lcsim.recon.tracking.digitization.sisim.config.ReadoutCleanupDriver;
  */
 public class TrackingReconstructionPlotsTest extends TestCase {
 
-    static final String testInput = "hps_twoClusters.slcio";
+    static final String testInput = "target/test-output/tst_combined.slcio";
     static final String testURLBase = "http://www.lcsim.org/test/hps-java";
     static final String testOutput = "RecoCopy_" + testInput;
-    static final String aidaOutput = "target/test-output/TestPlots2Cluster_TB_TimeMatched_" + testInput.replaceAll("slcio", "aida");
+    static final String aidaOutput = testInput.replaceAll("slcio", "aida");
 
-    private final int nEvents = -1;
+    private final int nEvents = 10;
 
     public void testTrackRecoPlots() throws Exception {
         //URL testURL = new URL(testURLBase + "/" + testInput);

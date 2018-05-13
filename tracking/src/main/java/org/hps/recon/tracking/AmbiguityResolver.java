@@ -293,13 +293,15 @@ public abstract class AmbiguityResolver {
                     List<Track> shared = sharedTracksMap.get(trk);
                     // System.out.printf("     removing %d shared \n",
                     // shared.size());
-                    AmbiguityResolver.this.tracks.removeAll(shared);
-                    for (Track s : shared) {
-                        // System.out.printf(
-                        // "           removed track with score %f \n",
-                        // getScore(s));
-                        if (!AmbiguityResolver.this.shared.contains(s))
-                            AmbiguityResolver.this.shared.add(s);
+                    if (shared != null) {
+                        AmbiguityResolver.this.tracks.removeAll(shared);
+                        for (Track s : shared) {
+                            // System.out.printf(
+                            // "           removed track with score %f \n",
+                            // getScore(s));
+                            if (!AmbiguityResolver.this.shared.contains(s))
+                                AmbiguityResolver.this.shared.add(s);
+                        }
                     }
                 }
             }
@@ -339,7 +341,8 @@ public abstract class AmbiguityResolver {
                 } catch (ClassCastException ex) {
                 }
 
-                temp.add(tempTrack);
+                if (!temp.contains(tempTrack))
+                    temp.add(tempTrack);
             }
             AmbiguityResolver.this.duplicates.addAll(AmbiguityResolver.this.tracks);
             AmbiguityResolver.this.duplicates.removeAll(temp);
