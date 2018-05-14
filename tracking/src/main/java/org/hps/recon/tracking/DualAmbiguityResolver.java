@@ -8,9 +8,15 @@ import org.lcsim.event.Track;
 import org.lcsim.event.TrackerHit;
 
 public class DualAmbiguityResolver extends SimpleAmbiguityResolver {
+    protected List<Track> dualDups;
 
     public DualAmbiguityResolver(List<List<Track>> inputTracks, AmbiMode mode, int share, double score) {
         super(inputTracks, mode, share, score);
+        dualDups = new ArrayList<Track>();
+    }
+
+    public List<Track> getDualDuplicateTracks() {
+        return dualDups;
     }
 
     @Override
@@ -75,6 +81,7 @@ public class DualAmbiguityResolver extends SimpleAmbiguityResolver {
 
     public void addToTrackList(List<Track> tracklist) {
         utils.makeTrackScoreMap(tracklist);
+        dualDups.clear();
         for (Track trk : tracklist) {
             List<TrackerHit> mapEntry = trk.getTrackerHits();
 
@@ -105,7 +112,12 @@ public class DualAmbiguityResolver extends SimpleAmbiguityResolver {
 
             // update map for duplicates
             if (hitsToTracksMap.containsValue(mapEntry)) {
-                hitsToTracksMap.get(mapEntry).add(trk);
+                List<Track> dups = hitsToTracksMap.get(mapEntry);
+                dups.add(trk);
+                for (Track dup : dups) {
+                    if (!dualDups.contains(dup))
+                        dualDups.add(dup);
+                }
             } else {
                 List<TrackerHit> dualEntry = null;
                 Set<List<TrackerHit>> existingHitLists = hitsToTracksMap.keySet();
@@ -116,7 +128,12 @@ public class DualAmbiguityResolver extends SimpleAmbiguityResolver {
                     }
                 }
                 if (dualEntry != null) {
-                    hitsToTracksMap.get(dualEntry).add(trk);
+                    List<Track> dups = hitsToTracksMap.get(dualEntry);
+                    dups.add(trk);
+                    for (Track dup : dups) {
+                        if (!dualDups.contains(dup))
+                            dualDups.add(dup);
+                    }
                 } else {
                     List<Track> newList = new ArrayList<Track>();
                     newList.add(trk);
