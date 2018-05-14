@@ -2,9 +2,6 @@ package org.hps.recon.tracking;
 
 // /nfs/slac/g/hps3/data/engrun2015/pass8/svtTests/
 
-import hep.physics.vec.BasicHep3Vector;
-import hep.physics.vec.Hep3Vector;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,13 +18,13 @@ import org.lcsim.util.test.TestUtil.TestOutputFile;
 
 public class AddTrackCollections extends TestCase {
 
-    protected String extraFileName = "tst_3-11.slcio";
-    protected String mainFileName = "tst_3-11-noCond.slcio";
+    protected String extraFileName = "/nfs/slac/g/hps3/data/engrun2015/pass8/svtTests/hps_005772.0.twoClusterSkim.evio_timingcut24.slcio";
+    protected String mainFileName = "/nfs/slac/g/hps3/data/engrun2015/pass8/svtTests/hps_005772.0.twoClusterSkim.evio_timingcut15.slcio";
     protected String outputFileName = "tst_combined.slcio";
     protected String TrackCollName = "GBLTracks";
     protected String HitCollName = "RotatedHelicalTrackHits";
-    protected String suffix = "-20s";
-    protected long nEvents = 10;
+    protected String suffix = "-24s";
+    protected long nEvents = 5000;
 
     public void testClear() throws Exception {
         String[] extraFileNameList = { extraFileName };

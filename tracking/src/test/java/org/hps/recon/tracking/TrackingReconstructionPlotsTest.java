@@ -29,9 +29,9 @@ public class TrackingReconstructionPlotsTest extends TestCase {
     static final String testInput = "target/test-output/tst_combined.slcio";
     static final String testURLBase = "http://www.lcsim.org/test/hps-java";
     static final String testOutput = "RecoCopy_" + testInput;
-    static final String aidaOutput = testInput.replaceAll("slcio", "aida");
+    static final String aidaOutput = testInput.replaceAll("slcio", "root");
 
-    private final int nEvents = 10;
+    private final int nEvents = -1;
 
     public void testTrackRecoPlots() throws Exception {
         //URL testURL = new URL(testURLBase + "/" + testInput);

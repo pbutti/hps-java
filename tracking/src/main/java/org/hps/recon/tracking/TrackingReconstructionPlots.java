@@ -1212,25 +1212,15 @@ public class TrackingReconstructionPlots extends Driver {
     }
 
     private void doComparison(List<Track> tracks, List<TrackerHit> hthList, List<Track> extraTracks, List<TrackerHit> extraHits) {
-        //        System.out.println("Printing first track set");
-        //        for (Track trk : tracks) {
-        //            System.out.printf("%s \n", trk.toString());
-        //        }
-        //        System.out.println("Printing second track set");
-        //        for (Track trk : extraTracks) {
-        //            System.out.printf("%s \n", trk.toString());
-        //        }
-
-        //doBasicTracks(extraTracks);
         aida.histogram2D("HelicalTrackHits Per Event New vs Old").fill(hthList.size(), extraHits.size());
-
+        aida.histogram2D("Raw numTracks Per Event New vs Old").fill(tracks.size(), extraTracks.size());
         List<List<Track>> temp = new ArrayList<List<Track>>();
         ArrayList<Track> temp1 = new ArrayList<Track>();
         temp1.addAll(extraTracks);
         temp.add(temp1);
 
         // new tracks shared amongst themselves
-        DualAmbiguityResolver dar = new DualAmbiguityResolver(temp, AmbiMode.SHARED, 4, 0);
+        DualAmbiguityResolver dar = new DualAmbiguityResolver(temp, AmbiMode.SHARED, 3, 0);
         dar.resolve();
         List<Track> sharedNew = new ArrayList<Track>();
         sharedNew.addAll(dar.getSharedTracks());
@@ -1238,7 +1228,9 @@ public class TrackingReconstructionPlots extends Driver {
         dar.setMode(AmbiMode.DUPS);
         dar.resolve();
         List<Track> dupsNew = dar.getDuplicateTracks();
-        aida.histogram1D("New Duplicate Tracks Per Event").fill(dupsNew.size());
+        List<Track> dups = dar.getDualDuplicateTracks();
+        if (extraTracks.size() > 0)
+            aida.histogram1D("New Duplicate Tracks Per Event").fill(dupsNew.size());
 
         // with duplicates removed... find partials
         temp.get(0).removeAll(dupsNew);
@@ -1265,18 +1257,12 @@ public class TrackingReconstructionPlots extends Driver {
         List<Track> sharedDual = new ArrayList<Track>();
         sharedDual.addAll(dar.getSharedTracks());
 
-        // System.out.printf("shared with new %d old %d \n", sharedDual.size(), sharedNew.size());
-        aida.histogram2D("New Shared Tracks with New vs Old - Per Event").fill(sharedDual.size(), sharedNew.size());
-        aida.histogram2D("New Partial Tracks with New vs Old - Per Event").fill(partialsDual.size(), partialsNew.size());
+        if (extraTracks.size() > 0) {
+            aida.histogram2D("New Shared Tracks with New vs Old - Per Event").fill(sharedDual.size(), sharedNew.size());
+            aida.histogram2D("New Partial Tracks with New vs Old - Per Event").fill(partialsDual.size(), partialsNew.size());
+        }
 
-        //temp.add(tracks);
-        //        dar.resetResolver();
-        //        dar.setMode(AmbiMode.DUPS);
-        //        dar.initializeFromCollection(temp);
-        //        dar.addToTrackList(tracks);
-        //        dar.resolve();
-
-        extraTracks.removeAll(dupsNew);
+        extraTracks.removeAll(dups);
         doBasicTracks(extraTracks);
     }
 
@@ -1374,14 +1360,14 @@ public class TrackingReconstructionPlots extends Driver {
             pCanditates = new HashMap<Track, Cluster>();
         }
 
-        String extraHitCollection = "RotatedHelicalTrackHits-20s";
+        String extraHitCollection = "RotatedHelicalTrackHits-24s";
         List<TrackerHit> extraHits = null;
         if (event.hasCollection(TrackerHit.class, extraHitCollection)) {
             extraHits = event.get(TrackerHit.class, extraHitCollection);
         } else {
             doComparisonPlots = false;
         }
-        String extraTracksCollection = "GBLTracks-20s";
+        String extraTracksCollection = "GBLTracks-24s";
         List<Track> extraTracks = null;
         if (event.hasCollection(Track.class, extraTracksCollection)) {
             extraTracks = event.get(Track.class, extraTracksCollection);
@@ -1706,6 +1692,7 @@ public class TrackingReconstructionPlots extends Driver {
             //            aida.histogram1D("New Shared Tracks Per Event", 5, 0, 5);
             //           aida.histogram1D("New Partial Tracks Per Event", 5, 0, 5);
             aida.histogram1D("New Duplicate Tracks Per Event", 10, 0, 10);
+            aida.histogram2D("Raw numTracks Per Event New vs Old", 10, 0, 10, 10, 0, 10);
         }
 
         if (doReconParticlePlots) {
