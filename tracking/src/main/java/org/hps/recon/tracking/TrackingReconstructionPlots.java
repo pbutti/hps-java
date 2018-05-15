@@ -63,9 +63,10 @@ public class TrackingReconstructionPlots extends Driver {
     private boolean doMatchedClusterPlots = false;
     private boolean doElectronPositronPlots = false;
     private boolean doStripHitPlots = false;
-    private boolean doReconParticlePlots = false;
+    private boolean doReconParticlePlots = true;
     private boolean doOccupancyPlots = false;
     private boolean doComparisonPlots = true;
+    private double timingThreshold = 15.0;
 
     private String trackCollectionName = "GBLTracks";
     String ecalSubdetectorName = "Ecal";
@@ -506,8 +507,10 @@ public class TrackingReconstructionPlots extends Driver {
 
                 //System.out.printf("lay %d time %f \n", lay, stripHit.getTime());
             }
-            if (Math.abs(stripHit.getTime()) <= 12.0)
-                n++;
+            if (Math.abs(stripHit.getTime()) <= timingThreshold) {
+                if ((stripHit.getPosition()[1] < 0 && ntracksBot == 0) || (stripHit.getPosition()[1] > 0 && ntracksTop == 0))
+                    n++;
+            }
             HitsInLayer.put(lay, n);
         }
         numLayHit = 0;
@@ -894,7 +897,7 @@ public class TrackingReconstructionPlots extends Driver {
             }
         }
 
-        doECalClusters(clusterList, totE > 0.7, totE < 0.55, nTracksTop > 0, nTracksBot > 0);
+        //doECalClusters(clusterList, totE > 0.7, totE < 0.55, nTracksTop > 0, nTracksBot > 0);
 
         //                    if (isPos) {
         //                        aida.histogram1D("Reco Pairs Positrons Bottom Track Chi2").fill(trk.getChi2());
@@ -1211,7 +1214,95 @@ public class TrackingReconstructionPlots extends Driver {
         }
     }
 
-    private void doComparison(List<Track> tracks, List<TrackerHit> hthList, List<Track> extraTracks, List<TrackerHit> extraHits) {
+    private void doComparison(List<Track> tracks, List<TrackerHit> hthList, List<Track> extraTracks, List<TrackerHit> extraHits, List<TrackerHit> sthList) {
+        Map<Integer, Integer> HitsInLayer = new HashMap<Integer, Integer>();
+        int ntracksTop = 0;
+        int ntracksBot = 0;
+        int ntracksTopExtra = 0;
+        int ntracksBotExtra = 0;
+        for (Track trk : tracks) {
+            boolean isTop = trk.getTrackerHits().get(0).getPosition()[2] > 0;
+            if (isTop)
+                ntracksTop++;
+            else
+                ntracksBot++;
+        }
+        for (Track trk : extraTracks) {
+            boolean isTop = trk.getTrackerHits().get(0).getPosition()[2] > 0;
+            if (isTop)
+                ntracksTopExtra++;
+            else
+                ntracksBotExtra++;
+        }
+
+        for (TrackerHit hth : hthList) {
+            HpsSiSensor sensor = ((HpsSiSensor) ((RawTrackerHit) hth.getRawHits().get(0)).getDetectorElement());
+            int lay = sensor.getLayerNumber() / 2 + 1;
+            int n;
+            if (HitsInLayer.containsKey(lay)) {
+                n = HitsInLayer.get(lay);
+            } else {
+                n = 0;
+            }
+            //System.out.printf("lay %d pos %f %f %f \n", lay, hth.getPosition()[0], hth.getPosition()[1], hth.getPosition()[2]);
+            if ((hth.getPosition()[1] > 0 && ntracksTop == 0) || (hth.getPosition()[1] < 0 && ntracksBot == 0)) {
+                n++;
+            }
+            HitsInLayer.put(lay, n);
+        }
+        int numLayHit = 0;
+        for (int lay = 1; lay <= 6; lay++) {
+            if (HitsInLayer.containsKey(lay) && HitsInLayer.get(lay) > 0)
+                numLayHit++;
+        }
+        if (ntracksTop == 0) {
+            if (ntracksTopExtra > 0)
+                aida.histogram1D("Top Layers with 3D-Hits in Events with New Top Track").fill(numLayHit);
+            else
+                aida.histogram1D("Top Layers with 3D-Hits in Events with Still No Top Track").fill(numLayHit);
+        }
+        if (ntracksBot == 0) {
+            if (ntracksBotExtra > 0)
+                aida.histogram1D("Bottom Layers with 3D-Hits in Events with New Bottom Track").fill(numLayHit);
+            else
+                aida.histogram1D("Bottom Layers with 3D-Hits in Events with Still No Bottom Track").fill(numLayHit);
+        }
+
+        HitsInLayer.clear();
+        for (TrackerHit stripHit : sthList) {
+            if (Math.abs(stripHit.getTime()) > timingThreshold)
+                continue;
+            HpsSiSensor sensor = ((HpsSiSensor) ((RawTrackerHit) stripHit.getRawHits().get(0)).getDetectorElement());
+            int lay = sensor.getLayerNumber();
+            int n;
+            if (HitsInLayer.containsKey(lay)) {
+                n = HitsInLayer.get(lay);
+            } else {
+                n = 0;
+            }
+            if ((stripHit.getPosition()[1] > 0 && ntracksTop == 0) || (stripHit.getPosition()[1] < 0 && ntracksBot == 0)) {
+                n++;
+            }
+            HitsInLayer.put(lay, n);
+        }
+        numLayHit = 0;
+        for (int lay = 1; lay <= 12; lay++) {
+            if (HitsInLayer.containsKey(lay) && HitsInLayer.get(lay) > 0)
+                numLayHit++;
+        }
+        if (ntracksTop == 0) {
+            if (ntracksTopExtra > 0)
+                aida.histogram1D("Top Layers with 2D-Hits in Events with New Top Track").fill(numLayHit);
+            else
+                aida.histogram1D("Top Layers with 2D-Hits in Events with Still No Top Track").fill(numLayHit);
+        }
+        if (ntracksBot == 0) {
+            if (ntracksBotExtra > 0)
+                aida.histogram1D("Bottom Layers with 2D-Hits in Events with New Bottom Track").fill(numLayHit);
+            else
+                aida.histogram1D("Bottom Layers with 2D-Hits in Events with Still No Bottom Track").fill(numLayHit);
+        }
+
         aida.histogram2D("HelicalTrackHits Per Event New vs Old").fill(hthList.size(), extraHits.size());
         aida.histogram2D("Raw numTracks Per Event New vs Old").fill(tracks.size(), extraTracks.size());
         List<List<Track>> temp = new ArrayList<List<Track>>();
@@ -1219,50 +1310,35 @@ public class TrackingReconstructionPlots extends Driver {
         temp1.addAll(extraTracks);
         temp.add(temp1);
 
-        // new tracks shared amongst themselves
-        DualAmbiguityResolver dar = new DualAmbiguityResolver(temp, AmbiMode.SHARED, 3, 0);
-        dar.resolve();
-        List<Track> sharedNew = new ArrayList<Track>();
-        sharedNew.addAll(dar.getSharedTracks());
-        dar.addToTrackList(tracks);
-        dar.setMode(AmbiMode.DUPS);
-        dar.resolve();
-        List<Track> dupsNew = dar.getDuplicateTracks();
-        List<Track> dups = dar.getDualDuplicateTracks();
-        if (extraTracks.size() > 0)
-            aida.histogram1D("New Duplicate Tracks Per Event").fill(dupsNew.size());
+        // dups
+        DualAmbiguityResolver dar2 = new DualAmbiguityResolver(temp, AmbiMode.DUPS, 3, 0);
+        dar2.addToTrackList(tracks);
+        dar2.resolve();
+        List<Track> dups = new ArrayList<Track>();
+        dups.addAll(dar2.getDualDuplicateTracks());
 
         // with duplicates removed... find partials
-        temp.get(0).removeAll(dupsNew);
-        List<Track> temp2 = new ArrayList<Track>();
-        temp2.addAll(tracks);
-        temp2.removeAll(dupsNew);
-        dar.resetResolver();
-        dar.setMode(AmbiMode.PARTIALS);
-        dar.initializeFromCollection(temp);
+        temp1.removeAll(dups);
+        dar2.resetResolver();
+        dar2.initializeFromList(temp1);
+        dar2.setMode(AmbiMode.PARTIALS);
+        dar2.addToTrackList(tracks);
+        dar2.resolve();
         List<Track> partialsNew = new ArrayList<Track>();
-        partialsNew.addAll(dar.getPartialTracks());
-        dar.addToTrackList(temp2);
-        dar.resolve();
-        List<Track> partialsDual = new ArrayList<Track>();
-        partialsDual.addAll(dar.getPartialTracks());
+        partialsNew.addAll(dar2.getPartialTracks());
 
-        // with shared-new removed... find shared-old
-        temp.get(0).removeAll(sharedNew);
-        dar.resetResolver();
-        dar.setMode(AmbiMode.SHARED);
-        dar.initializeFromCollection(temp);
-        dar.addToTrackList(temp2);
-        dar.resolve();
-        List<Track> sharedDual = new ArrayList<Track>();
-        sharedDual.addAll(dar.getSharedTracks());
-
-        if (extraTracks.size() > 0) {
-            aida.histogram2D("New Shared Tracks with New vs Old - Per Event").fill(sharedDual.size(), sharedNew.size());
-            aida.histogram2D("New Partial Tracks with New vs Old - Per Event").fill(partialsDual.size(), partialsNew.size());
-        }
+        // with duplicates and partials removed... find shared        
+        dar2.setMode(AmbiMode.SHARED);
+        dar2.resolve();
+        List<Track> sharedNew = new ArrayList<Track>();
+        sharedNew.addAll(dar2.getSharedTracks());
 
         extraTracks.removeAll(dups);
+        if (extraTracks.size() > 0) {
+            aida.histogram1D("New Shared Tracks - Per Event").fill(sharedNew.size());
+            aida.histogram1D("New Partial Tracks - Per Event").fill(partialsNew.size());
+        }
+
         doBasicTracks(extraTracks);
     }
 
@@ -1384,13 +1460,6 @@ public class TrackingReconstructionPlots extends Driver {
         } else {
             doComparisonPlots = false;
         }
-        if (doComparisonPlots) {
-            // partials test
-            //if (!extraTracks.isEmpty())
-            //    extraTracks.get(0).getTrackerHits().remove(0);
-
-            doComparison(tracks, hthList, extraTracks, extraHits);
-        }
 
         for (Track trk : tracks) {
             //            List<TrackerHit> temp = trk.getTrackerHits();
@@ -1417,9 +1486,22 @@ public class TrackingReconstructionPlots extends Driver {
         if (doElectronPositronPlots)
             doElectronPositron();
 
-        if (doReconParticlePlots)
-            if (doRecoParticles(event, fspList, tracks, clusters, tb))
+        boolean hasDoneBasic = false;
+        if (doReconParticlePlots) {
+            if (doRecoParticles(event, fspList, tracks, clusters, tb)) {
                 doMissingHits(tracks, hthList, stripClusters, clusters, (int) ((event.getTimeStamp() / 4) % 6));
+                if (doComparisonPlots) {
+                    // partials test
+                    //if (!extraTracks.isEmpty())
+                    //    extraTracks.get(0).getTrackerHits().remove(0);
+
+                    doComparison(tracks, hthList, extraTracks, extraHits, stripClusters);
+                    hasDoneBasic = true;
+                }
+            }
+        }
+        if (!hasDoneBasic)
+            doBasicTracks(tracks);
 
     }
 
@@ -1687,12 +1769,18 @@ public class TrackingReconstructionPlots extends Driver {
 
         if (doComparisonPlots) {
             aida.histogram2D("HelicalTrackHits Per Event New vs Old", 50, 0, 50, 50, 0, 50);
-            aida.histogram2D("New Shared Tracks with New vs Old - Per Event", 10, 0, 10, 10, 0, 10);
-            aida.histogram2D("New Partial Tracks with New vs Old - Per Event", 10, 0, 10, 10, 0, 10);
-            //            aida.histogram1D("New Shared Tracks Per Event", 5, 0, 5);
-            //           aida.histogram1D("New Partial Tracks Per Event", 5, 0, 5);
-            aida.histogram1D("New Duplicate Tracks Per Event", 10, 0, 10);
+            aida.histogram1D("New Shared Tracks - Per Event", 10, 0, 10);
+            aida.histogram1D("New Partial Tracks - Per Event", 10, 0, 10);
             aida.histogram2D("Raw numTracks Per Event New vs Old", 10, 0, 10, 10, 0, 10);
+            IHistogram1D top2DHitSVTlayersNew = aida.histogram1D("Top Layers with 2D-Hits in Events with New Top Track", 13, -0.5, 12.5);
+            IHistogram1D bot2DHitSVTlayersNew = aida.histogram1D("Bottom Layers with 2D-Hits in Events with New Bottom Track", 13, -0.5, 12.5);
+            IHistogram1D top2DHitSVTlayersNew2 = aida.histogram1D("Top Layers with 2D-Hits in Events with Still No Top Track", 13, -0.5, 12.5);
+            IHistogram1D bot2DHitSVTlayersNew2 = aida.histogram1D("Bottom Layers with 2D-Hits in Events with Still No Bottom Track", 13, -0.5, 12.5);
+            IHistogram1D top3DHitSVTlayersNew = aida.histogram1D("Top Layers with 3D-Hits in Events with New Top Track", 7, -0.5, 6.5);
+            IHistogram1D bot3DHitSVTlayersNew = aida.histogram1D("Bottom Layers with 3D-Hits in Events with New Bottom Track", 7, -0.5, 6.5);
+            IHistogram1D top3DHitSVTlayersNew2 = aida.histogram1D("Top Layers with 3D-Hits in Events with Still No Top Track", 7, -0.5, 6.5);
+            IHistogram1D bot3DHitSVTlayersNew2 = aida.histogram1D("Bottom Layers with 3D-Hits in Events with Still No Bottom Track", 7, -0.5, 6.5);
+
         }
 
         if (doReconParticlePlots) {

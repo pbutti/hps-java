@@ -17,7 +17,7 @@ import org.lcsim.util.loop.LCSimLoop;
 import org.lcsim.util.test.TestUtil.TestOutputFile;
 
 public class AddTrackCollections extends TestCase {
-
+    // /nfs/slac/work/mdiamond
     protected String extraFileName = "/nfs/slac/g/hps3/data/engrun2015/pass8/svtTests/hps_005772.0.twoClusterSkim.evio_timingcut24.slcio";
     protected String mainFileName = "/nfs/slac/g/hps3/data/engrun2015/pass8/svtTests/hps_005772.0.twoClusterSkim.evio_timingcut15.slcio";
     protected String outputFileName = "tst_combined.slcio";
