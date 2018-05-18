@@ -19,6 +19,15 @@ public class DualAmbiguityResolver extends SimpleAmbiguityResolver {
         return dualDups;
     }
 
+    public boolean isShared(Track trk) {
+        if (!sharedTracksMap.containsKey(trk))
+            return false;
+        List<Track> shared = sharedTracksMap.get(trk);
+        if (shared.isEmpty())
+            return false;
+        return true;
+    }
+
     @Override
     protected boolean areShared(Track trk1, Track trk2) {
         if (numSharedHits(trk1, trk2) > getShareThreshold())
@@ -26,7 +35,7 @@ public class DualAmbiguityResolver extends SimpleAmbiguityResolver {
         return false;
     }
 
-    protected int numSharedHits(Track trk1, Track trk2) {
+    public static int numSharedHits(Track trk1, Track trk2) {
         int counter = 0;
         List<TrackerHit> hits1 = trk1.getTrackerHits();
         List<TrackerHit> hits2 = trk2.getTrackerHits();
@@ -64,7 +73,7 @@ public class DualAmbiguityResolver extends SimpleAmbiguityResolver {
         return true;
     }
 
-    private boolean isEqual(TrackerHit h1, TrackerHit h2) {
+    public static boolean isEqual(TrackerHit h1, TrackerHit h2) {
         double[] pos1 = h1.getPosition();
         double[] pos2 = h2.getPosition();
         double TOL = 0.001;
