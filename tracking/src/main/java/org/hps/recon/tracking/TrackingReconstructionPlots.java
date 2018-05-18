@@ -1224,12 +1224,12 @@ public class TrackingReconstructionPlots extends Driver {
     //    }
 
     private boolean isOldHit(TrackerHit hit, List<TrackerHit> hthList) {
-
         for (TrackerHit hth : hthList) {
             if (DualAmbiguityResolver.isEqual(hit, hth)) {
                 return true;
             }
         }
+
         return false;
     }
 
@@ -1254,6 +1254,7 @@ public class TrackingReconstructionPlots extends Driver {
         int nhitsBot = 0;
         int nhitsTopExtra = 0;
         int nhitsBotExtra = 0;
+
         for (Track trk : tracks) {
             boolean isTop = trk.getTrackerHits().get(0).getPosition()[2] > 0;
             if (isTop)
@@ -1261,6 +1262,7 @@ public class TrackingReconstructionPlots extends Driver {
             else
                 ntracksBot++;
         }
+
         for (Track trk : extraTracks) {
             boolean isTop = trk.getTrackerHits().get(0).getPosition()[2] > 0;
             if (isTop)
@@ -1278,6 +1280,11 @@ public class TrackingReconstructionPlots extends Driver {
             } else {
                 n = 0;
             }
+            if ((hth.getPosition()[1] > 0 && ntracksTop == 0) || (hth.getPosition()[1] < 0 && ntracksBot == 0)) {
+                n++;
+            }
+            //System.out.printf("strip lay %d pos %f %f %f \n", lay, stripHit.getPosition()[0], stripHit.getPosition()[1], stripHit.getPosition()[2]);
+            HitsInLayer.put(lay, n);
             if (hth.getPosition()[1] > 0)
                 nhitsTop++;
             else
