@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.hps.conditions.beam.BeamEnergy.BeamEnergyCollection;
+//import org.hps.conditions.beam.BeamEnergy.BeamEnergyCollection;
 import org.hps.recon.ecal.cluster.ClusterUtilities;
 import org.hps.recon.tracking.SimpleAmbiguityResolver.AmbiMode;
 import org.hps.record.triggerbank.AbstractIntData;
@@ -63,12 +63,13 @@ public class TrackingReconstructionPlots extends Driver {
     private boolean doECalClusterPlots = false;
     private boolean doHitsOnTrackPlots = false;
     private boolean doResidualPlots = false;
-    private boolean doMatchedClusterPlots = false;
+    //private boolean doMatchedClusterPlots = false;
     private boolean doElectronPositronPlots = false;
     private boolean doStripHitPlots = false;
     private boolean doReconParticlePlots = true;
     private boolean doOccupancyPlots = false;
     private boolean doComparisonPlots = true;
+
     private double timingThreshold = 15.0;
     boolean isMC = false;
 
@@ -104,7 +105,7 @@ public class TrackingReconstructionPlots extends Driver {
         Hep3Vector fieldInTracker = TrackUtils.getBField(detector);
         this.bfield = Math.abs(fieldInTracker.y());
 
-        BeamEnergyCollection beamEnergyCollection = this.getConditionsManager().getCachedConditions(BeamEnergyCollection.class, "beam_energies").getCachedData();
+        //BeamEnergyCollection beamEnergyCollection = this.getConditionsManager().getCachedConditions(BeamEnergyCollection.class, "beam_energies").getCachedData();
         setupPlots();
     }
 
@@ -140,9 +141,9 @@ public class TrackingReconstructionPlots extends Driver {
         this.doResidualPlots = value;
     }
 
-    public void setDoMatchedClusterPlots(boolean value) {
-        this.doMatchedClusterPlots = value;
-    }
+    //    public void setDoMatchedClusterPlots(boolean value) {
+    //        this.doMatchedClusterPlots = value;
+    //    }
 
     public void setDoElectronPositronPlots(boolean value) {
         this.doElectronPositronPlots = value;
@@ -1410,11 +1411,14 @@ public class TrackingReconstructionPlots extends Driver {
                     aida.histogram2D("NewTracks numHits in Old vs New Time Window - Top").fill(trk.getTrackerHits().size() - numOldHits, numOldHits);
                 else
                     aida.histogram2D("NewTracks numHits in Old vs New Time Window - Bot").fill(trk.getTrackerHits().size() - numOldHits, numOldHits);
-                manualTrackClustersComparison(trk, clusters);
+
                 double time = 0;
                 for (TrackerHit hit : trk.getTrackerHits())
                     time += hit.getTime();
                 time /= trk.getTrackerHits().size();
+
+                manualTrackClustersComparison(trk, clusters, ntracksTop, ntracksBot, time);
+
                 for (TrackerHit hit : trk.getTrackerHits()) {
                     if (!isOldHit(hit, rotList)) {
                         if (isTop) {
@@ -1432,23 +1436,39 @@ public class TrackingReconstructionPlots extends Driver {
         doBasicTracks(extraTracks);
     }
 
-    public void manualTrackClustersComparison(Track trk, List<Cluster> clusters) {
+    public void manualTrackClustersComparison(Track trk, List<Cluster> clusters, int nTracksTop, int nTracksBot, double trackTime) {
         boolean isTop = trk.getTrackerHits().get(0).getPosition()[2] > 0;
+        BaseCluster matchingClus = null;
+        double timeOffset = 44.0;
 
         for (Cluster cluster : clusters) {
-            cluster = new BaseCluster(cluster);
             double ypos = TrackUtils.getTrackStateAtECal(trk).getReferencePoint()[2];
-            ClusterUtilities.applyCorrections(ecal, cluster, ypos, isMC);
+
+            if ((ypos > 0 && isTop) || (ypos < 0 && !isTop)) {
+                matchingClus = new BaseCluster(cluster);
+                ClusterUtilities.applyCorrections(ecal, matchingClus, ypos, isMC);
+            }
         }
+        if (matchingClus == null)
+            return;
+
+        double clusTime = ClusterUtilities.getSeedHitTime(matchingClus);
         Hep3Vector temp = new BasicHep3Vector(TrackUtils.getTrackStateAtECal(trk).getReferencePoint());
         temp = CoordinateTransformations.transformVectorToDetector(temp);
-        Hep3Vector residual = findClosestCluster(temp, clusters);
+        //Hep3Vector residual = findClosestCluster(temp, clusters);
+        Hep3Vector residual = new BasicHep3Vector(matchingClus.getPosition()[0] - temp.x(), matchingClus.getPosition()[1] - temp.y(), 0);
         if (isTop) {
+            //            if (nTracksTop == 0) {
             aida.histogram1D("Track-Cluster X Residual for New Tracks - Top").fill(residual.x());
             aida.histogram1D("Track-Cluster Y Residual for New Tracks - Top").fill(residual.y());
+            aida.histogram1D("Track-Cluster Time for New Tracks - Top").fill(clusTime - trackTime - timeOffset);
+            //            }
         } else {
+            //            if (nTracksBot == 0) {
             aida.histogram1D("Track-Cluster X Residual for New Tracks - Bot").fill(residual.x());
             aida.histogram1D("Track-Cluster Y Residual for New Tracks - Bot").fill(residual.y());
+            aida.histogram1D("Track-Cluster Time for New Tracks - Bot").fill(clusTime - trackTime - timeOffset);
+            //            }
         }
     }
 
@@ -1475,7 +1495,7 @@ public class TrackingReconstructionPlots extends Driver {
             clusters = event.get(Cluster.class, ecalCollectionName);
         } else {
             doECalClusterPlots = false;
-            doMatchedClusterPlots = false;
+            //doMatchedClusterPlots = false;
             doElectronPositronPlots = false;
         }
 
@@ -1674,24 +1694,24 @@ public class TrackingReconstructionPlots extends Driver {
         return p;
     }
 
-    private Hep3Vector findClosestCluster(Hep3Vector posonhelix, List<Cluster> clusters) {
-
-        Cluster closest = null;
-        double minDist = 9999;
-        for (Cluster cluster : clusters) {
-            //System.out.printf("posonhelix %s , cluster pos %s \n", posonhelix.toString(), new BasicHep3Vector(cluster.getPosition()).toString());
-            double[] clPos = cluster.getPosition();
-            double dist = Math.sqrt(Math.pow(clPos[0] - posonhelix.x(), 2) + Math.pow(clPos[1] - posonhelix.y(), 2)); //coordinates!!!
-            if (dist < minDist) {
-                closest = cluster;
-                minDist = dist;
-            }
-        }
-        double x = closest.getPosition()[0] - posonhelix.x();
-        double y = closest.getPosition()[1] - posonhelix.y();
-
-        return new BasicHep3Vector(x, y, 0);
-    }
+    //    private Hep3Vector findClosestCluster(Hep3Vector posonhelix, List<Cluster> clusters) {
+    //
+    //        Cluster closest = null;
+    //        double minDist = 9999;
+    //        for (Cluster cluster : clusters) {
+    //            //System.out.printf("posonhelix %s , cluster pos %s \n", posonhelix.toString(), new BasicHep3Vector(cluster.getPosition()).toString());
+    //            double[] clPos = cluster.getPosition();
+    //            double dist = Math.sqrt(Math.pow(clPos[0] - posonhelix.x(), 2) + Math.pow(clPos[1] - posonhelix.y(), 2)); //coordinates!!!
+    //            if (dist < minDist) {
+    //                closest = cluster;
+    //                minDist = dist;
+    //            }
+    //        }
+    //        double x = closest.getPosition()[0] - posonhelix.x();
+    //        double y = closest.getPosition()[1] - posonhelix.y();
+    //
+    //        return new BasicHep3Vector(x, y, 0);
+    //    }
 
     @Override
     public void endOfData() {
@@ -1794,48 +1814,48 @@ public class TrackingReconstructionPlots extends Driver {
             IHistogram1D mod6ResY = aida.histogram1D("Layer 6 Residual Y(mm)", 25, -3, 3);
         }
 
-        if (doMatchedClusterPlots) {
-
-            IHistogram2D eVsP = aida.histogram2D("Energy Vs Momentum", 50, 0, 0.50, 50, 0, 1.5);
-            IHistogram1D eOverP = aida.histogram1D("Energy Over Momentum", 50, 0, 2);
-
-            IHistogram1D distX = aida.histogram1D("deltaX", 50, -100, 100);
-            IHistogram1D distY = aida.histogram1D("deltaY", 50, -40, 40);
-
-            IHistogram2D xEcalVsTrk = aida.histogram2D("X ECal Vs Track", 100, -400, 400, 100, -400, 400);
-            IHistogram2D yEcalVsTrk = aida.histogram2D("Y ECal Vs Track", 100, -100, 100, 100, -100, 100);
-
-            IHistogram2D topeVsP = aida.histogram2D("Top Energy Vs Momentum", 50, 0, 0.500, 50, 0, 1.5);
-            IHistogram1D topeOverP = aida.histogram1D("Top Energy Over Momentum", 50, 0, 2);
-
-            IHistogram1D topdistX = aida.histogram1D("Top deltaX", 50, -100, 100);
-            IHistogram1D topdistY = aida.histogram1D("Top deltaY", 50, -40, 40);
-
-            IHistogram2D topxEcalVsTrk = aida.histogram2D("Top X ECal Vs Track", 100, -400, 400, 100, -100, 100);
-            IHistogram2D topyEcalVsTrk = aida.histogram2D("Top Y ECal Vs Track", 100, 0, 100, 100, 0, 100);
-
-            IHistogram2D BottomeVsP = aida.histogram2D("Bottom Energy Vs Momentum", 50, 0, 0.500, 50, 0, 1.5);
-            IHistogram1D BottomeOverP = aida.histogram1D("Bottom Energy Over Momentum", 50, 0, 2);
-
-            IHistogram1D BottomdistX = aida.histogram1D("Bottom deltaX", 50, -100, 100);
-            IHistogram1D BottomdistY = aida.histogram1D("Bottom deltaY", 50, -40, 40);
-
-            IHistogram2D BottomxEcalVsTrk = aida.histogram2D("Bottom X ECal Vs Track", 100, -400, 400, 100, -400, 400);
-            IHistogram2D BottomyEcalVsTrk = aida.histogram2D("Bottom Y ECal Vs Track", 100, -100, 0, 100, -100, 0);
-
-            IHistogram2D topdistXvsX = aida.histogram2D("Top deltaX vs X", 51, -400, 400, 25, -100, 100);
-            IHistogram2D topdistYvsY = aida.histogram2D("Top deltaY vs Y", 51, 0, 100, 25, -40, 40);
-
-            IHistogram2D botdistXvsX = aida.histogram2D("Bottom deltaX vs X", 51, -400, 400, 25, -100, 100);
-            IHistogram2D botdistYvsY = aida.histogram2D("Bottom deltaY vs Y", 51, -100, 0, 25, -40, 40);
-
-            IHistogram1D trackmatchN = aida.histogram1D("Tracks matched", 3, 0, 3);
-            IHistogram1D toptrackmatchN = aida.histogram1D("Tracks matched Top", 3, 0, 3);
-            IHistogram1D bottrackmatchN = aida.histogram1D("Tracks matched Bottom", 3, 0, 3);
-            IHistogram1D trackmatchN2 = aida.histogram1D("Tracks matched (Pz>0.8)", 3, 0, 3);
-            IHistogram1D toptrackmatchN2 = aida.histogram1D("Tracks matched Top (Pz>0.8)", 3, 0, 3);
-            IHistogram1D bottrackmatchN2 = aida.histogram1D("Tracks matched Bottom (Pz>0.8)", 3, 0, 3);
-        }
+        //        if (doMatchedClusterPlots) {
+        //
+        //            IHistogram2D eVsP = aida.histogram2D("Energy Vs Momentum", 50, 0, 0.50, 50, 0, 1.5);
+        //            IHistogram1D eOverP = aida.histogram1D("Energy Over Momentum", 50, 0, 2);
+        //
+        //            IHistogram1D distX = aida.histogram1D("deltaX", 50, -100, 100);
+        //            IHistogram1D distY = aida.histogram1D("deltaY", 50, -40, 40);
+        //
+        //            IHistogram2D xEcalVsTrk = aida.histogram2D("X ECal Vs Track", 100, -400, 400, 100, -400, 400);
+        //            IHistogram2D yEcalVsTrk = aida.histogram2D("Y ECal Vs Track", 100, -100, 100, 100, -100, 100);
+        //
+        //            IHistogram2D topeVsP = aida.histogram2D("Top Energy Vs Momentum", 50, 0, 0.500, 50, 0, 1.5);
+        //            IHistogram1D topeOverP = aida.histogram1D("Top Energy Over Momentum", 50, 0, 2);
+        //
+        //            IHistogram1D topdistX = aida.histogram1D("Top deltaX", 50, -100, 100);
+        //            IHistogram1D topdistY = aida.histogram1D("Top deltaY", 50, -40, 40);
+        //
+        //            IHistogram2D topxEcalVsTrk = aida.histogram2D("Top X ECal Vs Track", 100, -400, 400, 100, -100, 100);
+        //            IHistogram2D topyEcalVsTrk = aida.histogram2D("Top Y ECal Vs Track", 100, 0, 100, 100, 0, 100);
+        //
+        //            IHistogram2D BottomeVsP = aida.histogram2D("Bottom Energy Vs Momentum", 50, 0, 0.500, 50, 0, 1.5);
+        //            IHistogram1D BottomeOverP = aida.histogram1D("Bottom Energy Over Momentum", 50, 0, 2);
+        //
+        //            IHistogram1D BottomdistX = aida.histogram1D("Bottom deltaX", 50, -100, 100);
+        //            IHistogram1D BottomdistY = aida.histogram1D("Bottom deltaY", 50, -40, 40);
+        //
+        //            IHistogram2D BottomxEcalVsTrk = aida.histogram2D("Bottom X ECal Vs Track", 100, -400, 400, 100, -400, 400);
+        //            IHistogram2D BottomyEcalVsTrk = aida.histogram2D("Bottom Y ECal Vs Track", 100, -100, 0, 100, -100, 0);
+        //
+        //            IHistogram2D topdistXvsX = aida.histogram2D("Top deltaX vs X", 51, -400, 400, 25, -100, 100);
+        //            IHistogram2D topdistYvsY = aida.histogram2D("Top deltaY vs Y", 51, 0, 100, 25, -40, 40);
+        //
+        //            IHistogram2D botdistXvsX = aida.histogram2D("Bottom deltaX vs X", 51, -400, 400, 25, -100, 100);
+        //            IHistogram2D botdistYvsY = aida.histogram2D("Bottom deltaY vs Y", 51, -100, 0, 25, -40, 40);
+        //
+        //            IHistogram1D trackmatchN = aida.histogram1D("Tracks matched", 3, 0, 3);
+        //            IHistogram1D toptrackmatchN = aida.histogram1D("Tracks matched Top", 3, 0, 3);
+        //            IHistogram1D bottrackmatchN = aida.histogram1D("Tracks matched Bottom", 3, 0, 3);
+        //            IHistogram1D trackmatchN2 = aida.histogram1D("Tracks matched (Pz>0.8)", 3, 0, 3);
+        //            IHistogram1D toptrackmatchN2 = aida.histogram1D("Tracks matched Top (Pz>0.8)", 3, 0, 3);
+        //            IHistogram1D bottrackmatchN2 = aida.histogram1D("Tracks matched Bottom (Pz>0.8)", 3, 0, 3);
+        //        }
 
         if (doElectronPositronPlots) {
             IHistogram2D trackPCorr = aida.histogram2D("p(e-) vs p(e+) max", 25, 0, 1.2, 25, 0, 1.2);
@@ -1896,8 +1916,9 @@ public class TrackingReconstructionPlots extends Driver {
             aida.histogram1D("New Hits Contributing to New Tracks - Time from Track Avg - Top", 60, -30, 30);
             aida.histogram2D("Raw numTracks Per Event New vs Old - Top", 10, 0, 10, 10, 0, 10);
             aida.histogram2D("NewTracks numHits in Old vs New Time Window - Top", 7, 0, 7, 7, 0, 7);
-            aida.histogram1D("Track-Cluster X Residual for New Tracks - Top", 50, -200, 200);
-            aida.histogram1D("Track-Cluster Y Residual for New Tracks - Top", 50, -100, 100);
+            aida.histogram1D("Track-Cluster X Residual for New Tracks - Top", 120, -600, 600);
+            aida.histogram1D("Track-Cluster Y Residual for New Tracks - Top", 100, -200, 200);
+            aida.histogram1D("Track-Cluster Time for New Tracks - Top", 50, -25, 25);
 
             aida.histogram2D("HelicalTrackHits Per Event New vs Old - Bot", 50, 0, 50, 50, 0, 50);
             aida.histogram1D("New Shared Tracks - Per Event - Bot", 10, 0, 10);
@@ -1905,8 +1926,9 @@ public class TrackingReconstructionPlots extends Driver {
             aida.histogram1D("New Hits Contributing to New Tracks - Time from Track Avg - Bot", 60, -30, 30);
             aida.histogram2D("Raw numTracks Per Event New vs Old - Bot", 10, 0, 10, 10, 0, 10);
             aida.histogram2D("NewTracks numHits in Old vs New Time Window - Bot", 7, 0, 7, 7, 0, 7);
-            aida.histogram1D("Track-Cluster X Residual for New Tracks - Bot", 50, -200, 200);
-            aida.histogram1D("Track-Cluster Y Residual for New Tracks - Bot", 50, -100, 100);
+            aida.histogram1D("Track-Cluster X Residual for New Tracks - Bot", 120, -600, 600);
+            aida.histogram1D("Track-Cluster Y Residual for New Tracks - Bot", 100, -200, 200);
+            aida.histogram1D("Track-Cluster Time for New Tracks - Bot", 50, -25, 25);
 
             IHistogram1D top2DHitSVTlayersNew = aida.histogram1D("Top Layers with 2D-Hits in Events with New Top Track", 13, -0.5, 12.5);
             IHistogram1D bot2DHitSVTlayersNew = aida.histogram1D("Bottom Layers with 2D-Hits in Events with New Bottom Track", 13, -0.5, 12.5);
