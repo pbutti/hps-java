@@ -529,6 +529,7 @@ public class TrackUtils {
     public static BaseTrackState getTrackExtrapAtEcal(TrackState track, FieldMap fieldMap) {
         // extrapolateTrackUsingFieldMap(TrackState track, double startPositionX, double endPosition, double stepSize, FieldMap fieldMap)
         BaseTrackState bts = extrapolateTrackUsingFieldMap(track, BeamlineConstants.DIPOLE_EDGE_ENG_RUN, BeamlineConstants.ECAL_FACE, 5.0, fieldMap);
+
         bts.setLocation(TrackState.AtCalorimeter);
         return bts;
     }
@@ -1615,11 +1616,11 @@ public class TrackUtils {
         }
         writer.close();
     }
-    
+
     //This method transforms vector from tracking detector frame to sensor frame
-    public static Hep3Vector globalToSensor(Hep3Vector trkpos, HpsSiSensor sensor){
+    public static Hep3Vector globalToSensor(Hep3Vector trkpos, HpsSiSensor sensor) {
         SiSensorElectrodes electrodes = sensor.getReadoutElectrodes(ChargeCarrier.HOLE);
-        if(electrodes == null){
+        if (electrodes == null) {
             electrodes = sensor.getReadoutElectrodes(ChargeCarrier.ELECTRON);
             System.out.println("Charge Carrier is NULL");
         }

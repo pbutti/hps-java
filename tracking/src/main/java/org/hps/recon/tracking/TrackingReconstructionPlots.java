@@ -1266,10 +1266,13 @@ public class TrackingReconstructionPlots extends Driver {
 
         for (Track trk : extraTracks) {
             boolean isTop = trk.getTrackerHits().get(0).getPosition()[2] > 0;
-            if (isTop)
+            if (isTop) {
                 ntracksTopExtra++;
-            else
+                //aida.histogram1D("New Track on Top: Num Old Tracks on Top").fill(ntracksTop);
+            } else {
                 ntracksBotExtra++;
+                //aida.histogram1D("New Track on Bot: Num Old Tracks on Bot").fill(ntracksBot);
+            }
         }
 
         for (TrackerHit hth : hthList) {
@@ -1431,6 +1434,12 @@ public class TrackingReconstructionPlots extends Driver {
                     }
                 }
             }
+
+            if (isTop) {
+                aida.histogram1D("New Track on Top: Num Old Tracks on Top").fill(ntracksTop);
+            } else {
+                aida.histogram1D("New Track on Bot: Num Old Tracks on Bot").fill(ntracksBot);
+            }
         }
 
         doBasicTracks(extraTracks);
@@ -1439,36 +1448,63 @@ public class TrackingReconstructionPlots extends Driver {
     public void manualTrackClustersComparison(Track trk, List<Cluster> clusters, int nTracksTop, int nTracksBot, double trackTime) {
         boolean isTop = trk.getTrackerHits().get(0).getPosition()[2] > 0;
         BaseCluster matchingClus = null;
+        BaseCluster missingClus = null;
         double timeOffset = 44.0;
 
         for (Cluster cluster : clusters) {
-            double ypos = TrackUtils.getTrackStateAtECal(trk).getReferencePoint()[2];
+            double ypos = cluster.getPosition()[1];
 
+            if ((ypos > 0 && nTracksTop == 0) || (ypos < 0 && nTracksBot == 0)) {
+                missingClus = new BaseCluster(cluster);
+                ClusterUtilities.applyCorrections(ecal, missingClus, ypos, isMC);
+            }
             if ((ypos > 0 && isTop) || (ypos < 0 && !isTop)) {
                 matchingClus = new BaseCluster(cluster);
                 ClusterUtilities.applyCorrections(ecal, matchingClus, ypos, isMC);
             }
         }
-        if (matchingClus == null)
-            return;
 
-        double clusTime = ClusterUtilities.getSeedHitTime(matchingClus);
-        Hep3Vector temp = new BasicHep3Vector(TrackUtils.getTrackStateAtECal(trk).getReferencePoint());
-        temp = CoordinateTransformations.transformVectorToDetector(temp);
-        //Hep3Vector residual = findClosestCluster(temp, clusters);
-        Hep3Vector residual = new BasicHep3Vector(matchingClus.getPosition()[0] - temp.x(), matchingClus.getPosition()[1] - temp.y(), 0);
-        if (isTop) {
-            //            if (nTracksTop == 0) {
-            aida.histogram1D("Track-Cluster X Residual for New Tracks - Top").fill(residual.x());
-            aida.histogram1D("Track-Cluster Y Residual for New Tracks - Top").fill(residual.y());
-            aida.histogram1D("Track-Cluster Time for New Tracks - Top").fill(clusTime - trackTime - timeOffset);
-            //            }
-        } else {
-            //            if (nTracksBot == 0) {
-            aida.histogram1D("Track-Cluster X Residual for New Tracks - Bot").fill(residual.x());
-            aida.histogram1D("Track-Cluster Y Residual for New Tracks - Bot").fill(residual.y());
-            aida.histogram1D("Track-Cluster Time for New Tracks - Bot").fill(clusTime - trackTime - timeOffset);
-            //            }
+        if (matchingClus != null) {
+            double clusTime = ClusterUtilities.getSeedHitTime(matchingClus);
+            Hep3Vector temp = new BasicHep3Vector(TrackUtils.getTrackStateAtECal(trk).getReferencePoint());
+            temp = CoordinateTransformations.transformVectorToDetector(temp);
+            //Hep3Vector residual = findClosestCluster(temp, clusters);
+            Hep3Vector residual = new BasicHep3Vector(matchingClus.getPosition()[0] - temp.x(), matchingClus.getPosition()[1] - temp.y(), 0);
+
+            if (isTop) {
+                aida.histogram1D("Cluster-Track X Residual for New Tracks - Top").fill(residual.x());
+                aida.histogram1D("Cluster-Track Y Residual for New Tracks - Top").fill(residual.y());
+                aida.histogram2D("Cluster X Position vs Track X Position for New Tracks - Top").fill(temp.x(), matchingClus.getPosition()[0]);
+                aida.histogram2D("Cluster Y Position vs Track Y Position for New Tracks - Top").fill(temp.y(), matchingClus.getPosition()[1]);
+                aida.histogram1D("Track-Cluster Time for New Tracks - Top").fill(clusTime - trackTime - timeOffset);
+
+            } else {
+                aida.histogram2D("Cluster X Position vs Track X Position for New Tracks - Bot").fill(temp.x(), matchingClus.getPosition()[0]);
+                aida.histogram2D("Cluster Y Position vs Track Y Position for New Tracks - Bot").fill(temp.y(), matchingClus.getPosition()[1]);
+                aida.histogram1D("Cluster-Track X Residual for New Tracks - Bot").fill(residual.x());
+                aida.histogram1D("Cluster-Track Y Residual for New Tracks - Bot").fill(residual.y());
+                aida.histogram1D("Track-Cluster Time for New Tracks - Bot").fill(clusTime - trackTime - timeOffset);
+            }
+        }
+
+        if (missingClus != null) {
+            double clusTime = ClusterUtilities.getSeedHitTime(missingClus);
+            Hep3Vector temp = new BasicHep3Vector(TrackUtils.getTrackStateAtECal(trk).getReferencePoint());
+            temp = CoordinateTransformations.transformVectorToDetector(temp);
+            //Hep3Vector residual = findClosestCluster(temp, clusters);
+            Hep3Vector residual = new BasicHep3Vector(missingClus.getPosition()[0] - temp.x(), missingClus.getPosition()[1] - temp.y(), 0);
+
+            if (nTracksTop == 0) {
+                aida.histogram1D("Cluster-Track X Residual for New Tracks - TopWasMissing").fill(residual.x());
+                aida.histogram1D("Cluster-Track Y Residual for New Tracks - TopWasMissing").fill(residual.y());
+                aida.histogram1D("Track-Cluster Time for New Tracks - TopWasMissing").fill(clusTime - trackTime - timeOffset);
+
+            } else if (nTracksBot == 0) {
+                //if (nTracksBot == 0){
+                aida.histogram1D("Cluster-Track X Residual for New Tracks - BotWasMissing").fill(residual.x());
+                aida.histogram1D("Cluster-Track Y Residual for New Tracks - BotWasMissing").fill(residual.y());
+                aida.histogram1D("Track-Cluster Time for New Tracks - BotWasMissing").fill(clusTime - trackTime - timeOffset);
+            }
         }
     }
 
@@ -1916,9 +1952,12 @@ public class TrackingReconstructionPlots extends Driver {
             aida.histogram1D("New Hits Contributing to New Tracks - Time from Track Avg - Top", 60, -30, 30);
             aida.histogram2D("Raw numTracks Per Event New vs Old - Top", 10, 0, 10, 10, 0, 10);
             aida.histogram2D("NewTracks numHits in Old vs New Time Window - Top", 7, 0, 7, 7, 0, 7);
-            aida.histogram1D("Track-Cluster X Residual for New Tracks - Top", 120, -600, 600);
-            aida.histogram1D("Track-Cluster Y Residual for New Tracks - Top", 100, -200, 200);
+            aida.histogram1D("Cluster-Track X Residual for New Tracks - Top", 120, -600, 600);
+            aida.histogram1D("Cluster-Track Y Residual for New Tracks - Top", 100, -200, 200);
             aida.histogram1D("Track-Cluster Time for New Tracks - Top", 50, -25, 25);
+            aida.histogram1D("Cluster-Track X Residual for New Tracks - TopWasMissing", 120, -600, 600);
+            aida.histogram1D("Cluster-Track Y Residual for New Tracks - TopWasMissing", 100, -200, 200);
+            aida.histogram1D("Track-Cluster Time for New Tracks - TopWasMissing", 50, -25, 25);
 
             aida.histogram2D("HelicalTrackHits Per Event New vs Old - Bot", 50, 0, 50, 50, 0, 50);
             aida.histogram1D("New Shared Tracks - Per Event - Bot", 10, 0, 10);
@@ -1926,9 +1965,20 @@ public class TrackingReconstructionPlots extends Driver {
             aida.histogram1D("New Hits Contributing to New Tracks - Time from Track Avg - Bot", 60, -30, 30);
             aida.histogram2D("Raw numTracks Per Event New vs Old - Bot", 10, 0, 10, 10, 0, 10);
             aida.histogram2D("NewTracks numHits in Old vs New Time Window - Bot", 7, 0, 7, 7, 0, 7);
-            aida.histogram1D("Track-Cluster X Residual for New Tracks - Bot", 120, -600, 600);
-            aida.histogram1D("Track-Cluster Y Residual for New Tracks - Bot", 100, -200, 200);
+            aida.histogram1D("Cluster-Track X Residual for New Tracks - Bot", 120, -600, 600);
+            aida.histogram1D("Cluster-Track Y Residual for New Tracks - Bot", 100, -200, 200);
             aida.histogram1D("Track-Cluster Time for New Tracks - Bot", 50, -25, 25);
+            aida.histogram1D("Cluster-Track X Residual for New Tracks - BotWasMissing", 120, -600, 600);
+            aida.histogram1D("Cluster-Track Y Residual for New Tracks - BotWasMissing", 100, -200, 200);
+            aida.histogram1D("Track-Cluster Time for New Tracks - BotWasMissing", 50, -25, 25);
+
+            aida.histogram1D("New Track on Top: Num Old Tracks on Top", 4, 0, 4);
+            aida.histogram1D("New Track on Bot: Num Old Tracks on Bot", 4, 0, 4);
+
+            aida.histogram2D("Cluster X Position vs Track X Position for New Tracks - Top", 400, -400, 400, 400, -400, 400);
+            aida.histogram2D("Cluster Y Position vs Track Y Position for New Tracks - Top", 400, -400, 400, 400, -400, 400);
+            aida.histogram2D("Cluster X Position vs Track X Position for New Tracks - Bot", 400, -400, 400, 400, -400, 400);
+            aida.histogram2D("Cluster Y Position vs Track Y Position for New Tracks - Bot", 400, -400, 400, 400, -400, 400);
 
             IHistogram1D top2DHitSVTlayersNew = aida.histogram1D("Top Layers with 2D-Hits in Events with New Top Track", 13, -0.5, 12.5);
             IHistogram1D bot2DHitSVTlayersNew = aida.histogram1D("Bottom Layers with 2D-Hits in Events with New Bottom Track", 13, -0.5, 12.5);
