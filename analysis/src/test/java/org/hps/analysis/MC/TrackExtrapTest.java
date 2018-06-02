@@ -36,7 +36,7 @@ public class TrackExtrapTest extends TestCase {
 
     public void testIt() throws Exception
     {
-        int nEvents = -1;
+        int nEvents = 100;
         String fileName = "RecoCopy_tritrig-wab-beam.slcio";
         File inputFile = new File(fileName);
         String aidaOutput = fileName.replaceAll("slcio", "aida");
@@ -110,6 +110,13 @@ public class TrackExtrapTest extends TestCase {
             aida.histogram2D("Y vs X extrap-path", 1000, 500, 1500, 600,-300,300);
             aida.histogram2D("Y vs Z extrap-path", 1000,-50,50, 600,-300,300);
             aida.histogram2D("X vs Z extrap-path", 1000,-50,50,1000, 500, 1500);
+            
+            aida.histogram2D("Weird Events: Y vs X Pos at Layer6", 300,-300,300,300,-300,300);
+            aida.histogram2D("Weird Events: Y vs X Pos Extrapolated to ECal", 300,-300,300,300,-300,300);
+            aida.histogram2D("Weird Events: Y vs X Mom at Layer6", 100,-0.5,0.5,100,-0.5,0.5);
+            aida.histogram1D("Weird Events: Z Mom at Layer6", 100,0,1.5);
+            aida.histogram2D("Weird Events: Y vs X Mom of MCParticle", 100,-0.5,0.5,100,-0.5,0.5);
+            aida.histogram1D("Weird Events: Z Mom of MCParticle", 100,0,1.5);
             
             aida.histogram2D("[Extrapolated SimTrackerHit - SimCalorimeterHit] Y vs SimCalorimeterHit Y", 300, -300, 300, 40, -20, 20);
             aida.histogram2D("[Extrapolated SimTrackerHit - SimCalorimeterHit] X vs SimCalorimeterHit Y", 300, -300, 300, 40, -20, 20);
@@ -230,14 +237,16 @@ public class TrackExtrapTest extends TestCase {
 //                    }
                 //}
                 
-//                if (Math.abs(residualVec.x()) > 50) {
+                if (Math.abs(residualVec.x()) > 30) {
+                    doWeirdPlots(hitPosition, hitMomentum, part.getMomentum(), extrapPos);
+
 //                    System.out.printf("bad residual MCpart %s \n", part.toString());
 //                    for (SimTrackerHit hit : hits) {
 //                        System.out.printf("hit %s \n", hit.getPositionVec().toString());
 //                    }
 //                    System.out.printf("momentum %s \n", hitMomentum.toString());
 //                    doTrackExtrap(CoordinateTransformations.transformVectorToTracking(hitPosition), CoordinateTransformations.transformVectorToTracking(hitMomentum), part.getCharge(), true);
-//                }
+                }
                 
                 // filling plots
                 if (Math.abs(part.getPZ()) < lowMomThresh) {
@@ -282,6 +291,16 @@ public class TrackExtrapTest extends TestCase {
             }
         }
         
+        private void doWeirdPlots(Hep3Vector lay6Pos, Hep3Vector lay6Mom, Hep3Vector partMom, Hep3Vector extrapPos) {
+            aida.histogram2D("Weird Events: Y vs X Pos at Layer6").fill(lay6Pos.x(), lay6Pos.y());
+            aida.histogram2D("Weird Events: Y vs X Pos Extrapolated to ECal").fill(extrapPos.x(), extrapPos.y());
+            aida.histogram2D("Weird Events: Y vs X Mom at Layer6").fill(lay6Mom.x(), lay6Mom.y());
+            aida.histogram1D("Weird Events: Z Mom at Layer6").fill(lay6Mom.z());
+            aida.histogram2D("Weird Events: Y vs X Mom of MCParticle").fill(partMom.x(), partMom.y());
+            aida.histogram1D("Weird Events: Z Mom of MCParticle").fill(partMom.z());
+            
+        }
+
         // everything in tracking frame
         public Hep3Vector doTrackExtrap(Hep3Vector currentPosition, Hep3Vector currentMomentum, double q, boolean debug) {
 
