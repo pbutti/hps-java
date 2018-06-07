@@ -1758,7 +1758,7 @@ public class TrackingReconstructionPlots extends Driver {
             }
         }
 
-        doBasicTracks(extraTracks);
+        //doBasicTracks(extraTracks);
     }
 
     public void manualTrackClustersComparison(Track trk, List<Cluster> clusters, int nTracksTop, int nTracksBot, double trackTime) {
@@ -2007,6 +2007,7 @@ public class TrackingReconstructionPlots extends Driver {
             //           hasDoneBasic = true;
             if (newTrks != null && doComparisonPlots) {
                 doComparison(tracks, hthList, newTrks, extraHits, stripClusters, clusters, rotHits);
+                doBasicTracks(newTrks);
                 hasDoneBasic = true;
             }
         }
