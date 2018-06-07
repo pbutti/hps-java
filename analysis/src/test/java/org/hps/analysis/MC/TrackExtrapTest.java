@@ -36,10 +36,10 @@ public class TrackExtrapTest extends TestCase {
 
     public void testIt() throws Exception
     {
-        int nEvents = 100;
+        int nEvents = -1;
         String fileName = "RecoCopy_tritrig-wab-beam.slcio";
         File inputFile = new File(fileName);
-        String aidaOutput = fileName.replaceAll("slcio", "aida");
+        String aidaOutput = fileName.replaceAll("slcio", "root");
         LCSimLoop loop2 = new LCSimLoop();
         
         final DatabaseConditionsManager manager = new DatabaseConditionsManager();
@@ -71,6 +71,7 @@ public class TrackExtrapTest extends TestCase {
         public AIDA aida = null;
         private String outputPlots = null;
         private double lowMomThresh = 0.3;
+       // private boolean foundWeird = false;
         
         @Override
         public void endOfData() {
@@ -103,6 +104,7 @@ public class TrackExtrapTest extends TestCase {
                 aida = AIDA.defaultInstance();
             aida.tree().cd("/");
             setupPlots();
+            //foundWeird = false;
         }
 
         
@@ -110,6 +112,9 @@ public class TrackExtrapTest extends TestCase {
             aida.histogram2D("Y vs X extrap-path", 1000, 500, 1500, 600,-300,300);
             aida.histogram2D("Y vs Z extrap-path", 1000,-50,50, 600,-300,300);
             aida.histogram2D("X vs Z extrap-path", 1000,-50,50,1000, 500, 1500);
+            aida.histogram2D("Bfield Y vs Z Pos", 1000, 890, ecalPosition,220, -0.22, 0);
+            
+            aida.histogram2D("Y vs X Pos Extrapolated to ECal", 300,-300,300,300,-300,300);
             
             aida.histogram2D("Weird Events: Y vs X Pos at Layer6", 300,-300,300,300,-300,300);
             aida.histogram2D("Weird Events: Y vs X Pos Extrapolated to ECal", 300,-300,300,300,-300,300);
@@ -118,34 +123,35 @@ public class TrackExtrapTest extends TestCase {
             aida.histogram2D("Weird Events: Y vs X Mom of MCParticle", 100,-0.5,0.5,100,-0.5,0.5);
             aida.histogram1D("Weird Events: Z Mom of MCParticle", 100,0,1.5);
             
-            aida.histogram2D("[Extrapolated SimTrackerHit - SimCalorimeterHit] Y vs SimCalorimeterHit Y", 300, -300, 300, 40, -20, 20);
-            aida.histogram2D("[Extrapolated SimTrackerHit - SimCalorimeterHit] X vs SimCalorimeterHit Y", 300, -300, 300, 40, -20, 20);
-            aida.histogram2D("[Extrapolated SimTrackerHit - SimCalorimeterHit] Y vs SimCalorimeterHit X", 300, -300, 300, 40, -20, 20);
-            aida.histogram2D("[Extrapolated SimTrackerHit - SimCalorimeterHit] X vs SimCalorimeterHit X", 300, -300, 300, 40, -20, 20);
+            aida.histogram2D("[Extrapolated SimTrackerHit - SimCalorimeterHit] Y vs SimCalorimeterHit Y", 300, -300, 300, 200, -5.0, 5.0);
+            aida.histogram2D("[Extrapolated SimTrackerHit - SimCalorimeterHit] X vs SimCalorimeterHit Y", 300, -300, 300, 200, -5.0, 5.0);
+            aida.histogram2D("[Extrapolated SimTrackerHit - SimCalorimeterHit] Y vs SimCalorimeterHit X", 300, -300, 300, 200, -5.0, 5.0);
+            aida.histogram2D("[Extrapolated SimTrackerHit - SimCalorimeterHit] X vs SimCalorimeterHit X", 300, -300, 300, 200, -5.0, 5.0);
             
-            aida.histogram2D("Extrapolated SimTrackerHit - SimCalorimeterHit: Y vs X", 40, -20, 20, 40, -20, 20);
-            aida.histogram2D("Extrapolated SimTrackerHit - SimCalorimeterHit Y vs MCParticle Pz", 100, 0, 1.5, 40, -20, 20);
-            aida.histogram2D("Extrapolated SimTrackerHit - SimCalorimeterHit X vs MCParticle Pz", 100, 0, 1.5, 40, -20, 20);
+            aida.histogram2D("Extrapolated SimTrackerHit - SimCalorimeterHit: Y vs X", 200, -5.0, 5.0, 200, -5.0, 5.0);
+            aida.histogram2D("Extrapolated SimTrackerHit - SimCalorimeterHit Y vs MCParticle Pz", 100, 0, 1.5, 200, -5.0, 5.0);
+            aida.histogram2D("Extrapolated SimTrackerHit - SimCalorimeterHit X vs MCParticle Pz", 100, 0, 1.5, 200, -5.0, 5.0);
             
-            aida.histogram2D("Top: Extrapolated SimTrackerHit - SimCalorimeterHit: Y vs X", 40, -20, 20, 40, -20, 20);
-            aida.histogram2D("Top: Extrapolated SimTrackerHit - SimCalorimeterHit Y vs MCParticle Pz", 100, 0, 1.5, 40, -20, 20);
-            aida.histogram2D("Top: Extrapolated SimTrackerHit - SimCalorimeterHit X vs MCParticle Pz", 100, 0, 1.5, 40, -20, 20);
+            aida.histogram2D("Top: Extrapolated SimTrackerHit - SimCalorimeterHit: Y vs X", 200, -5.0, 5.0, 200, -5.0, 5.0);
+            aida.histogram2D("Top: Extrapolated SimTrackerHit - SimCalorimeterHit Y vs MCParticle Pz", 100, 0, 1.5, 200, -5.0, 5.0);
+            aida.histogram2D("Top: Extrapolated SimTrackerHit - SimCalorimeterHit X vs MCParticle Pz", 100, 0, 1.5, 200, -5.0, 5.0);
             
-            aida.histogram2D("Bot: Extrapolated SimTrackerHit - SimCalorimeterHit: Y vs X", 40, -20, 20, 40, -20, 20);
-            aida.histogram2D("Bot: Extrapolated SimTrackerHit - SimCalorimeterHit Y vs MCParticle Pz", 100, 0, 1.5, 40, -20, 20);
-            aida.histogram2D("Bot: Extrapolated SimTrackerHit - SimCalorimeterHit X vs MCParticle Pz", 100, 0, 1.5, 40, -20, 20);
+            aida.histogram2D("Bot: Extrapolated SimTrackerHit - SimCalorimeterHit: Y vs X", 200, -5.0, 5.0, 200, -5.0, 5.0);
+            aida.histogram2D("Bot: Extrapolated SimTrackerHit - SimCalorimeterHit Y vs MCParticle Pz", 100, 0, 1.5, 200, -5.0, 5.0);
+            aida.histogram2D("Bot: Extrapolated SimTrackerHit - SimCalorimeterHit X vs MCParticle Pz", 100, 0, 1.5, 200, -5.0, 5.0);
             
-            aida.histogram2D("e-: Extrapolated SimTrackerHit - SimCalorimeterHit: Y vs X", 40, -20, 20, 40, -20, 20);
-            aida.histogram2D("e-: Extrapolated SimTrackerHit - SimCalorimeterHit Y vs MCParticle Pz", 100, 0, 1.5, 40, -20, 20);
-            aida.histogram2D("e-: Extrapolated SimTrackerHit - SimCalorimeterHit X vs MCParticle Pz", 100, 0, 1.5, 40, -20, 20);
+            aida.histogram2D("e-: Extrapolated SimTrackerHit - SimCalorimeterHit: Y vs X", 200, -5.0, 5.0, 200, -5.0, 5.0);
+            aida.histogram2D("e-: Extrapolated SimTrackerHit - SimCalorimeterHit Y vs MCParticle Pz", 100, 0, 1.5, 200, -5.0, 5.0);
+            aida.histogram2D("e-: Extrapolated SimTrackerHit - SimCalorimeterHit X vs MCParticle Pz", 100, 0, 1.5, 200, -5.0, 5.0);
             
-            aida.histogram2D("e+: Extrapolated SimTrackerHit - SimCalorimeterHit: Y vs X", 40, -20, 20, 40, -20, 20);
-            aida.histogram2D("e+: Extrapolated SimTrackerHit - SimCalorimeterHit Y vs MCParticle Pz", 100, 0, 1.5, 40, -20, 20);
-            aida.histogram2D("e+: Extrapolated SimTrackerHit - SimCalorimeterHit X vs MCParticle Pz", 100, 0, 1.5, 40, -20, 20);
+            aida.histogram2D("e+: Extrapolated SimTrackerHit - SimCalorimeterHit: Y vs X", 200, -5.0, 5.0, 200, -5.0, 5.0);
+            aida.histogram2D("e+: Extrapolated SimTrackerHit - SimCalorimeterHit Y vs MCParticle Pz", 100, 0, 1.5, 200, -5.0, 5.0);
+            aida.histogram2D("e+: Extrapolated SimTrackerHit - SimCalorimeterHit X vs MCParticle Pz", 100, 0, 1.5, 200, -5.0, 5.0);
         }
         
         @Override
         protected void process(EventHeader event) {
+            //System.out.printf("processing event %d \n", event.getEventNumber());
             List<SimTrackerHit> trackerHits = null;
             if (event.hasCollection(SimTrackerHit.class, "TrackerHits"))
                 trackerHits = event.get(SimTrackerHit.class, "TrackerHits");
@@ -166,9 +172,6 @@ public class TrackExtrapTest extends TestCase {
                 scoringHits = event.get(SimTrackerHit.class, "TrackerHitsECal");
             else
                 return;
-
-
-            //System.out.println("analyzing event");
             
             Map<MCParticle, List<SimTrackerHit>> scoringHitMap = new HashMap<MCParticle, List<SimTrackerHit>>();
             for (SimTrackerHit scoringHit : scoringHits) {
@@ -195,8 +198,7 @@ public class TrackExtrapTest extends TestCase {
                 List<SimTrackerHit> caloHitList = scoringHitMap.get(part);
                 if ((hits == null) || (caloHitList == null) || (caloHitList.isEmpty()))
                     continue;
-        
-
+                
                 SimTrackerHit lastHit = null;
                 int lay=0;
                 for (SimTrackerHit hit : hits) {
@@ -209,44 +211,42 @@ public class TrackExtrapTest extends TestCase {
                     continue;
                     
                 SimTrackerHit caloHit = caloHitList.get(0);
-                if (caloHitList.size() > 1) {
-                    for (SimTrackerHit scoringHit : caloHitList) {
-                        if (scoringHit.getTime() < caloHit.getTime())
-                            caloHit = scoringHit;
-                        //System.out.printf("Multiple caloHit %s MCPart %s \n", scoringHit.getPositionVec().toString(), scoringHit.getMCParticle().toString());
-                    }
-                }
+//                if (caloHitList.size() > 1) {
+//                    for (SimTrackerHit scoringHit : caloHitList) {
+//                        if (scoringHit.getTime() < caloHit.getTime())
+//                            caloHit = scoringHit;
+//                        System.out.printf("Multiple caloHit %s MCPart %s \n", scoringHit.getPositionVec().toString(), scoringHit.getMCParticle().toString());
+//                    }
+//                }
                 
                 Hep3Vector hitPosition = lastHit.getPositionVec();
                 Hep3Vector hitMomentum = new BasicHep3Vector(lastHit.getMomentum());
                 //System.out.printf("starting mom %s \n", CoordinateTransformations.transformVectorToTracking(hitMomentum).toString());
+                
                 Hep3Vector extrapPos = doTrackExtrap(CoordinateTransformations.transformVectorToTracking(hitPosition), CoordinateTransformations.transformVectorToTracking(hitMomentum), part.getCharge(), false);
+                if (extrapPos == null)
+                    continue;                
                 extrapPos=CoordinateTransformations.transformVectorToDetector(extrapPos);
-                //System.out.printf("extrapPos %s \n", extrapPos.toString());
-                
-                //double residual=10000;
-                //Hep3Vector residualVec = null;
-                //for (SimCalorimeterHit caloHit : caloHits) {
+
+                caloHit = findClosestCaloHit(caloHitList, extrapPos);
                 Hep3Vector caloHitPos = caloHit.getPositionVec();
-                //System.out.printf("      caloHitPos %s \n", caloHitPos.toString());
                 Hep3Vector residualVec = VecOp.sub(extrapPos, caloHitPos);
-                    //double dist = Math.sqrt(diff.x() * diff.x() + diff.y() * diff.y());
-//                    if (dist < residual) {
-//                        residual =dist;
-//                        residualVec = diff;
-//                    }
-                //}
                 
+                // weird events?
                 if (Math.abs(residualVec.x()) > 30) {
                     doWeirdPlots(hitPosition, hitMomentum, part.getMomentum(), extrapPos);
-
-//                    System.out.printf("bad residual MCpart %s \n", part.toString());
+                    //if (!foundWeird) {
+                        //System.out.printf("bad residual MCpart %s \n", part.toString());
 //                    for (SimTrackerHit hit : hits) {
 //                        System.out.printf("hit %s \n", hit.getPositionVec().toString());
 //                    }
 //                    System.out.printf("momentum %s \n", hitMomentum.toString());
-//                    doTrackExtrap(CoordinateTransformations.transformVectorToTracking(hitPosition), CoordinateTransformations.transformVectorToTracking(hitMomentum), part.getCharge(), true);
+                    //    doTrackExtrap(CoordinateTransformations.transformVectorToTracking(hitPosition), CoordinateTransformations.transformVectorToTracking(hitMomentum), part.getCharge(), true);
+                    //}
+                    //foundWeird=true;
                 }
+                else 
+                    aida.histogram2D("Y vs X Pos Extrapolated to ECal").fill(extrapPos.x(), extrapPos.y());
                 
                 // filling plots
                 if (Math.abs(part.getPZ()) < lowMomThresh) {
@@ -291,6 +291,19 @@ public class TrackExtrapTest extends TestCase {
             }
         }
         
+        private SimTrackerHit findClosestCaloHit(List<SimTrackerHit> caloHitList, Hep3Vector extrapPos) {
+            SimTrackerHit closestHit = caloHitList.get(0);
+            double res = VecOp.sub(extrapPos, closestHit.getPositionVec()).magnitude();
+            for (SimTrackerHit caloHit : caloHitList) {
+                Hep3Vector residualVec = VecOp.sub(extrapPos, caloHit.getPositionVec());
+                if (residualVec.magnitude() < res) {
+                    res = residualVec.magnitude();
+                    closestHit = caloHit;
+                }
+            }
+            return closestHit;
+        }
+
         private void doWeirdPlots(Hep3Vector lay6Pos, Hep3Vector lay6Mom, Hep3Vector partMom, Hep3Vector extrapPos) {
             aida.histogram2D("Weird Events: Y vs X Pos at Layer6").fill(lay6Pos.x(), lay6Pos.y());
             aida.histogram2D("Weird Events: Y vs X Pos Extrapolated to ECal").fill(extrapPos.x(), extrapPos.y());
@@ -304,11 +317,8 @@ public class TrackExtrapTest extends TestCase {
         // everything in tracking frame
         public Hep3Vector doTrackExtrap(Hep3Vector currentPosition, Hep3Vector currentMomentum, double q, boolean debug) {
 
-            
-            double bFieldY = bFieldMap.getField(new BasicHep3Vector(0, 0, 500)).y();
-            
+            double bFieldY = 0;
             Hep3Vector currentPositionDet = null;
-
             double distance = ecalPosition - currentPosition.x();
             
             if (debug)
@@ -338,6 +348,11 @@ public class TrackExtrapTest extends TestCase {
                 if (debug)
                     System.out.printf("  > currentPositionTry %f %f %f , bfieldY %f \n", currentPositionTry.x(), currentPositionTry.y(), currentPositionTry.z(), bFieldY);
 
+                if (Math.signum(currentPositionTry.x() - currentPosition.x()) != sign) {
+                    System.out.println("looper, abort");
+                    return null;
+                }
+                
                 if ((Math.abs(ecalPosition - currentPositionTry.x()) > epsilon) && (Math.signum(ecalPosition - currentPositionTry.x()) != sign)) {
                     // went too far, try again with smaller step-size
                     if (Math.abs(stepSize) > 0.01) {
@@ -357,6 +372,7 @@ public class TrackExtrapTest extends TestCase {
                     aida.histogram2D("Y vs X extrap-path").fill(currentPosition.x(), currentPosition.y());
                     aida.histogram2D("Y vs Z extrap-path").fill(currentPosition.z(), currentPosition.y());
                     aida.histogram2D("X vs Z extrap-path").fill(currentPosition.z(), currentPosition.x());
+                    aida.histogram2D("Bfield Y vs Z Pos").fill(currentPosition.x(), bFieldY);
                 }
 
                 distance = Math.abs(ecalPosition - currentPosition.x());
