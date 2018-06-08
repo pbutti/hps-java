@@ -2198,12 +2198,19 @@ public class TrackingReconstructionPlots extends Driver {
         }
 
         if (doBumpHuntPlots) {
-            //List<Track> newTrks = doComparisonBH(event, tracks, extraTracks, clusters, tb, hitToStripsTable, hitToRotatedTable);
-
-            List<Track> specialTrks = doBumpHuntCuts2(event, tracks, clusters, tb, hitToStripsTable, hitToRotatedTable);
-            if (specialTrks != null)
-                doBasicTracks(specialTrks);
+            List<Track> newTrks = null;
+            if (doComparisonPlots)
+                newTrks = doComparisonBH(event, tracks, extraTracks, clusters, tb, hitToStripsTable, hitToRotatedTable);
+            else
+                newTrks = doBumpHuntCuts2(event, tracks, clusters, tb, hitToStripsTable, hitToRotatedTable);
             hasDoneBasic = true;
+
+            if (newTrks != null) {
+                doBasicTracks(newTrks);
+                if (doComparisonPlots)
+                    doComparison(tracks, hthList, newTrks, extraHits, stripClusters, clusters, rotHits);
+            }
+
             //            if (newTrks != null && doComparisonPlots) {
             //                doComparison(tracks, hthList, newTrks, extraHits, stripClusters, clusters, rotHits);
             //                doBasicTracks(newTrks);
