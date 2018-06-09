@@ -18,39 +18,53 @@ import org.lcsim.util.test.TestUtil.TestOutputFile;
 
 public class AddTrackCollections extends TestCase {
     // /nfs/slac/work/mdiamond
-    protected String extraFileName = "/nfs/slac/g/hps3/data/engrun2015/pass8/svtTests/hps_005772.0.twoClusterSkim.evio_timingcut24.slcio";
-    protected String mainFileName = "/nfs/slac/g/hps3/data/engrun2015/pass8/svtTests/hps_005772.0.twoClusterSkim.evio_timingcut15.slcio";
-    protected String outputFileName = "tst_combined.slcio";
+    protected String extraFileName1 = "/nfs/slac/g/hps3/data/engrun2015/pass8/svtTests/hps_005772.";
+    protected String extraFileName2 = ".twoClusterSkim.evio_timingcut24.slcio";
+    protected String mainFileName1 = "/nfs/slac/g/hps3/data/engrun2015/pass8/svtTests/hps_005772.";
+    protected String mainFileName2 = ".twoClusterSkim.evio_timingcutNominal.slcio";
+    protected String outputFileName1 = "/nfs/slac/work/mdiamond/combined";
+    protected String outputFileName2 = "-24s.slcio";
     protected String TrackCollName = "GBLTracks";
     protected String HitCollName = "RotatedHelicalTrackHits";
     protected String suffix = "-24s";
     protected long nEvents = 5000;
 
     public void testClear() throws Exception {
-        String[] extraFileNameList = { extraFileName };
+        List<Integer> fileNums = new ArrayList<Integer>();
+        for (int fileNum = 100; fileNum <= 470; fileNum += 10)
+            fileNums.add(fileNum);
+        for (int fileNum = 0; fileNum <= 40; fileNum += 10)
+            fileNums.add(fileNum);
 
-        File mainFile = new File(mainFileName);
-        File outputFile = new TestOutputFile(outputFileName);
-        //        outputFile.getParentFile().mkdirs();
+        for (int fileNum : fileNums) {
+            String extraFileName = String.format("%s%d%s", extraFileName1, fileNum, extraFileName2);
+            String[] extraFileNameList = { extraFileName };
+            String mainFileName = String.format("%s%d%s", mainFileName1, fileNum, mainFileName2);
+            String outputFileName = String.format("%s%d%s.slcio", outputFileName1, fileNum, suffix);
 
-        LCSimLoop loop = new LCSimLoop();
-        loop.setLCIORecordSource(mainFile);
+            File mainFile = new File(mainFileName);
+            File outputFile = new TestOutputFile(outputFileName);
+            //        outputFile.getParentFile().mkdirs();
 
-        AddTrackCollectionsDriver atc = new AddTrackCollectionsDriver();
-        atc.setOverlayFiles(extraFileNameList);
-        atc.setTrackCollName(TrackCollName);
-        atc.setHitCollName(HitCollName);
-        atc.setSuffix(suffix);
-        loop.add(atc);
+            LCSimLoop loop = new LCSimLoop();
+            loop.setLCIORecordSource(mainFile);
 
-        loop.add(new LCIODriver(outputFile));
+            AddTrackCollectionsDriver atc = new AddTrackCollectionsDriver();
+            atc.setOverlayFiles(extraFileNameList);
+            atc.setTrackCollName(TrackCollName);
+            atc.setHitCollName(HitCollName);
+            atc.setSuffix(suffix);
+            loop.add(atc);
 
-        try {
-            loop.loop(nEvents);
-        } catch (Exception e) {
-            System.out.println(e.toString());
+            loop.add(new LCIODriver(outputFile));
+
+            try {
+                loop.loop(nEvents);
+            } catch (Exception e) {
+                System.out.println(e.toString());
+            }
+            loop.dispose();
         }
-        loop.dispose();
     }
 
     protected class AddTrackCollectionsDriver extends org.lcsim.util.OverlayDriver {
