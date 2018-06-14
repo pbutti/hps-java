@@ -1,6 +1,7 @@
 package org.hps.recon.tracking;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -51,13 +52,13 @@ public class DualAmbiguityResolver extends SimpleAmbiguityResolver {
         return counter;
     }
 
-    private boolean isEqual(List<TrackerHit> h1List, List<TrackerHit> h2List) {
+    private boolean isEqual(Set<TrackerHit> h1List, Set<TrackerHit> h2List) {
         if (h1List.size() != h2List.size())
             return false;
         return isPartial(h1List, h2List);
     }
 
-    private boolean isPartial(List<TrackerHit> h1List, List<TrackerHit> h2List) {
+    private boolean isPartial(Set<TrackerHit> h1List, Set<TrackerHit> h2List) {
         for (TrackerHit h1 : h1List) {
             boolean found = false;
             for (TrackerHit h2 : h2List) {
@@ -92,7 +93,8 @@ public class DualAmbiguityResolver extends SimpleAmbiguityResolver {
         utils.makeTrackScoreMap(tracklist);
         dualDups.clear();
         for (Track trk : tracklist) {
-            List<TrackerHit> mapEntry = trk.getTrackerHits();
+            //List<TrackerHit> mapEntry = trk.getTrackerHits();
+            Set<TrackerHit> mapEntrySet = new HashSet<TrackerHit>(trk.getTrackerHits());
 
             // update shared map
             List<Track> newShared = new ArrayList<Track>();
@@ -107,12 +109,12 @@ public class DualAmbiguityResolver extends SimpleAmbiguityResolver {
                 // update partials list
                 // is this a partial of an existing track?
                 // or is an existing track a partial of this one?
-                if (otherTrack.getTrackerHits().size() > mapEntry.size()) {
-                    if (isPartial(mapEntry, otherTrack.getTrackerHits())) {
+                if (otherTrack.getTrackerHits().size() > mapEntrySet.size()) {
+                    if (isPartial(mapEntrySet, new HashSet<TrackerHit>(otherTrack.getTrackerHits()))) {
                         partials.add(trk);
                     }
-                } else if (otherTrack.getTrackerHits().size() < mapEntry.size()) {
-                    if (isPartial(otherTrack.getTrackerHits(), mapEntry)) {
+                } else if (otherTrack.getTrackerHits().size() < mapEntrySet.size()) {
+                    if (isPartial(new HashSet<TrackerHit>(otherTrack.getTrackerHits()), mapEntrySet)) {
                         partials.add(otherTrack);
                     }
                 }
@@ -120,18 +122,18 @@ public class DualAmbiguityResolver extends SimpleAmbiguityResolver {
             sharedTracksMap.put(trk, newShared);
 
             // update map for duplicates
-            if (hitsToTracksMap.containsValue(mapEntry)) {
-                List<Track> dups = hitsToTracksMap.get(mapEntry);
+            if (hitsToTracksMap.containsValue(mapEntrySet)) {
+                List<Track> dups = hitsToTracksMap.get(mapEntrySet);
                 dups.add(trk);
                 for (Track dup : dups) {
                     if (!dualDups.contains(dup))
                         dualDups.add(dup);
                 }
             } else {
-                List<TrackerHit> dualEntry = null;
-                Set<List<TrackerHit>> existingHitLists = hitsToTracksMap.keySet();
-                for (List<TrackerHit> existingHitList : existingHitLists) {
-                    if (isEqual(existingHitList, mapEntry)) {
+                Set<TrackerHit> dualEntry = null;
+                Set<Set<TrackerHit>> existingHitLists = hitsToTracksMap.keySet();
+                for (Set<TrackerHit> existingHitList : existingHitLists) {
+                    if (isEqual(existingHitList, mapEntrySet)) {
                         dualEntry = existingHitList;
                         break;
                     }
@@ -146,7 +148,7 @@ public class DualAmbiguityResolver extends SimpleAmbiguityResolver {
                 } else {
                     List<Track> newList = new ArrayList<Track>();
                     newList.add(trk);
-                    hitsToTracksMap.put(mapEntry, newList);
+                    hitsToTracksMap.put(mapEntrySet, newList);
                 }
             }
         }

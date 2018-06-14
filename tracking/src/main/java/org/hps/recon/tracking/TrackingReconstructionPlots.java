@@ -71,7 +71,7 @@ public class TrackingReconstructionPlots extends Driver {
     private boolean doStripHitPlots = false;
     private boolean doReconParticlePlots = true;
     private boolean doOccupancyPlots = false;
-    private boolean doComparisonPlots = false;
+    private boolean doComparisonPlots = true;
     private boolean doBumpHuntPlots = true;
 
     private double timingThreshold = 15.0;
@@ -1240,7 +1240,7 @@ public class TrackingReconstructionPlots extends Driver {
                         aida.histogram1D(temp).fill(pz);
                         aida.histogram2D("Positron T-B Cluster deltaT vs Top Track Pz").fill(pz, clusDeltaT);
                     }
-                    if (clusDeltaTbinned < 2 && clusDeltaTbinned > -2) {
+                    if (clusDeltaT < 2 && clusDeltaT > -2) {
                         aida.histogram2D("Tight T-B Cluster deltaT vs Top Track Pz").fill(pz, clusDeltaT);
                         if (charge == -1)
                             aida.histogram2D("Electron Tight T-B Cluster deltaT vs Top Track Pz").fill(pz, clusDeltaT);
@@ -1251,16 +1251,16 @@ public class TrackingReconstructionPlots extends Driver {
                     String temp = String.format("Bot Track Pz - T-B Cluster deltaT %dto%d", clusDeltaTbinned, clusDeltaTbinned + 2);
                     aida.histogram1D(temp).fill(pz);
                     if (charge == -1) {
-                        temp = String.format("Electron Top Track Pz - T-B Cluster deltaT %dto%d", clusDeltaTbinned, clusDeltaTbinned + 2);
+                        temp = String.format("Electron Bot Track Pz - T-B Cluster deltaT %dto%d", clusDeltaTbinned, clusDeltaTbinned + 2);
                         aida.histogram1D(temp).fill(pz);
                         aida.histogram2D("Electron T-B Cluster deltaT vs Bot Track Pz").fill(pz, clusDeltaT);
                     } else {
-                        temp = String.format("Positron Top Track Pz - T-B Cluster deltaT %dto%d", clusDeltaTbinned, clusDeltaTbinned + 2);
+                        temp = String.format("Positron Bot Track Pz - T-B Cluster deltaT %dto%d", clusDeltaTbinned, clusDeltaTbinned + 2);
                         aida.histogram1D(temp).fill(pz);
                         aida.histogram2D("Positron T-B Cluster deltaT vs Bot Track Pz").fill(pz, clusDeltaT);
                     }
                     aida.histogram2D("T-B Cluster deltaT vs Bot Track Pz").fill(pz, clusDeltaT);
-                    if (clusDeltaTbinned < 2 && clusDeltaTbinned > -2) {
+                    if (clusDeltaT < 2 && clusDeltaT > -2) {
                         aida.histogram2D("Tight T-B Cluster deltaT vs Bot Track Pz").fill(pz, clusDeltaT);
                         if (charge == -1)
                             aida.histogram2D("Electron Tight T-B Cluster deltaT vs Bot Track Pz").fill(pz, clusDeltaT);
@@ -2098,6 +2098,9 @@ public class TrackingReconstructionPlots extends Driver {
         sar.initializeFromList(origTracks);
         sar.setMode(AmbiMode.DUPS);
         sar.resolve();
+        sar.setMode(AmbiMode.SHARED);
+        sar.setShareThreshold(3);
+        sar.resolve();
         tracks.addAll(sar.getTracks());
 
         List<GenericObject> tb = null;
@@ -2766,9 +2769,9 @@ public class TrackingReconstructionPlots extends Driver {
                 aida.histogram1D(temp, 100, 0, 1.5);
                 temp = String.format("Electron Bot Track Pz - T-B Cluster deltaT %dto%d", i, i + 2);
                 aida.histogram1D(temp, 100, 0, 1.5);
-                temp = String.format("Positron Track Pz - T-B Cluster deltaT %dto%d", i, i + 2);
+                temp = String.format("Positron Top Track Pz - T-B Cluster deltaT %dto%d", i, i + 2);
                 aida.histogram1D(temp, 100, 0, 1.5);
-                temp = String.format("Positron Track Pz - T-B Cluster deltaT %dto%d", i, i + 2);
+                temp = String.format("Positron Bot Track Pz - T-B Cluster deltaT %dto%d", i, i + 2);
                 aida.histogram1D(temp, 100, 0, 1.5);
             }
             for (int bh = 0; bh <= 4; bh++) {
