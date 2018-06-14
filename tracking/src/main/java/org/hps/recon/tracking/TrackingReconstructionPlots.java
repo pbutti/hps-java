@@ -23,6 +23,7 @@ import org.hps.record.triggerbank.AbstractIntData;
 import org.hps.record.triggerbank.SSPCluster;
 import org.hps.record.triggerbank.SSPData;
 import org.hps.record.triggerbank.TIData;
+import org.hps.util.Pair;
 import org.lcsim.detector.tracker.silicon.HpsSiSensor;
 import org.lcsim.detector.tracker.silicon.SiSensor;
 import org.lcsim.event.Cluster;
@@ -30,6 +31,7 @@ import org.lcsim.event.EventHeader;
 import org.lcsim.event.LCIOParameters.ParameterName;
 import org.lcsim.event.base.BaseCluster;
 import org.lcsim.event.base.BaseRelationalTable;
+import org.lcsim.event.base.BaseTrackState;
 import org.lcsim.event.GenericObject;
 import org.lcsim.event.LCRelation;
 import org.lcsim.event.RawTrackerHit;
@@ -67,13 +69,14 @@ public class TrackingReconstructionPlots extends Driver {
     //private boolean doMatchedClusterPlots = false;
     private boolean doElectronPositronPlots = false;
     private boolean doStripHitPlots = false;
-    private boolean doReconParticlePlots = false;
+    private boolean doReconParticlePlots = true;
     private boolean doOccupancyPlots = false;
-    private boolean doComparisonPlots = true;
+    private boolean doComparisonPlots = false;
     private boolean doBumpHuntPlots = true;
 
     private double timingThreshold = 15.0;
     boolean isMC = false;
+    boolean hasDoneBasic = false;
 
     private String trackCollectionName = "GBLTracks";
     String ecalSubdetectorName = "Ecal";
@@ -251,6 +254,9 @@ public class TrackingReconstructionPlots extends Driver {
         int ntracksBot = 0;
         double momentum_param = 2.99792458e-04;
 
+        if (hasDoneBasic)
+            return;
+
         aida.histogram1D("Tracks per Event", 3, 0, 3).fill(tracks.size());
 
         for (Track trk : tracks) {
@@ -395,7 +401,7 @@ public class TrackingReconstructionPlots extends Driver {
         }
     }
 
-    private void doMissingHits(List<Track> GBLTrackList, List<TrackerHit> hthList, List<TrackerHit> sthList, List<Cluster> clusterList, int trigPhase) {
+    private void doMissingHits(List<Track> GBLTrackList, List<TrackerHit> hthList, List<TrackerHit> sthList, List<Cluster> clusterList, int trigPhase, int BHstage) {
         int ntracksTop = 0;
         int ntracksBot = 0;
         int ntracksPos = 0;
@@ -412,6 +418,12 @@ public class TrackingReconstructionPlots extends Driver {
             if (clus.getEnergy() > maxClusE)
                 maxClusE = clus.getEnergy();
         }
+        if (topClus == null || botClus == null)
+            return;
+
+        boolean passesTcut = (BHstage >= 3);
+        if (BHstage > 4)
+            BHstage = 4;
 
         for (Track trk : GBLTrackList) {
             boolean isTop = trk.getTrackerHits().get(0).getPosition()[2] > 0;
@@ -425,8 +437,17 @@ public class TrackingReconstructionPlots extends Driver {
             else if (charge == 1)
                 ntracksPos++;
         }
-        aida.histogram1D("Tracks per Event Bot").fill(ntracksBot);
-        aida.histogram1D("Tracks per Event Top").fill(ntracksTop);
+        if (passesTcut) {
+            aida.histogram1D("Tracks per Event Bot").fill(ntracksBot);
+            aida.histogram1D("Tracks per Event Top").fill(ntracksTop);
+        }
+
+        double clusDeltaT = (ClusterUtilities.getSeedHitTime(topClus) - ClusterUtilities.getSeedHitTime(botClus));
+        int clusDeltaTbinned = -12;
+        for (int i = -10; i <= 10; i += 2) {
+            if (clusDeltaT > i)
+                clusDeltaTbinned = i;
+        }
 
         Map<Integer, Integer> HitsInLayer = new HashMap<Integer, Integer>();
         //System.out.println("Starting 3D hits in event:");
@@ -439,29 +460,35 @@ public class TrackingReconstructionPlots extends Driver {
             } else {
                 n = 0;
             }
+
             //System.out.printf("lay %d pos %f %f %f \n", lay, hth.getPosition()[0], hth.getPosition()[1], hth.getPosition()[2]);
             if ((hth.getPosition()[1] > 0 && ntracksTop == 0) || (hth.getPosition()[1] < 0 && ntracksBot == 0)) {
                 //System.out.printf("lay %d time %f \n", lay, hth.getTime());
-                if (ntracksBot == 0) {
-                    aida.histogram1D("Times of Bottom 3D-Hits in Events with No Bottom Track").fill(hth.getTime());
-                }
-                if (ntracksTop == 0) {
-                    aida.histogram1D("Times of Top 3D-Hits in Events with No Top Track").fill(hth.getTime());
+                if (passesTcut) {
+                    if (ntracksBot == 0) {
+                        aida.histogram1D("Times of Bottom 3D-Hits in Events with No Bottom Track").fill(hth.getTime());
+                    }
+                    if (ntracksTop == 0) {
+                        aida.histogram1D("Times of Top 3D-Hits in Events with No Top Track").fill(hth.getTime());
+                    }
                 }
                 n++;
             }
             HitsInLayer.put(lay, n);
+
         }
         int numLayHit = 0;
         for (int lay = 1; lay <= 6; lay++) {
             if (HitsInLayer.containsKey(lay) && HitsInLayer.get(lay) > 0)
                 numLayHit++;
         }
-        if (ntracksTop == 0) {
-            aida.histogram1D("Top Layers with 3D-Hits in Events with No Top Track").fill(numLayHit);
-        }
-        if (ntracksBot == 0) {
-            aida.histogram1D("Bottom Layers with 3D-Hits in Events with No Bottom Track").fill(numLayHit);
+        if (passesTcut) {
+            if (ntracksTop == 0) {
+                aida.histogram1D("Top Layers with 3D-Hits in Events with No Top Track").fill(numLayHit);
+            }
+            if (ntracksBot == 0) {
+                aida.histogram1D("Bottom Layers with 3D-Hits in Events with No Bottom Track").fill(numLayHit);
+            }
         }
 
         //        System.out.println("Starting 2D hits in event:");
@@ -477,13 +504,15 @@ public class TrackingReconstructionPlots extends Driver {
                 n = 0;
             }
             //System.out.printf("lay %d pos %f %f %f \n", lay, stripHit.getPosition()[0], stripHit.getPosition()[1], stripHit.getPosition()[2]);
-            if (lay >= 7) {
-                if (stripHit.getPosition()[1] < 0 && ntracksBot == 0) {
+            //if (lay >= 7) {
+            if (stripHit.getPosition()[1] < 0 && ntracksBot == 0) {
+                if (passesTcut) {
                     aida.histogram1D("Times of Bottom 2D-Hits in Events with No Bottom Track").fill(stripHit.getTime());
                     String temp = String.format("Times of Bottom 2D-Hits in Events with No Bottom Track - Layer %d", lay);
                     aida.histogram1D(temp).fill(stripHit.getTime());
                     temp = String.format("Times of Bottom 2D-Hits in Events with No Bottom Track - Trigger Phase %d", trigPhase);
                     aida.histogram1D(temp).fill(stripHit.getTime());
+
                     if (ntracksEle > 0)
                         aida.histogram1D("Times of Bottom 2D-Hits in Electron Events with No Bottom Track").fill(stripHit.getTime());
                     else if (ntracksPos > 0)
@@ -499,7 +528,17 @@ public class TrackingReconstructionPlots extends Driver {
                             aida.histogram1D("Times of Bottom 2D-Hits in LowMaxClusETop Events with No Bottom Track").fill(stripHit.getTime());
                     }
                 }
-                if (stripHit.getPosition()[1] > 0 && ntracksTop == 0) {
+                if (clusDeltaTbinned < 10 && clusDeltaTbinned > -10) {
+                    String temp = String.format("Times of Bottom 2D-Hits in Events with No Bottom Track - T-B Cluster deltaT %dto%d", clusDeltaTbinned, clusDeltaTbinned + 2);
+                    aida.histogram1D(temp).fill(stripHit.getTime());
+                    for (int bh = 0; bh <= BHstage; bh++) {
+                        temp = String.format("Times of Bottom 2D-Hits in Events with No Bottom Track - BH stage%d", bh);
+                        aida.histogram1D(temp).fill(stripHit.getTime());
+                    }
+                }
+            }
+            if (stripHit.getPosition()[1] > 0 && ntracksTop == 0) {
+                if (passesTcut) {
                     aida.histogram1D("Times of Top 2D-Hits in Events with No Top Track").fill(stripHit.getTime());
                     String temp = String.format("Times of Top 2D-Hits in Events with No Top Track - Layer %d", lay);
                     aida.histogram1D(temp).fill(stripHit.getTime());
@@ -520,9 +559,18 @@ public class TrackingReconstructionPlots extends Driver {
                             aida.histogram1D("Times of Top 2D-Hits in LowMaxClusETop Events with No Top Track").fill(stripHit.getTime());
                     }
                 }
-
-                //System.out.printf("lay %d time %f \n", lay, stripHit.getTime());
+                if (clusDeltaTbinned < 10 && clusDeltaTbinned > -10) {
+                    String temp = String.format("Times of Top 2D-Hits in Events with No Top Track - T-B Cluster deltaT %dto%d", clusDeltaTbinned, clusDeltaTbinned + 2);
+                    aida.histogram1D(temp).fill(stripHit.getTime());
+                    for (int bh = 0; bh <= BHstage; bh++) {
+                        temp = String.format("Times of Top 2D-Hits in Events with No Top Track - BH stage%d", bh);
+                        aida.histogram1D(temp).fill(stripHit.getTime());
+                    }
+                }
             }
+
+            //System.out.printf("lay %d time %f \n", lay, stripHit.getTime());
+            //}
             if (Math.abs(stripHit.getTime()) <= timingThreshold) {
                 if ((stripHit.getPosition()[1] < 0 && ntracksBot == 0) || (stripHit.getPosition()[1] > 0 && ntracksTop == 0))
                     n++;
@@ -534,11 +582,13 @@ public class TrackingReconstructionPlots extends Driver {
             if (HitsInLayer.containsKey(lay) && HitsInLayer.get(lay) > 0)
                 numLayHit++;
         }
-        if (ntracksTop == 0) {
-            aida.histogram1D("Top Layers with 2D-Hits in Events with No Top Track").fill(numLayHit);
-        }
-        if (ntracksBot == 0) {
-            aida.histogram1D("Bottom Layers with 2D-Hits in Events with No Bottom Track").fill(numLayHit);
+        if (passesTcut) {
+            if (ntracksTop == 0) {
+                aida.histogram1D("Top Layers with 2D-Hits in Events with No Top Track").fill(numLayHit);
+            }
+            if (ntracksBot == 0) {
+                aida.histogram1D("Bottom Layers with 2D-Hits in Events with No Bottom Track").fill(numLayHit);
+            }
         }
     }
 
@@ -555,7 +605,8 @@ public class TrackingReconstructionPlots extends Driver {
         if (fillPlots)
             aida.histogram1D("Passed BH Selection2" + isTop).fill(0);
 
-        double trackP = new BasicHep3Vector(trk.getTrackStates().get(0).getMomentum()).magnitude();
+        double trackP = new BasicHep3Vector(BaseTrackState.computeMomentum(trk.getTrackStates().get(0), bfield)).magnitude();
+        //double trackP = new BasicHep3Vector(trk.getTrackStates().get(0).getMomentum()).magnitude();
 
         boolean hasLay1hit = false;
         for (TrackerHit hit : trk.getTrackerHits()) {
@@ -601,7 +652,7 @@ public class TrackingReconstructionPlots extends Driver {
         if (correctedMatchMe.getPosition()[1] * temp.y() < 0)
             return false;
         Hep3Vector residual = new BasicHep3Vector(correctedMatchMe.getPosition()[0] - temp.x(), correctedMatchMe.getPosition()[1] - temp.y(), 0);
-        if (residual.x() > 40 || residual.y() > 20)
+        if (Math.abs(residual.x()) > 40 || Math.abs(residual.y()) > 20)
             return false;
         if (fillPlots)
             aida.histogram1D("Passed BH Selection2" + isTop).fill(5);
@@ -609,11 +660,11 @@ public class TrackingReconstructionPlots extends Driver {
         return true;
     }
 
-    private Cluster doBumpHuntCuts(List<Track> tracks, List<Cluster> clusterList, List<GenericObject> TriggerBank, RelationalTable hitToStrips, RelationalTable hitToRotated) {
+    private Pair<Cluster, Integer> doBumpHuntCuts(List<Track> tracks, List<Cluster> clusterList, List<GenericObject> TriggerBank, RelationalTable hitToStrips, RelationalTable hitToRotated) {
         return doBumpHuntCuts(null, tracks, clusterList, TriggerBank, hitToStrips, hitToRotated);
     }
 
-    private Cluster doBumpHuntCuts(EventHeader evt, List<Track> tracks, List<Cluster> clusterList, List<GenericObject> TriggerBank, RelationalTable hitToStrips, RelationalTable hitToRotated) {
+    private Pair<Cluster, Integer> doBumpHuntCuts(EventHeader evt, List<Track> tracks, List<Cluster> clusterList, List<GenericObject> TriggerBank, RelationalTable hitToStrips, RelationalTable hitToRotated) {
 
         List<SSPCluster> sspClusters = null;
         TIData triggerData = null;
@@ -640,8 +691,9 @@ public class TrackingReconstructionPlots extends Driver {
             }
         }
         if (!(hasTop && hasBot))
-            return null;
+            return new Pair<Cluster, Integer>(null, -1);
 
+        int BHstage = 0;
         aida.histogram1D("Passed BH Selection").fill(0);
 
         for (GenericObject gob : TriggerBank) {
@@ -655,11 +707,12 @@ public class TrackingReconstructionPlots extends Driver {
 
         }
         if (triggerData == null)
-            return null;
+            return new Pair<Cluster, Integer>(null, BHstage);
         if (!triggerData.isPair1Trigger())
-            return null;
+            return new Pair<Cluster, Integer>(null, BHstage);
 
-        aida.histogram1D("Passed BH Selection").fill(1);
+        BHstage++;
+        aida.histogram1D("Passed BH Selection").fill(BHstage);
 
         if (!clusterList.isEmpty() && sspClusters != null && !sspClusters.isEmpty()) {
             isMatched = true;
@@ -680,8 +733,9 @@ public class TrackingReconstructionPlots extends Driver {
         }
 
         if (!isMatched)
-            return null;
-        aida.histogram1D("Passed BH Selection").fill(2);
+            return new Pair<Cluster, Integer>(null, BHstage);
+        BHstage++;
+        aida.histogram1D("Passed BH Selection").fill(BHstage);
 
         // match to top cluster?
         hasTop = false;
@@ -712,102 +766,93 @@ public class TrackingReconstructionPlots extends Driver {
         returnMe.removeAll(sar.getPartialTracks());
         returnMe.removeAll(sar.getSharedTracks());
 
-        for (Track trk : returnMe) {
-            double pt = Math.abs((1 / trk.getTrackStates().get(0).getOmega()) * bfield * 2.99792458e-04);
-            double pz = pt * Math.cos(trk.getTrackStates().get(0).getPhi());
-            if (trk.getTrackerHits().get(0).getPosition()[2] > 0)
-                aida.histogram1D("BH Selection at Stage2: Top MatchedTrack Pz").fill(pz);
-            else
-                aida.histogram1D("BH Selection at Stage2: Bot MatchedTrack Pz").fill(pz);
-        }
-        for (Track trk : tracks) {
-            double pt = Math.abs((1 / trk.getTrackStates().get(0).getOmega()) * bfield * 2.99792458e-04);
-            double pz = pt * Math.cos(trk.getTrackStates().get(0).getPhi());
-            if (trk.getTrackerHits().get(0).getPosition()[2] > 0)
-                aida.histogram1D("BH Selection at Stage2: Top Track Pz").fill(pz);
-            else
-                aida.histogram1D("BH Selection at Stage2: Bot Track Pz").fill(pz);
-        }
-        if (!hasTop)
-            aida.histogram1D("Passed BH Selection: Missing Track on Top").fill(2);
-        if (!hasBot)
-            aida.histogram1D("Passed BH Selection: Missing Track on Bot").fill(2);
+        fillBHplots(returnMe, tracks, hasTop, hasBot, BHstage);
 
         // Energy cuts
         if ((totE < 0.8 * ebeam) || (totE > 1.2 * ebeam))
-            return null;
+            return new Pair<Cluster, Integer>(null, BHstage);
+        BHstage++;
         //        if ((trigE < 0.8 * ebeam) || (trigE > 1.2 * ebeam))
         //            return null;
-        aida.histogram1D("Passed BH Selection").fill(3);
-        for (Track trk : returnMe) {
-            double pt = Math.abs((1 / trk.getTrackStates().get(0).getOmega()) * bfield * 2.99792458e-04);
-            double pz = pt * Math.cos(trk.getTrackStates().get(0).getPhi());
-            if (trk.getTrackerHits().get(0).getPosition()[2] > 0)
-                aida.histogram1D("BH Selection at Stage3: Top MatchedTrack Pz").fill(pz);
-            else
-                aida.histogram1D("BH Selection at Stage3: Bot MatchedTrack Pz").fill(pz);
-        }
-        for (Track trk : tracks) {
-            double pt = Math.abs((1 / trk.getTrackStates().get(0).getOmega()) * bfield * 2.99792458e-04);
-            double pz = pt * Math.cos(trk.getTrackStates().get(0).getPhi());
-            if (trk.getTrackerHits().get(0).getPosition()[2] > 0)
-                aida.histogram1D("BH Selection at Stage3: Top Track Pz").fill(pz);
-            else
-                aida.histogram1D("BH Selection at Stage3: Bot Track Pz").fill(pz);
-        }
-        if (!hasTop)
-            aida.histogram1D("Passed BH Selection: Missing Track on Top").fill(3);
-        if (!hasBot)
-            aida.histogram1D("Passed BH Selection: Missing Track on Bot").fill(3);
+        aida.histogram1D("Passed BH Selection").fill(BHstage);
+        fillBHplots(returnMe, tracks, hasTop, hasBot, BHstage);
 
         // Cluster timing cut
-        if ((ClusterUtilities.getSeedHitTime(topClus) - ClusterUtilities.getSeedHitTime(botClus)) > 2.0)
-            return null;
+        if (Math.abs(ClusterUtilities.getSeedHitTime(topClus) - ClusterUtilities.getSeedHitTime(botClus)) > 2.0)
+            return new Pair<Cluster, Integer>(null, BHstage);
+        BHstage++;
         aida.histogram1D("Passed BH Selection").fill(4);
-        for (Track trk : returnMe) {
-            double pt = Math.abs((1 / trk.getTrackStates().get(0).getOmega()) * bfield * 2.99792458e-04);
-            double pz = pt * Math.cos(trk.getTrackStates().get(0).getPhi());
-            if (trk.getTrackerHits().get(0).getPosition()[2] > 0)
-                aida.histogram1D("BH Selection at Stage4: Top MatchedTrack Pz").fill(pz);
-            else
-                aida.histogram1D("BH Selection at Stage4: Bot MatchedTrack Pz").fill(pz);
-        }
-        for (Track trk : tracks) {
-            double pt = Math.abs((1 / trk.getTrackStates().get(0).getOmega()) * bfield * 2.99792458e-04);
-            double pz = pt * Math.cos(trk.getTrackStates().get(0).getPhi());
-            if (trk.getTrackerHits().get(0).getPosition()[2] > 0)
-                aida.histogram1D("BH Selection at Stage4: Top Track Pz").fill(pz);
-            else
-                aida.histogram1D("BH Selection at Stage4: Bot Track Pz").fill(pz);
-        }
-        if (!hasTop)
-            aida.histogram1D("Passed BH Selection: Missing Track on Top").fill(4);
-        if (!hasBot)
-            aida.histogram1D("Passed BH Selection: Missing Track on Bot").fill(4);
-
-        //       if (!doBumpHuntCuts(trk, matchMe, hitToStrips, hitToRotated))
-        //           return null;
+        fillBHplots(returnMe, tracks, hasTop, hasBot, BHstage);
 
         if (hasTop && !hasBot) {
             aida.histogram1D("Passed BH Selection").fill(5);
-            if (evt != null)
-                System.out.printf("event %d \n", evt.getEventNumber());
-            return botClus;
+            BHstage = 5;
+            //if (evt != null)
+            //    System.out.printf("event %d \n", evt.getEventNumber());
+            return new Pair<Cluster, Integer>(botClus, BHstage);
         } else if (hasBot && !hasTop) {
             aida.histogram1D("Passed BH Selection").fill(6);
-            if (evt != null)
-                System.out.printf("event %d \n", evt.getEventNumber());
-            return topClus;
+            BHstage = 6;
+            //if (evt != null)
+            //    System.out.printf("event %d \n", evt.getEventNumber());
+            return new Pair<Cluster, Integer>(topClus, BHstage);
         } else if (hasBot && hasTop) {
             aida.histogram1D("Passed BH Selection").fill(5);
             aida.histogram1D("Passed BH Selection").fill(6);
-            return null;
+            BHstage = 7;
+            return new Pair<Cluster, Integer>(null, 7);
         } else
-            return null;
+            return new Pair<Cluster, Integer>(null, BHstage);
 
     }
 
-    private List<Track> doBumpHuntCuts2(EventHeader evt, List<Track> tracks, List<Cluster> clusterList, List<GenericObject> TriggerBank, RelationalTable hitToStrips, RelationalTable hitToRotated) {
+    private void fillBHplots(List<Track> returnMe, List<Track> tracks, boolean hasTop, boolean hasBot, int BHstage) {
+        String stage = String.format("Stage%d", BHstage);
+        for (Track trk : returnMe) {
+            int charge = -(int) Math.signum(TrackUtils.getR(trk.getTrackStates().get(0)));
+            double pz = BaseTrackState.computeMomentum(trk.getTrackStates().get(0), bfield)[0];
+            if (trk.getTrackerHits().get(0).getPosition()[2] > 0) {
+                aida.histogram1D("BH Selection at " + stage + ": Top MatchedTrack Pz").fill(pz);
+                if (charge == -1)
+                    aida.histogram1D("Electron BH Selection at " + stage + ": Top MatchedTrack Pz").fill(pz);
+                else
+                    aida.histogram1D("Positron BH Selection at " + stage + ": Top MatchedTrack Pz").fill(pz);
+                aida.histogram1D("BH Selection at " + stage + ": Top MatchedTrack tanl").fill(Math.abs(trk.getTrackStates().get(0).getParameter(ParameterName.tanLambda.ordinal())));
+            } else {
+                aida.histogram1D("BH Selection at " + stage + ": Bot MatchedTrack Pz").fill(pz);
+                if (charge == -1)
+                    aida.histogram1D("Electron BH Selection at " + stage + ": Bot MatchedTrack Pz").fill(pz);
+                else
+                    aida.histogram1D("Positron BH Selection at " + stage + ": Bot MatchedTrack Pz").fill(pz);
+                aida.histogram1D("BH Selection at " + stage + ": Bot MatchedTrack tanl").fill(Math.abs(trk.getTrackStates().get(0).getParameter(ParameterName.tanLambda.ordinal())));
+            }
+        }
+        for (Track trk : tracks) {
+            int charge = -(int) Math.signum(TrackUtils.getR(trk.getTrackStates().get(0)));
+            double pz = BaseTrackState.computeMomentum(trk.getTrackStates().get(0), bfield)[0];
+            if (trk.getTrackerHits().get(0).getPosition()[2] > 0) {
+                aida.histogram1D("BH Selection at " + stage + ": Top Track Pz").fill(pz);
+                if (charge == -1)
+                    aida.histogram1D("Electron BH Selection at " + stage + ": Top Track Pz").fill(pz);
+                else
+                    aida.histogram1D("Positron BH Selection at " + stage + ": Top Track Pz").fill(pz);
+                aida.histogram1D("BH Selection at " + stage + ": Top Track tanl").fill(Math.abs(trk.getTrackStates().get(0).getParameter(ParameterName.tanLambda.ordinal())));
+            } else {
+                aida.histogram1D("BH Selection at " + stage + ": Bot Track Pz").fill(pz);
+                if (charge == -1)
+                    aida.histogram1D("Electron BH Selection at " + stage + ": Bot Track Pz").fill(pz);
+                else
+                    aida.histogram1D("Positron BH Selection at " + stage + ": Bot Track Pz").fill(pz);
+                aida.histogram1D("BH Selection at " + stage + ": Bot Track tanl").fill(Math.abs(trk.getTrackStates().get(0).getParameter(ParameterName.tanLambda.ordinal())));
+            }
+        }
+        if (!hasTop)
+            aida.histogram1D("Passed BH Selection: Missing Track on Top").fill(BHstage);
+        if (!hasBot)
+            aida.histogram1D("Passed BH Selection: Missing Track on Bot").fill(BHstage);
+    }
+
+    private Pair<List<Track>, Integer> doBumpHuntCuts2(EventHeader evt, List<Track> tracks, List<Cluster> clusterList, List<GenericObject> TriggerBank, RelationalTable hitToStrips, RelationalTable hitToRotated) {
 
         List<SSPCluster> sspClusters = null;
         TIData triggerData = null;
@@ -819,6 +864,7 @@ public class TrackingReconstructionPlots extends Driver {
         double totE = 0;
         //double trigE = 0;
         List<Track> returnMe = new ArrayList<Track>();
+        int BHstage = 0;
 
         // top/bottom clusters matched to Pairs1 trigger requirement
         if (clusterList != null) {
@@ -834,9 +880,9 @@ public class TrackingReconstructionPlots extends Driver {
             }
         }
         if (!(hasTop && hasBot))
-            return null;
+            return new Pair<List<Track>, Integer>(null, -1);
 
-        aida.histogram1D("Passed BH Selection").fill(0);
+        aida.histogram1D("Passed BH Selection").fill(BHstage);
 
         for (GenericObject gob : TriggerBank) {
             if (AbstractIntData.getTag(gob) == SSPData.BANK_TAG) {
@@ -849,11 +895,12 @@ public class TrackingReconstructionPlots extends Driver {
 
         }
         if (triggerData == null)
-            return null;
+            return new Pair<List<Track>, Integer>(null, BHstage);
         if (!triggerData.isPair1Trigger())
-            return null;
+            return new Pair<List<Track>, Integer>(null, BHstage);
 
-        aida.histogram1D("Passed BH Selection").fill(1);
+        BHstage++;
+        aida.histogram1D("Passed BH Selection").fill(BHstage);
 
         if (!clusterList.isEmpty() && sspClusters != null && !sspClusters.isEmpty()) {
             isMatched = true;
@@ -874,8 +921,10 @@ public class TrackingReconstructionPlots extends Driver {
         }
 
         if (!isMatched)
-            return null;
-        aida.histogram1D("Passed BH Selection").fill(2);
+            return new Pair<List<Track>, Integer>(null, BHstage);
+
+        BHstage++;
+        aida.histogram1D("Passed BH Selection").fill(BHstage);
 
         // match to top cluster?
         hasTop = false;
@@ -906,98 +955,47 @@ public class TrackingReconstructionPlots extends Driver {
         returnMe.removeAll(sar.getPartialTracks());
         returnMe.removeAll(sar.getSharedTracks());
 
-        for (Track trk : returnMe) {
-            double pt = Math.abs((1 / trk.getTrackStates().get(0).getOmega()) * bfield * 2.99792458e-04);
-            double pz = pt * Math.cos(trk.getTrackStates().get(0).getPhi());
-            if (trk.getTrackerHits().get(0).getPosition()[2] > 0)
-                aida.histogram1D("BH Selection at Stage2: Top MatchedTrack Pz").fill(pz);
-            else
-                aida.histogram1D("BH Selection at Stage2: Bot MatchedTrack Pz").fill(pz);
-        }
-        for (Track trk : tracks) {
-            double pt = Math.abs((1 / trk.getTrackStates().get(0).getOmega()) * bfield * 2.99792458e-04);
-            double pz = pt * Math.cos(trk.getTrackStates().get(0).getPhi());
-            if (trk.getTrackerHits().get(0).getPosition()[2] > 0)
-                aida.histogram1D("BH Selection at Stage2: Top Track Pz").fill(pz);
-            else
-                aida.histogram1D("BH Selection at Stage2: Bot Track Pz").fill(pz);
-        }
-        if (!hasTop)
-            aida.histogram1D("Passed BH Selection: Missing Track on Top").fill(2);
-        if (!hasBot)
-            aida.histogram1D("Passed BH Selection: Missing Track on Bot").fill(2);
+        fillBHplots(returnMe, tracks, hasTop, hasBot, BHstage);
 
         // Energy cuts
         if ((totE < 0.8 * ebeam) || (totE > 1.2 * ebeam))
-            return null;
+            return new Pair<List<Track>, Integer>(null, BHstage);
+
         //        if ((trigE < 0.8 * ebeam) || (trigE > 1.2 * ebeam))
         //            return null;
-        aida.histogram1D("Passed BH Selection").fill(3);
-        for (Track trk : returnMe) {
-            double pt = Math.abs((1 / trk.getTrackStates().get(0).getOmega()) * bfield * 2.99792458e-04);
-            double pz = pt * Math.cos(trk.getTrackStates().get(0).getPhi());
-            if (trk.getTrackerHits().get(0).getPosition()[2] > 0)
-                aida.histogram1D("BH Selection at Stage3: Top MatchedTrack Pz").fill(pz);
-            else
-                aida.histogram1D("BH Selection at Stage3: Bot MatchedTrack Pz").fill(pz);
-        }
-        for (Track trk : tracks) {
-            double pt = Math.abs((1 / trk.getTrackStates().get(0).getOmega()) * bfield * 2.99792458e-04);
-            double pz = pt * Math.cos(trk.getTrackStates().get(0).getPhi());
-            if (trk.getTrackerHits().get(0).getPosition()[2] > 0)
-                aida.histogram1D("BH Selection at Stage3: Top Track Pz").fill(pz);
-            else
-                aida.histogram1D("BH Selection at Stage3: Bot Track Pz").fill(pz);
-        }
-        if (!hasTop)
-            aida.histogram1D("Passed BH Selection: Missing Track on Top").fill(3);
-        if (!hasBot)
-            aida.histogram1D("Passed BH Selection: Missing Track on Bot").fill(3);
+        BHstage++;
+        aida.histogram1D("Passed BH Selection").fill(BHstage);
+        fillBHplots(returnMe, tracks, hasTop, hasBot, BHstage);
 
         // Cluster timing cut
-        if ((ClusterUtilities.getSeedHitTime(topClus) - ClusterUtilities.getSeedHitTime(botClus)) > 2.0)
-            return null;
-        aida.histogram1D("Passed BH Selection").fill(4);
-        for (Track trk : returnMe) {
-            double pt = Math.abs((1 / trk.getTrackStates().get(0).getOmega()) * bfield * 2.99792458e-04);
-            double pz = pt * Math.cos(trk.getTrackStates().get(0).getPhi());
-            if (trk.getTrackerHits().get(0).getPosition()[2] > 0)
-                aida.histogram1D("BH Selection at Stage4: Top MatchedTrack Pz").fill(pz);
-            else
-                aida.histogram1D("BH Selection at Stage4: Bot MatchedTrack Pz").fill(pz);
-        }
-        for (Track trk : tracks) {
-            double pt = Math.abs((1 / trk.getTrackStates().get(0).getOmega()) * bfield * 2.99792458e-04);
-            double pz = pt * Math.cos(trk.getTrackStates().get(0).getPhi());
-            if (trk.getTrackerHits().get(0).getPosition()[2] > 0)
-                aida.histogram1D("BH Selection at Stage4: Top Track Pz").fill(pz);
-            else
-                aida.histogram1D("BH Selection at Stage4: Bot Track Pz").fill(pz);
-        }
-        if (!hasTop)
-            aida.histogram1D("Passed BH Selection: Missing Track on Top").fill(4);
-        if (!hasBot)
-            aida.histogram1D("Passed BH Selection: Missing Track on Bot").fill(4);
+        if (Math.abs(ClusterUtilities.getSeedHitTime(topClus) - ClusterUtilities.getSeedHitTime(botClus)) > 2.0)
+            return new Pair<List<Track>, Integer>(null, BHstage);
+        BHstage++;
+        aida.histogram1D("Passed BH Selection").fill(BHstage);
 
+        fillBHplots(returnMe, tracks, hasTop, hasBot, BHstage);
         //       if (!doBumpHuntCuts(trk, matchMe, hitToStrips, hitToRotated))
         //           return null;
 
         if (hasTop && !hasBot) {
+            BHstage = 5;
             aida.histogram1D("Passed BH Selection").fill(5);
-            if (evt != null)
-                System.out.printf("event %d \n", evt.getEventNumber());
+            //if (evt != null)
+            //    System.out.printf("event %d \n", evt.getEventNumber());
             //return returnMe;
         } else if (hasBot && !hasTop) {
+            BHstage = 6;
             aida.histogram1D("Passed BH Selection").fill(6);
-            if (evt != null)
-                System.out.printf("event %d \n", evt.getEventNumber());
+            //if (evt != null)
+            //    System.out.printf("event %d \n", evt.getEventNumber());
             //return reutrnMe;
         } else if (hasBot && hasTop) {
+            BHstage = 7;
             aida.histogram1D("Passed BH Selection").fill(5);
             aida.histogram1D("Passed BH Selection").fill(6);
             //return null;
         }
-        return returnMe;
+        return new Pair<List<Track>, Integer>(returnMe, BHstage);
 
     }
 
@@ -1045,11 +1043,17 @@ public class TrackingReconstructionPlots extends Driver {
         if (!isOK)
             return false;
 
-        if ((ClusterUtilities.getSeedHitTime(topClus) - ClusterUtilities.getSeedHitTime(botClus)) > 2.0)
-            return false;
+        //if (Math.abs(ClusterUtilities.getSeedHitTime(topClus) - ClusterUtilities.getSeedHitTime(botClus)) > 2.0)
+        //    return false;
+        double clusDeltaT = (ClusterUtilities.getSeedHitTime(topClus) - ClusterUtilities.getSeedHitTime(botClus));
+        int clusDeltaTbinned = -12;
+        for (int i = -10; i <= 10; i += 2) {
+            if (clusDeltaT > i)
+                clusDeltaTbinned = i;
+        }
 
-        if (totE < 0.2)
-            return false;
+        //if (totE < 0.2)
+        //    return false;
 
         //if (!(totE > 0.8 && totE < 1.2))
         //    return;
@@ -1222,6 +1226,52 @@ public class TrackingReconstructionPlots extends Driver {
             double pt = Math.abs((1 / trk.getTrackStates().get(0).getOmega()) * bfield * 2.99792458e-04);
             double pz = pt * Math.cos(trk.getTrackStates().get(0).getPhi());
 
+            if (clusDeltaTbinned < 10 && clusDeltaTbinned > -10) {
+                if (isTop) {
+                    String temp = String.format("Top Track Pz - T-B Cluster deltaT %dto%d", clusDeltaTbinned, clusDeltaTbinned + 2);
+                    aida.histogram1D(temp).fill(pz);
+                    aida.histogram2D("T-B Cluster deltaT vs Top Track Pz").fill(pz, clusDeltaT);
+                    if (charge == -1) {
+                        temp = String.format("Electron Top Track Pz - T-B Cluster deltaT %dto%d", clusDeltaTbinned, clusDeltaTbinned + 2);
+                        aida.histogram1D(temp).fill(pz);
+                        aida.histogram2D("Electron T-B Cluster deltaT vs Top Track Pz").fill(pz, clusDeltaT);
+                    } else {
+                        temp = String.format("Positron Top Track Pz - T-B Cluster deltaT %dto%d", clusDeltaTbinned, clusDeltaTbinned + 2);
+                        aida.histogram1D(temp).fill(pz);
+                        aida.histogram2D("Positron T-B Cluster deltaT vs Top Track Pz").fill(pz, clusDeltaT);
+                    }
+                    if (clusDeltaTbinned < 2 && clusDeltaTbinned > -2) {
+                        aida.histogram2D("Tight T-B Cluster deltaT vs Top Track Pz").fill(pz, clusDeltaT);
+                        if (charge == -1)
+                            aida.histogram2D("Electron Tight T-B Cluster deltaT vs Top Track Pz").fill(pz, clusDeltaT);
+                        else
+                            aida.histogram2D("Positron Tight T-B Cluster deltaT vs Top Track Pz").fill(pz, clusDeltaT);
+                    }
+                } else {
+                    String temp = String.format("Bot Track Pz - T-B Cluster deltaT %dto%d", clusDeltaTbinned, clusDeltaTbinned + 2);
+                    aida.histogram1D(temp).fill(pz);
+                    if (charge == -1) {
+                        temp = String.format("Electron Top Track Pz - T-B Cluster deltaT %dto%d", clusDeltaTbinned, clusDeltaTbinned + 2);
+                        aida.histogram1D(temp).fill(pz);
+                        aida.histogram2D("Electron T-B Cluster deltaT vs Bot Track Pz").fill(pz, clusDeltaT);
+                    } else {
+                        temp = String.format("Positron Top Track Pz - T-B Cluster deltaT %dto%d", clusDeltaTbinned, clusDeltaTbinned + 2);
+                        aida.histogram1D(temp).fill(pz);
+                        aida.histogram2D("Positron T-B Cluster deltaT vs Bot Track Pz").fill(pz, clusDeltaT);
+                    }
+                    aida.histogram2D("T-B Cluster deltaT vs Bot Track Pz").fill(pz, clusDeltaT);
+                    if (clusDeltaTbinned < 2 && clusDeltaTbinned > -2) {
+                        aida.histogram2D("Tight T-B Cluster deltaT vs Bot Track Pz").fill(pz, clusDeltaT);
+                        if (charge == -1)
+                            aida.histogram2D("Electron Tight T-B Cluster deltaT vs Bot Track Pz").fill(pz, clusDeltaT);
+                        else
+                            aida.histogram2D("Positron Tight T-B Cluster deltaT vs Bot Track Pz").fill(pz, clusDeltaT);
+                    }
+                }
+            }
+
+            if (Math.abs(ClusterUtilities.getSeedHitTime(topClus) - ClusterUtilities.getSeedHitTime(botClus)) > 2.0)
+                continue;
             //            if (isTop) {
             //                if (isEle) {
             //                    aida.histogram1D("Reco Pairs Electrons Top Track Chi2").fill(trk.getChi2());
@@ -1327,6 +1377,9 @@ public class TrackingReconstructionPlots extends Driver {
             }
 
         }
+
+        if (Math.abs(ClusterUtilities.getSeedHitTime(topClus) - ClusterUtilities.getSeedHitTime(botClus)) > 2.0)
+            return false;
 
         for (Track trk : tracks) {
             TrackState tsAtEcal = TrackStateUtils.getTrackStateAtECal(trk);
@@ -1713,11 +1766,14 @@ public class TrackingReconstructionPlots extends Driver {
         return numOldHits;
     }
 
-    private List<Track> doComparisonBH(EventHeader evt, List<Track> tracks, List<Track> extraTracks, List<Cluster> clusters, List<GenericObject> TriggerBank, RelationalTable hitToStrips, RelationalTable hitToRotated) {
+    private Pair<List<Track>, Integer> doComparisonBH(EventHeader evt, List<Track> tracks, List<Track> extraTracks, List<Cluster> clusters, List<GenericObject> TriggerBank, RelationalTable hitToStrips, RelationalTable hitToRotated) {
         // cluster originally missing a track
-        Cluster missingClus = doBumpHuntCuts(evt, tracks, clusters, TriggerBank, hitToStrips, hitToRotated);
+        Pair<Cluster, Integer> tempP = doBumpHuntCuts(evt, tracks, clusters, TriggerBank, hitToStrips, hitToRotated);
+        Cluster missingClus = tempP.getFirstElement();
+        int BHstage = tempP.getSecondElement();
+
         if (missingClus == null)
-            return null;
+            return new Pair<List<Track>, Integer>(null, BHstage);
         boolean missingClusTop = (missingClus.getPosition()[1] > 0);
 
         if (missingClusTop)
@@ -1755,7 +1811,7 @@ public class TrackingReconstructionPlots extends Driver {
                 }
             }
         }
-        return temp1;
+        return new Pair<List<Track>, Integer>(temp1, BHstage);
     }
 
     private void doComparison(List<Track> tracks, List<TrackerHit> hthList, List<Track> extraTracks, List<TrackerHit> extraHits, List<TrackerHit> sthList, List<Cluster> clusters, List<TrackerHit> rotList) {
@@ -2036,7 +2092,13 @@ public class TrackingReconstructionPlots extends Driver {
             aida.histogram1D("Number Tracks/Event").fill(0);
             return;
         }
-        List<Track> tracks = event.get(Track.class, trackCollectionName);
+        List<Track> origTracks = event.get(Track.class, trackCollectionName);
+        List<Track> tracks = new ArrayList<Track>();
+        SimpleAmbiguityResolver sar = new SimpleAmbiguityResolver();
+        sar.initializeFromList(origTracks);
+        sar.setMode(AmbiMode.DUPS);
+        sar.resolve();
+        tracks.addAll(sar.getTracks());
 
         List<GenericObject> tb = null;
         if (event.hasCollection(GenericObject.class, "TriggerBank")) {
@@ -2141,7 +2203,12 @@ public class TrackingReconstructionPlots extends Driver {
         String extraTracksCollection = "GBLTracks-24s";
         List<Track> extraTracks = null;
         if (event.hasCollection(Track.class, extraTracksCollection)) {
-            extraTracks = event.get(Track.class, extraTracksCollection);
+            List<Track> extraTracksOrig = event.get(Track.class, extraTracksCollection);
+            sar.initializeFromList(extraTracksOrig);
+            sar.setMode(AmbiMode.DUPS);
+            sar.resolve();
+            extraTracks = new ArrayList<Track>();
+            extraTracks.addAll(sar.getTracks());
             //            System.out.println("Printing first track set");
             //            for (Track trk : tracks) {
             //                System.out.printf("%s \n", trk.toString());
@@ -2182,27 +2249,17 @@ public class TrackingReconstructionPlots extends Driver {
         if (doElectronPositronPlots)
             doElectronPositron();
 
-        boolean hasDoneBasic = false;
-        if (doReconParticlePlots) {
-            if (doRecoParticles(event, fspList, tracks, clusters, tb)) {
-                doMissingHits(tracks, hthList, stripClusters, clusters, (int) ((event.getTimeStamp() / 4) % 6));
-                if (doComparisonPlots) {
-                    // partials test
-                    //if (!extraTracks.isEmpty())
-                    //    extraTracks.get(0).getTrackerHits().remove(0);
-
-                    doComparison(tracks, hthList, extraTracks, extraHits, stripClusters, clusters, rotHits);
-                    hasDoneBasic = true;
-                }
-            }
-        }
-
+        int BHstage = -1;
         if (doBumpHuntPlots) {
             List<Track> newTrks = null;
-            if (doComparisonPlots)
-                newTrks = doComparisonBH(event, tracks, extraTracks, clusters, tb, hitToStripsTable, hitToRotatedTable);
-            else
-                newTrks = doBumpHuntCuts2(event, tracks, clusters, tb, hitToStripsTable, hitToRotatedTable);
+            Pair<List<Track>, Integer> temp = null;
+            if (doComparisonPlots) {
+                temp = doComparisonBH(event, tracks, extraTracks, clusters, tb, hitToStripsTable, hitToRotatedTable);
+            } else {
+                temp = doBumpHuntCuts2(event, tracks, clusters, tb, hitToStripsTable, hitToRotatedTable);
+            }
+            newTrks = temp.getFirstElement();
+            BHstage = temp.getSecondElement();
             hasDoneBasic = true;
 
             if (newTrks != null) {
@@ -2216,6 +2273,29 @@ public class TrackingReconstructionPlots extends Driver {
             //                doBasicTracks(newTrks);
             //                hasDoneBasic = true;
             //            }
+        }
+
+        if (doReconParticlePlots) {
+            if (!doBumpHuntPlots) {
+                if (doRecoParticles(event, fspList, tracks, clusters, tb)) {
+                    doMissingHits(tracks, hthList, stripClusters, clusters, (int) ((event.getTimeStamp() / 4) % 6), BHstage);
+                    if (doComparisonPlots) {
+                        // partials test
+                        //if (!extraTracks.isEmpty())
+                        //    extraTracks.get(0).getTrackerHits().remove(0);
+
+                        doComparison(tracks, hthList, extraTracks, extraHits, stripClusters, clusters, rotHits);
+                        hasDoneBasic = true;
+                    }
+                }
+            } else {
+                doRecoParticles(event, fspList, tracks, clusters, tb);
+                doMissingHits(tracks, hthList, stripClusters, clusters, (int) ((event.getTimeStamp() / 4) % 6), BHstage);
+                if (doComparisonPlots) {
+                    doComparison(tracks, hthList, extraTracks, extraHits, stripClusters, clusters, rotHits);
+                    hasDoneBasic = true;
+                }
+            }
         }
 
         if (!hasDoneBasic)
@@ -2557,6 +2637,51 @@ public class TrackingReconstructionPlots extends Driver {
             aida.histogram1D("BH Selection at Stage4: Top MatchedTrack Pz", 100, 0, 1.5);
             aida.histogram1D("BH Selection at Stage4: Bot Track Pz", 100, 0, 1.5);
             aida.histogram1D("BH Selection at Stage4: Bot MatchedTrack Pz", 100, 0, 1.5);
+
+            aida.histogram1D("Electron BH Selection at Stage2: Top Track Pz", 100, 0, 1.5);
+            aida.histogram1D("Electron BH Selection at Stage2: Top MatchedTrack Pz", 100, 0, 1.5);
+            aida.histogram1D("Electron BH Selection at Stage2: Bot Track Pz", 100, 0, 1.5);
+            aida.histogram1D("Electron BH Selection at Stage2: Bot MatchedTrack Pz", 100, 0, 1.5);
+
+            aida.histogram1D("Electron BH Selection at Stage3: Top Track Pz", 100, 0, 1.5);
+            aida.histogram1D("Electron BH Selection at Stage3: Top MatchedTrack Pz", 100, 0, 1.5);
+            aida.histogram1D("Electron BH Selection at Stage3: Bot Track Pz", 100, 0, 1.5);
+            aida.histogram1D("Electron BH Selection at Stage3: Bot MatchedTrack Pz", 100, 0, 1.5);
+
+            aida.histogram1D("Electron BH Selection at Stage4: Top Track Pz", 100, 0, 1.5);
+            aida.histogram1D("Electron BH Selection at Stage4: Top MatchedTrack Pz", 100, 0, 1.5);
+            aida.histogram1D("Electron BH Selection at Stage4: Bot Track Pz", 100, 0, 1.5);
+            aida.histogram1D("Electron BH Selection at Stage4: Bot MatchedTrack Pz", 100, 0, 1.5);
+
+            aida.histogram1D("Positron BH Selection at Stage2: Top Track Pz", 100, 0, 1.5);
+            aida.histogram1D("Positron BH Selection at Stage2: Top MatchedTrack Pz", 100, 0, 1.5);
+            aida.histogram1D("Positron BH Selection at Stage2: Bot Track Pz", 100, 0, 1.5);
+            aida.histogram1D("Positron BH Selection at Stage2: Bot MatchedTrack Pz", 100, 0, 1.5);
+
+            aida.histogram1D("Positron BH Selection at Stage3: Top Track Pz", 100, 0, 1.5);
+            aida.histogram1D("Positron BH Selection at Stage3: Top MatchedTrack Pz", 100, 0, 1.5);
+            aida.histogram1D("Positron BH Selection at Stage3: Bot Track Pz", 100, 0, 1.5);
+            aida.histogram1D("Positron BH Selection at Stage3: Bot MatchedTrack Pz", 100, 0, 1.5);
+
+            aida.histogram1D("Positron BH Selection at Stage4: Top Track Pz", 100, 0, 1.5);
+            aida.histogram1D("Positron BH Selection at Stage4: Top MatchedTrack Pz", 100, 0, 1.5);
+            aida.histogram1D("Positron BH Selection at Stage4: Bot Track Pz", 100, 0, 1.5);
+            aida.histogram1D("Positron BH Selection at Stage4: Bot MatchedTrack Pz", 100, 0, 1.5);
+
+            aida.histogram1D("BH Selection at Stage2: Top Track tanl", 100, 0, 0.1);
+            aida.histogram1D("BH Selection at Stage2: Top MatchedTrack tanl", 100, 0, 0.1);
+            aida.histogram1D("BH Selection at Stage2: Bot Track tanl", 100, 0, 0.1);
+            aida.histogram1D("BH Selection at Stage2: Bot MatchedTrack tanl", 100, 0, 0.1);
+
+            aida.histogram1D("BH Selection at Stage3: Top Track tanl", 100, 0, 0.1);
+            aida.histogram1D("BH Selection at Stage3: Top MatchedTrack tanl", 100, 0, 0.1);
+            aida.histogram1D("BH Selection at Stage3: Bot Track tanl", 100, 0, 0.1);
+            aida.histogram1D("BH Selection at Stage3: Bot MatchedTrack tanl", 100, 0, 0.1);
+
+            aida.histogram1D("BH Selection at Stage4: Top Track tanl", 100, 0, 0.1);
+            aida.histogram1D("BH Selection at Stage4: Top MatchedTrack tanl", 100, 0, 0.1);
+            aida.histogram1D("BH Selection at Stage4: Bot Track tanl", 100, 0, 0.1);
+            aida.histogram1D("BH Selection at Stage4: Bot MatchedTrack tanl", 100, 0, 0.1);
         }
 
         if (doReconParticlePlots) {
@@ -2628,6 +2753,42 @@ public class TrackingReconstructionPlots extends Driver {
                 temp = String.format("Times of Bottom 2D-Hits in Events with No Bottom Track - Trigger Phase %d", i);
                 aida.histogram1D(temp, 100, -100, 100);
             }
+            for (int i = -10; i <= 8; i += 2) {
+                String temp = String.format("Times of Top 2D-Hits in Events with No Top Track - T-B Cluster deltaT %dto%d", i, i + 2);
+                aida.histogram1D(temp, 100, -100, 100);
+                temp = String.format("Times of Bottom 2D-Hits in Events with No Bottom Track - T-B Cluster deltaT %dto%d", i, i + 2);
+                aida.histogram1D(temp, 100, -100, 100);
+                temp = String.format("Top Track Pz - T-B Cluster deltaT %dto%d", i, i + 2);
+                aida.histogram1D(temp, 100, 0, 1.5);
+                temp = String.format("Bot Track Pz - T-B Cluster deltaT %dto%d", i, i + 2);
+                aida.histogram1D(temp, 100, 0, 1.5);
+                temp = String.format("Electron Top Track Pz - T-B Cluster deltaT %dto%d", i, i + 2);
+                aida.histogram1D(temp, 100, 0, 1.5);
+                temp = String.format("Electron Bot Track Pz - T-B Cluster deltaT %dto%d", i, i + 2);
+                aida.histogram1D(temp, 100, 0, 1.5);
+                temp = String.format("Positron Track Pz - T-B Cluster deltaT %dto%d", i, i + 2);
+                aida.histogram1D(temp, 100, 0, 1.5);
+                temp = String.format("Positron Track Pz - T-B Cluster deltaT %dto%d", i, i + 2);
+                aida.histogram1D(temp, 100, 0, 1.5);
+            }
+            for (int bh = 0; bh <= 4; bh++) {
+                String temp = String.format("Times of Bottom 2D-Hits in Events with No Bottom Track - BH stage%d", bh);
+                aida.histogram1D(temp, 100, -100, 100);
+                temp = String.format("Times of Top 2D-Hits in Events with No Top Track - BH stage%d", bh);
+                aida.histogram1D(temp, 100, -100, 100);
+            }
+            aida.histogram2D("T-B Cluster deltaT vs Bot Track Pz", 100, 0, 1.5, 400, -10, 10);
+            aida.histogram2D("T-B Cluster deltaT vs Top Track Pz", 100, 0, 1.5, 400, -10, 10);
+            aida.histogram2D("Tight T-B Cluster deltaT vs Bot Track Pz", 100, 0, 1.5, 400, -2, 2);
+            aida.histogram2D("Tight T-B Cluster deltaT vs Top Track Pz", 100, 0, 1.5, 400, -2, 2);
+            aida.histogram2D("Electron T-B Cluster deltaT vs Bot Track Pz", 100, 0, 1.5, 400, -10, 10);
+            aida.histogram2D("Electron T-B Cluster deltaT vs Top Track Pz", 100, 0, 1.5, 400, -10, 10);
+            aida.histogram2D("Electron Tight T-B Cluster deltaT vs Bot Track Pz", 100, 0, 1.5, 400, -2, 2);
+            aida.histogram2D("Electron Tight T-B Cluster deltaT vs Top Track Pz", 100, 0, 1.5, 400, -2, 2);
+            aida.histogram2D("Positron T-B Cluster deltaT vs Bot Track Pz", 100, 0, 1.5, 400, -10, 10);
+            aida.histogram2D("Positron T-B Cluster deltaT vs Top Track Pz", 100, 0, 1.5, 400, -10, 10);
+            aida.histogram2D("Positron Tight T-B Cluster deltaT vs Bot Track Pz", 100, 0, 1.5, 400, -2, 2);
+            aida.histogram2D("Positron Tight T-B Cluster deltaT vs Top Track Pz", 100, 0, 1.5, 400, -2, 2);
 
             IHistogram2D clusE_2D_both = aida.histogram2D("Top vs Bottom ClusE with tracks in both", 25, 0, 0.75, 25, 0, 0.75);
             IHistogram2D clusE_2D_top = aida.histogram2D("Top vs Bottom ClusE with track in top", 25, 0, 0.75, 25, 0, 0.75);

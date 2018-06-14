@@ -4,9 +4,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.lcsim.event.Track;
 import org.lcsim.event.TrackerHit;
@@ -33,7 +34,7 @@ public abstract class AmbiguityResolver {
     List<Track> wereCleaned;
     List<Track> poorScore;
 
-    protected Map<List<TrackerHit>, List<Track>> hitsToTracksMap;
+    protected Map<Set<TrackerHit>, List<Track>> hitsToTracksMap;
     protected Map<Track, List<Track>> sharedTracksMap;
     protected Map<Track, double[]> trackScoreMap;
 
@@ -50,7 +51,7 @@ public abstract class AmbiguityResolver {
         this.wereCleaned = new ArrayList<Track>();
         this.poorScore = new ArrayList<Track>();
 
-        hitsToTracksMap = new LinkedHashMap<List<TrackerHit>, List<Track>>();
+        hitsToTracksMap = new HashMap<Set<TrackerHit>, List<Track>>();
         sharedTracksMap = new HashMap<Track, List<Track>>();
         trackScoreMap = new HashMap<Track, double[]>();
     }
@@ -223,7 +224,7 @@ public abstract class AmbiguityResolver {
          */
         protected void makeTrackHitMaps(List<Track> tracklist) {
             for (Track trk : tracklist) {
-                List<TrackerHit> trackHits = trk.getTrackerHits();
+                Set<TrackerHit> trackHits = new HashSet<TrackerHit>(trk.getTrackerHits());
                 List<Track> matchingTracks = hitsToTracksMap.get(trackHits);
                 if (matchingTracks == null) {
                     matchingTracks = new ArrayList<Track>();
@@ -315,8 +316,8 @@ public abstract class AmbiguityResolver {
          */
         protected void RemoveDuplicates() {
             List<Track> temp = new ArrayList<Track>();
-            for (Map.Entry<List<TrackerHit>, List<Track>> mapEntry : hitsToTracksMap.entrySet()) {
-                List<Track> matchingTracks = mapEntry.getValue();
+            for (Set<TrackerHit> mapEntry : hitsToTracksMap.keySet()) {
+                List<Track> matchingTracks = hitsToTracksMap.get(mapEntry);
                 if (matchingTracks.isEmpty())
                     continue;
 
