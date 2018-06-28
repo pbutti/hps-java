@@ -38,7 +38,7 @@ import org.lcsim.event.RawTrackerHit;
 import org.lcsim.event.ReconstructedParticle;
 import org.lcsim.event.RelationalTable;
 import org.lcsim.event.Track;
-import org.lcsim.event.TrackState;
+//import org.lcsim.event.TrackState;
 import org.lcsim.event.TrackerHit;
 import org.lcsim.geometry.Detector;
 import org.lcsim.geometry.IDDecoder;
@@ -69,7 +69,7 @@ public class TrackingReconstructionPlots extends Driver {
     //private boolean doMatchedClusterPlots = false;
     private boolean doElectronPositronPlots = false;
     private boolean doStripHitPlots = false;
-    private boolean doReconParticlePlots = false;
+    private boolean doReconParticlePlots = true;
     private boolean doOccupancyPlots = false;
     private boolean doComparisonPlots = false;
     private boolean doBumpHuntPlots = false;
@@ -1011,112 +1011,53 @@ public class TrackingReconstructionPlots extends Driver {
 
     private boolean doRecoParticles(EventHeader event, List<ReconstructedParticle> fspList, List<Track> tracks, List<Cluster> clusterList, List<GenericObject> TriggerBank) {
 
-        //boolean hasClusters = true;
-        //        boolean passesEsum = false;
-        boolean highEclusTop = false;
-        boolean highEclusBot = false;
-        boolean lowEclusBot = false;
-        boolean lowEclusTop = false;
-        List<SSPCluster> sspClusters = null;
-        boolean isOK = false;
-        boolean hasTop = false;
-        boolean hasBot = false;
-        boolean isMatched = false;
-        Cluster topClus = null;
-        Cluster botClus = null;
-        double totE = 0;
-        double trigE = 0;
-        //
-        if (clusterList != null) {
-            for (Cluster clus : clusterList) {
-                totE += clus.getEnergy();
-                if (clus.getPosition()[1] > 0) {
-                    if (clus.getEnergy() > 0.15)
-                        highEclusTop = true;
-                    else
-                        lowEclusTop = true;
-                    hasTop = true;
-                    topClus = clus;
-                } else {
-                    if (clus.getEnergy() > 0.15)
-                        highEclusBot = true;
-                    else
-                        lowEclusBot = true;
-                    hasBot = true;
-                    botClus = clus;
+        List<ReconstructedParticle> eleList = new ArrayList<ReconstructedParticle>();
+        List<ReconstructedParticle> posList = new ArrayList<ReconstructedParticle>();
+        for (ReconstructedParticle fsp : fspList) {
+            if (fsp.getTracks().isEmpty())
+                continue;
+            if (fsp.getCharge() < 0)
+                eleList.add(fsp);
+            else if (fsp.getCharge() > 0)
+                posList.add(fsp);
+        }
+        boolean isOpposite = false;
+        Track eleTrk = null;
+        Track posTrk = null;
+        for (ReconstructedParticle ele : eleList) {
+            if (isOpposite)
+                break;
+            eleTrk = ele.getTracks().get(0);
+            for (ReconstructedParticle pos : posList) {
+                posTrk = pos.getTracks().get(0);
+                if (eleTrk.getTrackStates().get(0).getTanLambda() * posTrk.getTrackStates().get(0).getTanLambda() < 0) {
+                    isOpposite = true;
+                    break;
                 }
             }
-            isOK = (hasTop && hasBot);
-
         }
 
-        if (!isOK)
+        if (!isOpposite)
             return false;
 
-        //if (Math.abs(ClusterUtilities.getSeedHitTime(topClus) - ClusterUtilities.getSeedHitTime(botClus)) > 2.0)
-        //    return false;
-        double clusDeltaT = (ClusterUtilities.getSeedHitTime(topClus) - ClusterUtilities.getSeedHitTime(botClus));
-        int clusDeltaTbinned = -12;
-        for (int i = -10; i <= 10; i += 2) {
-            if (clusDeltaT > i)
-                clusDeltaTbinned = i;
+        double pt = Math.abs((1.0 / eleTrk.getTrackStates().get(0).getOmega()) * bfield * 2.99792458e-04);
+        double pz = pt * Math.cos(eleTrk.getTrackStates().get(0).getPhi());
+        if (eleTrk.getTrackStates().get(0).getTanLambda() > 0) {
+            aida.histogram1D("Reco Pairs Electrons Top Track Pz").fill(pz);
+        } else {
+            aida.histogram1D("Reco Pairs Electrons Bottom Track Pz").fill(pz);
         }
 
-        //if (totE < 0.2)
-        //    return false;
+        pt = Math.abs((1.0 / posTrk.getTrackStates().get(0).getOmega()) * bfield * 2.99792458e-04);
+        pz = pt * Math.cos(posTrk.getTrackStates().get(0).getPhi());
+        if (posTrk.getTrackStates().get(0).getTanLambda() > 0) {
+            aida.histogram1D("Reco Pairs Positrons Top Track Pz").fill(pz);
+        } else {
+            aida.histogram1D("Reco Pairs Positrons Bottom Track Pz").fill(pz);
+        }
 
-        //if (!(totE > 0.8 && totE < 1.2))
-        //    return;
-
-        //if (fspList.isEmpty())
-        //    return;
-
-        //        ReconstructedParticle mostEnergeticEle = null;
-        //        ReconstructedParticle mostEnergeticPos = null;
-        //        for (ReconstructedParticle fsp : fspList) {
-        //            if (fsp.getCharge() < 0) {
-        //                if (mostEnergeticEle == null)
-        //                    mostEnergeticEle = fsp;
-        //                else if (fsp.getEnergy() > mostEnergeticEle.getEnergy())
-        //                    mostEnergeticEle = fsp;
-        //            } else if (fsp.getCharge() > 0) {
-        //                if (mostEnergeticPos == null)
-        //                    mostEnergeticPos = fsp;
-        //                else if (fsp.getEnergy() > mostEnergeticPos.getEnergy())
-        //                    mostEnergeticPos = fsp;
-        //            }
-        //        }
-        //        if (mostEnergeticPos != null && mostEnergeticEle != null) {
-        //            Hep3Vector temp = VecOp.add(mostEnergeticPos.getMomentum(), mostEnergeticEle.getMomentum());
-        //            if (temp.magnitude() > 0.8)
-        //                passesEsum = true;
-        //        }
-
-        //        double fsppt = 0;
-        //        double fsppz = 0;
-        //        if (mostEnergeticFsp != null) {
-        //            fsppt = Math.abs((1.0 / mostEnergeticFsp.getTracks().get(0).getTrackStates().get(0).getOmega()) * bfield * 2.99792458e-04);
-        //            fsppz = fsppt * Math.cos(mostEnergeticFsp.getTracks().get(0).getTrackStates().get(0).getPhi());
-        //            fsppz *= mostEnergeticFsp.getCharge();
-        //        }
-
-        //        for (ReconstructedParticle fsp : fspList) {
-        //            if (fsp.getTracks().isEmpty())
-        //                continue;
         //
-        //            Track trk = fsp.getTracks().get(0);
-        //            boolean isEle = false;
-        //            boolean isPos = false;
-        //            boolean isTop = false;
-        //            if (fsp.getCharge() < 0)
-        //                isEle = true;
-        //            else if (fsp.getCharge() > 0)
-        //                isPos = true;
-        //            if (trk.getTrackerHits().get(0).getPosition()[2] > 0)
-        //                isTop = true;
-        //
-        //            double pt = Math.abs((1.0 / trk.getTrackStates().get(0).getOmega()) * bfield * 2.99792458e-04);
-        //            double pz = pt * Math.cos(trk.getTrackStates().get(0).getPhi());
+
         //
         //            if (isTop) {
         //                aida.histogram1D("Reco Particles Top Track Chi2").fill(trk.getChi2());
@@ -1138,457 +1079,6 @@ public class TrackingReconstructionPlots extends Driver {
         //                continue;
         //        }
 
-        //            boolean isSingles = false;
-        //            boolean isSingles0 = false;
-        //            boolean isSingles1 = false;
-        //            boolean isPairs = false;
-        for (GenericObject gob : TriggerBank) {
-            //                if (AbstractIntData.getTag(gob) == TIData.BANK_TAG) {
-            //
-            //                    TIData tid = new TIData(gob);
-            //                    if (tid.isSingle0Trigger()) {
-            //                        isSingles = true;
-            //                        isSingles0 = true;
-            //
-            //                    }
-            //                    if (tid.isSingle1Trigger()) {
-            //                        isSingles = true;
-            //                        isSingles1 = true;
-            //
-            //                    }
-            //                    if (tid.isPair0Trigger() || tid.isPair1Trigger()) {
-            //                        isPairs = true;
-            //
-            //                    }
-            //                }
-            if (AbstractIntData.getTag(gob) == SSPData.BANK_TAG) {
-                SSPData sspBank = new SSPData(gob);
-                sspClusters = sspBank.getClusters();
-            }
-        }
-
-        //            if (sspClusters != null) {
-        //                double totE = 0;
-        //                for (SSPCluster clus : sspClusters) {
-        //                    totE += clus.getEnergy();
-        //                    if (clus.getYIndex() < 0) {
-        //                        if (clus.getEnergy() < 0.1)
-        //                            lowEclusBot = true;
-        //                        else if (clus.getEnergy() > 0.15)
-        //                            highEclusBot = true;
-        //                    }
-        //                                        if (clus.getEnergy() > 0.5) {
-        //                                            if (clus.getYIndex() > 0)
-        //                                                highEclusTop = true;
-        //                                            else
-        //                                                highEclusBot = true;
-        //                                        }
-        //                }
-        //                if (totE > 0.8)
-        //                    passesEsum = true;
-        //            }
-
-        //            List<Cluster> matchedClusters = fsp.getClusters();
-
-        if (!clusterList.isEmpty() && sspClusters != null && !sspClusters.isEmpty()) {
-            isMatched = true;
-            for (SSPCluster sspclus : sspClusters) {
-                boolean m = false;
-                for (Cluster matchedCluster : clusterList) {
-                    if (isMatchedCluster(matchedCluster, sspclus)) {
-                        m = true;
-                        break;
-                    }
-                }
-                if (m == false) {
-                    isMatched = false;
-                    //break;
-                }
-                trigE += sspclus.getEnergy();
-            }
-            //                    if (matchedCluster.getEnergy() > 0.06 && isSingles0) {
-            //                        isMatched = true;
-            //                        break;
-            //                    }
-            //                    if (matchedCluster.getEnergy() > 0.4 && isSingles1) {
-            //                        isMatched = true;
-            //                        break;
-            //                    }
-            //                    if (matchedCluster.getEnergy() > 0.054 && isPairs) {
-            //                        isMatched = true;
-            //                        break;
-            //                    }
-
-        }
-
-        if (!isMatched)
-            return false;
-
-        int nTracksTop = 0;
-        int nTracksBot = 0;
-        for (Track trk : tracks) {
-            boolean isTop = trk.getTrackerHits().get(0).getPosition()[2] > 0;
-            int charge = -(int) Math.signum(TrackUtils.getR(trk.getTrackStates().get(0)));
-            if (isTop)
-                nTracksTop++;
-            else
-                nTracksBot++;
-            double pt = Math.abs((1 / trk.getTrackStates().get(0).getOmega()) * bfield * 2.99792458e-04);
-            double pz = pt * Math.cos(trk.getTrackStates().get(0).getPhi());
-
-            if (clusDeltaTbinned < 10 && clusDeltaTbinned > -10) {
-                if (isTop) {
-                    String temp = String.format("Top Track Pz - T-B Cluster deltaT %dto%d", clusDeltaTbinned, clusDeltaTbinned + 2);
-                    aida.histogram1D(temp).fill(pz);
-                    aida.histogram2D("T-B Cluster deltaT vs Top Track Pz").fill(pz, clusDeltaT);
-                    if (charge == -1) {
-                        temp = String.format("Electron Top Track Pz - T-B Cluster deltaT %dto%d", clusDeltaTbinned, clusDeltaTbinned + 2);
-                        aida.histogram1D(temp).fill(pz);
-                        aida.histogram2D("Electron T-B Cluster deltaT vs Top Track Pz").fill(pz, clusDeltaT);
-                    } else {
-                        temp = String.format("Positron Top Track Pz - T-B Cluster deltaT %dto%d", clusDeltaTbinned, clusDeltaTbinned + 2);
-                        aida.histogram1D(temp).fill(pz);
-                        aida.histogram2D("Positron T-B Cluster deltaT vs Top Track Pz").fill(pz, clusDeltaT);
-                    }
-                    if (clusDeltaT < 2 && clusDeltaT > -2) {
-                        aida.histogram2D("Tight T-B Cluster deltaT vs Top Track Pz").fill(pz, clusDeltaT);
-                        if (charge == -1)
-                            aida.histogram2D("Electron Tight T-B Cluster deltaT vs Top Track Pz").fill(pz, clusDeltaT);
-                        else
-                            aida.histogram2D("Positron Tight T-B Cluster deltaT vs Top Track Pz").fill(pz, clusDeltaT);
-                    }
-                } else {
-                    String temp = String.format("Bot Track Pz - T-B Cluster deltaT %dto%d", clusDeltaTbinned, clusDeltaTbinned + 2);
-                    aida.histogram1D(temp).fill(pz);
-                    if (charge == -1) {
-                        temp = String.format("Electron Bot Track Pz - T-B Cluster deltaT %dto%d", clusDeltaTbinned, clusDeltaTbinned + 2);
-                        aida.histogram1D(temp).fill(pz);
-                        aida.histogram2D("Electron T-B Cluster deltaT vs Bot Track Pz").fill(pz, clusDeltaT);
-                    } else {
-                        temp = String.format("Positron Bot Track Pz - T-B Cluster deltaT %dto%d", clusDeltaTbinned, clusDeltaTbinned + 2);
-                        aida.histogram1D(temp).fill(pz);
-                        aida.histogram2D("Positron T-B Cluster deltaT vs Bot Track Pz").fill(pz, clusDeltaT);
-                    }
-                    aida.histogram2D("T-B Cluster deltaT vs Bot Track Pz").fill(pz, clusDeltaT);
-                    if (clusDeltaT < 2 && clusDeltaT > -2) {
-                        aida.histogram2D("Tight T-B Cluster deltaT vs Bot Track Pz").fill(pz, clusDeltaT);
-                        if (charge == -1)
-                            aida.histogram2D("Electron Tight T-B Cluster deltaT vs Bot Track Pz").fill(pz, clusDeltaT);
-                        else
-                            aida.histogram2D("Positron Tight T-B Cluster deltaT vs Bot Track Pz").fill(pz, clusDeltaT);
-                    }
-                }
-            }
-
-            if (Math.abs(ClusterUtilities.getSeedHitTime(topClus) - ClusterUtilities.getSeedHitTime(botClus)) > 2.0)
-                continue;
-            //            if (isTop) {
-            //                if (isEle) {
-            //                    aida.histogram1D("Reco Pairs Electrons Top Track Chi2").fill(trk.getChi2());
-            //                    aida.histogram1D("Reco Pairs Electrons Top Track Pz").fill(pz);
-            //                } else if (isPos) {
-            //                    aida.histogram1D("Reco Pairs Positrons Top Track Chi2").fill(trk.getChi2());
-            //                    aida.histogram1D("Reco Pairs Positrons Top Track Pz").fill(pz);
-            //                }
-
-            //                    if (isPos) {
-            //                        aida.histogram1D("Reco Pairs Positrons Top Track Chi2").fill(trk.getChi2());
-            //                    } else if (isEle) {
-            //                        aida.histogram1D("Reco Pairs Electrons Top Track Chi2").fill(trk.getChi2());
-            //                    }
-            //if (isMatched)
-            //    aida.histogram1D("Reco MatchedPairs Particles Top Track Pz").fill(pz);
-            //                    if (highEclusTop) {
-            //                        aida.histogram1D("Reco Particles Top Track Pz HighEclusTopEvent").fill(pz);
-            //                        if (tracks.size() == 1)
-            //                            aida.histogram1D("Reco Particles Top Track Pz HighEclusTopEvent Tracks=1").fill(pz);
-            //                        else if (tracks.size() == 2)
-            //                            aida.histogram1D("Reco Particles Top Track Pz HighEclusTopEvent Tracks=2").fill(pz);
-            //                        else if (tracks.size() >= 3)
-            //                            aida.histogram1D("Reco Particles Top Track Pz HighEclusTopEvent minTracks=3").fill(pz);
-            //                    }
-            //                    if (lowEclusBot && !highEclusBot) {
-            //                        aida.histogram1D("Reco Particles Top Track Pz LowEclusBotEvent").fill(pz);
-            //                        if (tracks.size() == 1)
-            //                            aida.histogram1D("Reco Particles Top Track Pz LowEclusBotEvent Tracks=1").fill(pz);
-            //                        else if (tracks.size() == 2)
-            //                            aida.histogram1D("Reco Particles Top Track Pz LowEclusBotEvent Tracks=2").fill(pz);
-            //                        else if (tracks.size() >= 3)
-            //                            aida.histogram1D("Reco Particles Top Track Pz LowEclusBotEvent minTracks=3").fill(pz);
-            //                    }
-            //                    if (highEclusBot) {
-            //                        aida.histogram1D("Reco Particles Top Track Pz HighEclusBotEvent").fill(pz);
-            //                        if (tracks.size() == 1)
-            //                            aida.histogram1D("Reco Particles Top Track Pz HighEclusBotEvent Tracks=1").fill(pz);
-            //                        else if (tracks.size() == 2)
-            //                            aida.histogram1D("Reco Particles Top Track Pz HighEclusBotEvent Tracks=2").fill(pz);
-            //                        else if (tracks.size() >= 3)
-            //                            aida.histogram1D("Reco Particles Top Track Pz HighEclusBotEvent minTracks=3").fill(pz);
-            //                    }
-            //if (passesEsum)
-            //  aida.histogram1D("Reco Particles Top Track Pz HighEsumEvent").fill(pz);
-            //            } else {
-            //                if (isEle) {
-            //                    aida.histogram1D("Reco Pairs Electrons Bottom Track Chi2").fill(trk.getChi2());
-            //                    aida.histogram1D("Reco Pairs Electrons Bottom Track Pz").fill(pz);
-            //                } else if (isPos) {
-            //                    aida.histogram1D("Reco Pairs Positrons Bottom Track Chi2").fill(trk.getChi2());
-            //                    aida.histogram1D("Reco Pairs Positrons Bottom Track Pz").fill(pz);
-            //                }
-            //            }
-
-            if (highEclusBot) {
-                if (isTop) {
-                    aida.histogram1D("Reco Top Track Pz HighEclusBotEvent").fill(pz);
-                    aida.histogram1D("Reco Top Track Chi2 HighEclusBotEvent").fill(trk.getChi2());
-                } else {
-                    aida.histogram1D("Reco Bottom Track Pz HighEclusBotEvent").fill(pz);
-                    aida.histogram1D("Reco Bottom Track Chi2 HighEclusBotEvent").fill(trk.getChi2());
-                }
-            }
-            if (highEclusTop) {
-                if (isTop) {
-                    aida.histogram1D("Reco Top Track Pz HighEclusTopEvent").fill(pz);
-                    aida.histogram1D("Reco Top Track Chi2 HighEclusTopEvent").fill(trk.getChi2());
-                } else {
-                    aida.histogram1D("Reco Bottom Track Chi2 HighEclusTopEvent").fill(trk.getChi2());
-                    aida.histogram1D("Reco Bottom Track Pz HighEclusTopEvent").fill(pz);
-                }
-            }
-            if (lowEclusTop) {
-                if (isTop) {
-                    aida.histogram1D("Reco Top Track Pz LowEclusTopEvent").fill(pz);
-                    aida.histogram1D("Reco Top Track Chi2 LowEclusTopEvent").fill(trk.getChi2());
-                } else {
-                    aida.histogram1D("Reco Bottom Track Chi2 LowEclusTopEvent").fill(trk.getChi2());
-                    aida.histogram1D("Reco Bottom Track Pz LowEclusTopEvent").fill(pz);
-                }
-            }
-            if (lowEclusBot) {
-                if (isTop) {
-                    aida.histogram1D("Reco Top Track Pz LowEclusBotEvent").fill(pz);
-                    aida.histogram1D("Reco Top Track Chi2 LowEclusBotEvent").fill(trk.getChi2());
-                } else {
-                    aida.histogram1D("Reco Bottom Track Chi2 LowEclusBotEvent").fill(trk.getChi2());
-                    aida.histogram1D("Reco Bottom Track Pz LowEclusBotEvent").fill(pz);
-                }
-            }
-
-            if (isTop) {
-                if (charge == -1)
-                    aida.histogram1D("Reco Pairs Electrons Top Track Pz").fill(pz);
-                else if (charge == 1)
-                    aida.histogram1D("Reco Pairs Positrons Top Track Pz").fill(pz);
-            } else {
-                if (charge == -1)
-                    aida.histogram1D("Reco Pairs Electrons Bottom Track Pz").fill(pz);
-                else if (charge == 1)
-                    aida.histogram1D("Reco Pairs Positrons Bottom Track Pz").fill(pz);
-            }
-
-        }
-
-        if (Math.abs(ClusterUtilities.getSeedHitTime(topClus) - ClusterUtilities.getSeedHitTime(botClus)) > 2.0)
-            return false;
-
-        for (Track trk : tracks) {
-            TrackState tsAtEcal = TrackStateUtils.getTrackStateAtECal(trk);
-            Hep3Vector atEcal = null;
-            if (tsAtEcal == null)
-                continue;
-            atEcal = new BasicHep3Vector(tsAtEcal.getReferencePoint());
-            atEcal = CoordinateTransformations.transformVectorToDetector(atEcal);
-            if (totE > 0.7) {
-                if (nTracksTop > 0 && nTracksBot == 0)
-                    aida.histogram2D("HighEsum TopTrack ECal Extrap Position").fill(atEcal.x(), atEcal.y());
-                else if (nTracksTop == 0 && nTracksBot > 0)
-                    aida.histogram2D("HighEsum BottomTrack ECal Extrap Position").fill(atEcal.x(), atEcal.y());
-            } else if (totE < 0.55) {
-                double pt = Math.abs((1 / trk.getTrackStates().get(0).getOmega()) * bfield * 2.99792458e-04);
-                double pz = pt * Math.cos(trk.getTrackStates().get(0).getPhi());
-                if (nTracksTop > 0 && nTracksBot == 0) {
-                    aida.histogram2D("LowEsum TopTrack ECal Extrap Position").fill(atEcal.x(), atEcal.y());
-                    aida.histogram2D("LowEsum TopTrack ClusterE vs TrackPz").fill(pz, topClus.getEnergy());
-                } else if (nTracksTop == 0 && nTracksBot > 0) {
-                    aida.histogram2D("LowEsum BottomTrack ECal Extrap Position").fill(atEcal.x(), atEcal.y());
-                    aida.histogram2D("LowEsum BottomTrack ClusterE vs TrackPz").fill(pz, botClus.getEnergy());
-                }
-            }
-        }
-
-        if (nTracksTop > 0) {
-            if (nTracksBot > 0) {
-                aida.histogram2D("Top vs Bottom ClusE with tracks in both").fill(topClus.getEnergy(), botClus.getEnergy());
-                aida.histogram1D("Reco ESum with tracks in both").fill(totE);
-                aida.histogram1D("Trigger ESum with tracks in both").fill(trigE);
-            } else {
-                aida.histogram2D("Top vs Bottom ClusE with track in top").fill(topClus.getEnergy(), botClus.getEnergy());
-                aida.histogram1D("Reco ESum with track in top").fill(totE);
-                aida.histogram1D("Trigger ESum with track in top").fill(trigE);
-            }
-        } else {
-            if (nTracksBot > 0) {
-                aida.histogram2D("Top vs Bottom ClusE with track in bottom").fill(topClus.getEnergy(), botClus.getEnergy());
-                aida.histogram1D("Reco ESum with track in bottom").fill(totE);
-                aida.histogram1D("Trigger ESum with track in bottom").fill(trigE);
-            } else {
-                aida.histogram2D("Top vs Bottom ClusE with no tracks").fill(topClus.getEnergy(), botClus.getEnergy());
-                aida.histogram1D("Reco ESum with no tracks").fill(totE);
-                aida.histogram1D("Trigger ESum with no tracks").fill(trigE);
-            }
-        }
-
-        //doECalClusters(clusterList, totE > 0.7, totE < 0.55, nTracksTop > 0, nTracksBot > 0);
-
-        //                    if (isPos) {
-        //                        aida.histogram1D("Reco Pairs Positrons Bottom Track Chi2").fill(trk.getChi2());
-        //                    } else if (isEle) {
-        //                        aida.histogram1D("Reco Pairs Electrons Bottom Track Chi2").fill(trk.getChi2());
-        //                    }
-        //                    if (isMatched)
-        //                        aida.histogram1D("Reco MatchedPairs Particles Bottom Track Pz").fill(pz);
-        //                    if (highEclusTop) {
-        //                        aida.histogram1D("Reco Particles Bottom Track Pz HighEclusTopEvent").fill(pz);
-        //                        if (tracks.size() == 1)
-        //                            aida.histogram1D("Reco Particles Bottom Track Pz HighEclusTopEvent Tracks=1").fill(pz);
-        //                        else if (tracks.size() == 2)
-        //                            aida.histogram1D("Reco Particles Bottom Track Pz HighEclusTopEvent Tracks=2").fill(pz);
-        //                        else if (tracks.size() >= 3)
-        //                            aida.histogram1D("Reco Particles Bottom Track Pz HighEclusTopEvent minTracks=3").fill(pz);
-        //                    }
-        //                    if (lowEclusBot && !highEclusBot) {
-        //                        aida.histogram1D("Reco Particles Bottom Track Pz LowEclusBotEvent").fill(pz);
-        //                        if (tracks.size() == 1)
-        //                            aida.histogram1D("Reco Particles Bottom Track Pz LowEclusBotEvent Tracks=1").fill(pz);
-        //                        else if (tracks.size() == 2)
-        //                            aida.histogram1D("Reco Particles Bottom Track Pz LowEclusBotEvent Tracks=2").fill(pz);
-        //                        else if (tracks.size() >= 3)
-        //                            aida.histogram1D("Reco Particles Bottom Track Pz LowEclusBotEvent minTracks=3").fill(pz);
-        //                    }
-        //                    if (highEclusBot) {
-        //                        aida.histogram1D("Reco Particles Bottom Track Pz HighEclusBotEvent").fill(pz);
-        //                        if (tracks.size() == 1)
-        //                            aida.histogram1D("Reco Particles Bottom Track Pz HighEclusBotEvent Tracks=1").fill(pz);
-        //                        else if (tracks.size() == 2)
-        //                            aida.histogram1D("Reco Particles Bottom Track Pz HighEclusBotEvent Tracks=2").fill(pz);
-        //                        else if (tracks.size() >= 3)
-        //                            aida.histogram1D("Reco Particles Bottom Track Pz HighEclusBotEvent minTracks=3").fill(pz);
-        //                    }
-        //                    if (passesEsum)
-        //                        aida.histogram1D("Reco Particles Bottom Track Pz HighEsumEvent").fill(pz);
-        //                }
-
-        //                if (pz < 0.8) {
-        //                    if (isTop) {
-        //                        aida.histogram1D("Reco PairsLowPz Particles Top Track Chi2").fill(trk.getChi2());
-        //                        if (isPos) {
-        //                            aida.histogram1D("Reco PairsLowPz Positrons Top Track Chi2").fill(trk.getChi2());
-        //                        } else if (isEle) {
-        //                            aida.histogram1D("Reco PairsLowPz Electrons Top Track Chi2").fill(trk.getChi2());
-        //                        }
-        //                    } else {
-        //                        aida.histogram1D("Reco PairsLowPz Particles Bottom Track Chi2").fill(trk.getChi2());
-        //                        if (isPos) {
-        //                            aida.histogram1D("Reco PairsLowPz Positrons Bottom Track Chi2").fill(trk.getChi2());
-        //                        } else if (isEle) {
-        //                            aida.histogram1D("Reco PairsLowPz Electrons Bottom Track Chi2").fill(trk.getChi2());
-        //                        }
-        //                    }
-        //
-        //                    if (isMatched) {
-        //                        if (isTop) {
-        //
-        //                            aida.histogram1D("Reco PairsLowPzMatched Particles Top Track Chi2").fill(trk.getChi2());
-        //                            aida.histogram1D("Reco PairsLowPzMatched Particles Top Track d0").fill(trk.getTrackStates().get(0).getD0());
-        //                            aida.histogram1D("Reco PairsLowPzMatched Particles Top Track z0").fill(trk.getTrackStates().get(0).getZ0());
-        //                            if (isPos) {
-        //                                aida.histogram1D("Reco PairsLowPzMatched Positrons Top Track Chi2").fill(trk.getChi2());
-        //                            } else if (isEle) {
-        //                                aida.histogram1D("Reco PairsLowPzMatched Electrons Top Track Chi2").fill(trk.getChi2());
-        //                            }
-        //                        } else {
-        //                            aida.histogram1D("Reco PairsLowPzMatched Particles Bottom Track Chi2").fill(trk.getChi2());
-        //                            aida.histogram1D("Reco PairsLowPzMatched Particles Bottom Track d0").fill(trk.getTrackStates().get(0).getD0());
-        //                            aida.histogram1D("Reco PairsLowPzMatched Particles Bottom Track z0").fill(trk.getTrackStates().get(0).getZ0());
-        //                            if (isPos) {
-        //                                aida.histogram1D("Reco PairsLowPzMatched Positrons Bottom Track Chi2").fill(trk.getChi2());
-        //                            } else if (isEle) {
-        //                                aida.histogram1D("Reco PairsLowPzMatched Electrons Bottom Track Chi2").fill(trk.getChi2());
-        //                            }
-        //                        }
-        //                    }
-        //
-        //                }
-        //            }
-
-        //            if (isOK) {
-        //                if (isTop) {
-        //                    aida.histogram1D("Reco Energetic Particles Top Track Chi2").fill(trk.getChi2());
-        //                    aida.histogram1D("Reco Energetic Particles Top Track Pz").fill(pz);
-        //                } else {
-        //                    aida.histogram1D("Reco Energetic Particles Bottom Track Chi2").fill(trk.getChi2());
-        //                    aida.histogram1D("Reco Energetic Particles Bottom Track Pz").fill(pz);
-        //                }
-
-        //                if (isSingles) {
-        //                    if (isTop) {
-        //                        aida.histogram1D("Reco FEE Particles Top Track Chi2").fill(trk.getChi2());
-        //                        aida.histogram1D("Reco FEE Particles Top Track Pz").fill(pz);
-        //                    } else {
-        //                        aida.histogram1D("Reco FEE Particles Bottom Track Chi2").fill(trk.getChi2());
-        //                        aida.histogram1D("Reco FEE Particles Bottom Track Pz").fill(pz);
-        //                    }
-
-        //                    if (isMatched) {
-        //                                                if (isTop) {
-        //                                                    aida.histogram1D("Reco FEEMatched Particles Top Track Chi2").fill(trk.getChi2());
-        //                                                    aida.histogram1D("Reco FEEMatched Particles Top Track Pz").fill(pz);
-        //                                                } else {
-        //                                                    aida.histogram1D("Reco FEEMatched Particles Bottom Track Chi2").fill(trk.getChi2());
-        //                                                    aida.histogram1D("Reco FEEMatched Particles Bottom Track Pz").fill(pz);
-        //                                                }
-        //                    }
-
-        //                    if (pz < 0.8) {
-        //                        if (mostEnergeticFsp == null)
-        //                            mostEnergeticFsp = fsp;
-        //                        // 4 plots: top/top, bottom/bottom, bottom/top, top/bottom
-        //                        // 4-quadrant 2d plot, Pz (negative=electron, positive=positron)
-        //                        double newPz = pz * fsp.getCharge();
-        //                        if (isTop) {
-        //                            aida.histogram1D("Reco FEELowPz Particles Top Track Chi2").fill(trk.getChi2());
-        //                            aida.histogram1D("Reco FEELowPz Particles Top Track d0").fill(trk.getTrackStates().get(0).getD0());
-        //                            aida.histogram1D("Reco FEELowPz Particles Top Track z0").fill(trk.getTrackStates().get(0).getZ0());
-        //                            if (isPos) {
-        //                                aida.histogram1D("Reco FEELowPz Positrons Top Track Chi2").fill(trk.getChi2());
-        //                            } else if (isEle) {
-        //                                aida.histogram1D("Reco FEELowPz Electrons Top Track Chi2").fill(trk.getChi2());
-        //                            }
-        //
-        //                            if (mostEnergeticFsp.getTracks().get(0).getTrackerHits().get(0).getPosition()[2] > 0) {
-        //                                aida.histogram2D("Reco FEELowPz vs MostEnergetic top-top").fill(newPz, fsppz);
-        //                            } else {
-        //                                aida.histogram2D("Reco FEELowPz vs MostEnergetic top-bottom").fill(newPz, fsppz);
-        //                            }
-        //                        } else {
-        //                            aida.histogram1D("Reco FEELowPz Particles Bottom Track Chi2").fill(trk.getChi2());
-        //                            aida.histogram1D("Reco FEELowPz Particles Bottom Track d0").fill(trk.getTrackStates().get(0).getD0());
-        //                            aida.histogram1D("Reco FEELowPz Particles Bottom Track z0").fill(trk.getTrackStates().get(0).getZ0());
-        //                            if (isPos) {
-        //                                aida.histogram1D("Reco FEELowPz Positrons Bottom Track Chi2").fill(trk.getChi2());
-        //                            } else if (isEle) {
-        //                                aida.histogram1D("Reco FEELowPz Electrons Bottom Track Chi2").fill(trk.getChi2());
-        //                            }
-        //                            if (mostEnergeticFsp.getTracks().get(0).getTrackerHits().get(0).getPosition()[2] > 0) {
-        //                                aida.histogram2D("Reco FEELowPz vs MostEnergetic bottom-top").fill(newPz, fsppz);
-        //                            } else {
-        //                                aida.histogram2D("Reco FEELowPz vs MostEnergetic bottom-bottom").fill(newPz, fsppz);
-        //                            }
-        //                        }
-        //
-        //                    }
-        //                }
-        //}
         return true;
     }
 
@@ -2295,17 +1785,18 @@ public class TrackingReconstructionPlots extends Driver {
 
         if (doReconParticlePlots) {
             if (!doBumpHuntPlots) {
-                if (doRecoParticles(event, fspList, tracks, clusters, tb)) {
-                    doMissingHits(tracks, hthList, stripClusters, clusters, (int) ((event.getTimeStamp() / 4) % 6), BHstage);
-                    if (doComparisonPlots) {
-                        // partials test
-                        //if (!extraTracks.isEmpty())
-                        //    extraTracks.get(0).getTrackerHits().remove(0);
-
-                        doComparison(origTracks, tracks, hthList, extraTracks, extraHits, stripClusters, clusters, rotHits);
-                        hasDoneBasic = true;
-                    }
-                }
+                doRecoParticles(event, fspList, tracks, clusters, tb);
+                //                if (doRecoParticles(event, fspList, tracks, clusters, tb)) {
+                //                    doMissingHits(tracks, hthList, stripClusters, clusters, (int) ((event.getTimeStamp() / 4) % 6), BHstage);
+                //                    if (doComparisonPlots) {
+                //                        // partials test
+                //                        //if (!extraTracks.isEmpty())
+                //                        //    extraTracks.get(0).getTrackerHits().remove(0);
+                //
+                //                        doComparison(origTracks, tracks, hthList, extraTracks, extraHits, stripClusters, clusters, rotHits);
+                //                        hasDoneBasic = true;
+                //                    }
+                //                }
             } else {
                 doRecoParticles(event, fspList, tracks, clusters, tb);
                 doMissingHits(tracks, hthList, stripClusters, clusters, (int) ((event.getTimeStamp() / 4) % 6), BHstage);
@@ -2718,10 +2209,10 @@ public class TrackingReconstructionPlots extends Driver {
         }
 
         if (doReconParticlePlots) {
-            IHistogram1D botRecoPartETrkPz = aida.histogram1D("Reco Pairs Electrons Bottom Track Pz", 100, 0, 1.5);
-            IHistogram1D topRecoPartETrkPz = aida.histogram1D("Reco Pairs Electrons Top Track Pz", 100, 0, 1.5);
-            IHistogram1D botRecoPartPTrkPz = aida.histogram1D("Reco Pairs Positrons Bottom Track Pz", 100, 0, 1.5);
-            IHistogram1D topRecoPartPTrkPz = aida.histogram1D("Reco Pairs Positrons Top Track Pz", 100, 0, 1.5);
+            IHistogram1D botRecoPartETrkPz = aida.histogram1D("Reco Pairs Electrons Bottom Track Pz", 300, 0, 3.0);
+            IHistogram1D topRecoPartETrkPz = aida.histogram1D("Reco Pairs Electrons Top Track Pz", 300, 0, 3.0);
+            IHistogram1D botRecoPartPTrkPz = aida.histogram1D("Reco Pairs Positrons Bottom Track Pz", 300, 0, 3.0);
+            IHistogram1D topRecoPartPTrkPz = aida.histogram1D("Reco Pairs Positrons Top Track Pz", 300, 0, 3.0);
 
             //            IHistogram1D botRecoPartETrkChi2 = aida.histogram1D("Reco Pairs Electrons Bottom Track Chi2", 100, 0, 100);
             //            IHistogram1D topRecoPartETrkChi2 = aida.histogram1D("Reco Pairs Electrons Top Track Chi2", 100, 0, 100);
@@ -2736,114 +2227,114 @@ public class TrackingReconstructionPlots extends Driver {
             //IHistogram1D botRecoPartTrkPz_Esum = aida.histogram1D("Reco Bottom Track Pz HighEsumEvent", 100, 0, 1.5);
             //IHistogram1D topRecoPartTrkPz_Esum = aida.histogram1D("Reco Top Track Pz HighEsumEvent", 100, 0, 1.5);
 
-            IHistogram1D botRecoPartTrkPz_HighEclusTop = aida.histogram1D("Reco Bottom Track Pz HighEclusTopEvent", 50, 0, 1.5);
-            IHistogram1D topRecoPartTrkPz_HighEclusTop = aida.histogram1D("Reco Top Track Pz HighEclusTopEvent", 50, 0, 1.5);
-            IHistogram1D botRecoPartTrkPz_HighEclusBot = aida.histogram1D("Reco Bottom Track Pz HighEclusBotEvent", 50, 0, 1.5);
-            IHistogram1D topRecoPartTrkPz_HighEclusBot = aida.histogram1D("Reco Top Track Pz HighEclusBotEvent", 50, 0, 1.5);
-            IHistogram1D botRecoPartTrkChi2_HighEclusTop = aida.histogram1D("Reco Bottom Track Chi2 HighEclusTopEvent", 50, 0, 100);
-            IHistogram1D topRecoPartTrkChi2_HighEclusTop = aida.histogram1D("Reco Top Track Chi2 HighEclusTopEvent", 50, 0, 100);
-            IHistogram1D botRecoPartTrkChi2_HighEclusBot = aida.histogram1D("Reco Bottom Track Chi2 HighEclusBotEvent", 50, 0, 100);
-            IHistogram1D topRecoPartTrkChi2_HighEclusBot = aida.histogram1D("Reco Top Track Chi2 HighEclusBotEvent", 50, 0, 100);
-            IHistogram1D botRecoPartTrkPz_LowEclusTop = aida.histogram1D("Reco Bottom Track Pz LowEclusTopEvent", 50, 0, 1.5);
-            IHistogram1D topRecoPartTrkPz_LowEclusTop = aida.histogram1D("Reco Top Track Pz LowEclusTopEvent", 50, 0, 1.5);
-            IHistogram1D botRecoPartTrkPz_LowEclusBot = aida.histogram1D("Reco Bottom Track Pz LowEclusBotEvent", 50, 0, 1.5);
-            IHistogram1D topRecoPartTrkPz_LowEclusBot = aida.histogram1D("Reco Top Track Pz LowEclusBotEvent", 50, 0, 1.5);
-            IHistogram1D botRecoPartTrkChi2_LowEclusTop = aida.histogram1D("Reco Bottom Track Chi2 LowEclusTopEvent", 50, 0, 100);
-            IHistogram1D topRecoPartTrkChi2_LowEclusTop = aida.histogram1D("Reco Top Track Chi2 LowEclusTopEvent", 50, 0, 100);
-            IHistogram1D botRecoPartTrkChi2_LowEclusBot = aida.histogram1D("Reco Bottom Track Chi2 LowEclusBotEvent", 50, 0, 100);
-            IHistogram1D topRecoPartTrkChi2_LowEclusBot = aida.histogram1D("Reco Top Track Chi2 LowEclusBotEvent", 50, 0, 100);
-
-            IHistogram1D top3DHitSVTlayers = aida.histogram1D("Top Layers with 3D-Hits in Events with No Top Track", 7, -0.5, 6.5);
-            IHistogram1D bot3DHitSVTlayers = aida.histogram1D("Bottom Layers with 3D-Hits in Events with No Bottom Track", 7, -0.5, 6.5);
-            IHistogram1D top2DHitSVTlayers = aida.histogram1D("Top Layers with 2D-Hits in Events with No Top Track", 13, -0.5, 12.5);
-            IHistogram1D bot2DHitSVTlayers = aida.histogram1D("Bottom Layers with 2D-Hits in Events with No Bottom Track", 13, -0.5, 12.5);
-
-            IHistogram1D top3DHitSVTtimes = aida.histogram1D("Times of Top 3D-Hits in Events with No Top Track", 30, -15, 15);
-            IHistogram1D bot3DHitSVTtimes = aida.histogram1D("Times of Bottom 3D-Hits in Events with No Bottom Track", 30, -15, 15);
-            IHistogram1D top2DHitSVTtimes = aida.histogram1D("Times of Top 2D-Hits in Events with No Top Track", 100, -100, 100);
-            IHistogram1D bot2DHitSVTtimes = aida.histogram1D("Times of Bottom 2D-Hits in Events with No Bottom Track", 100, -100, 100);
-            IHistogram1D top2DHitSVTtimes_ele = aida.histogram1D("Times of Top 2D-Hits in Electron Events with No Top Track", 100, -100, 100);
-            IHistogram1D bot2DHitSVTtimes_ele = aida.histogram1D("Times of Bottom 2D-Hits in Electron Events with No Bottom Track", 100, -100, 100);
-            IHistogram1D top2DHitSVTtimes_pos = aida.histogram1D("Times of Top 2D-Hits in Positron Events with No Top Track", 100, -100, 100);
-            IHistogram1D bot2DHitSVTtimes_pos = aida.histogram1D("Times of Bottom 2D-Hits in Positron Events with No Bottom Track", 100, -100, 100);
-            IHistogram1D top2DHitSVTtimes_high = aida.histogram1D("Times of Top 2D-Hits in HighMaxClusE Events with No Top Track", 100, -100, 100);
-            IHistogram1D bot2DHitSVTtimes_high = aida.histogram1D("Times of Bottom 2D-Hits in HighMaxClusE Events with No Bottom Track", 100, -100, 100);
-            IHistogram1D top2DHitSVTtimes_low = aida.histogram1D("Times of Top 2D-Hits in LowMaxClusE Events with No Top Track", 100, -100, 100);
-            IHistogram1D bot2DHitSVTtimes_low = aida.histogram1D("Times of Bottom 2D-Hits in LowMaxClusE Events with No Bottom Track", 100, -100, 100);
-            IHistogram1D top2DHitSVTtimes_lowBot = aida.histogram1D("Times of Top 2D-Hits in LowMaxClusEBot Events with No Top Track", 100, -100, 100);
-            IHistogram1D bot2DHitSVTtimes_lowBot = aida.histogram1D("Times of Bottom 2D-Hits in LowMaxClusEBot Events with No Bottom Track", 100, -100, 100);
-            IHistogram1D top2DHitSVTtimes_lowTop = aida.histogram1D("Times of Top 2D-Hits in LowMaxClusETop Events with No Top Track", 100, -100, 100);
-            IHistogram1D bot2DHitSVTtimes_lowTop = aida.histogram1D("Times of Bottom 2D-Hits in LowMaxClusETop Events with No Bottom Track", 100, -100, 100);
-            for (int i = 1; i <= 12; i++) {
-                String temp = String.format("Times of Top 2D-Hits in Events with No Top Track - Layer %d", i);
-                aida.histogram1D(temp, 100, -100, 100);
-                temp = String.format("Times of Bottom 2D-Hits in Events with No Bottom Track - Layer %d", i);
-                aida.histogram1D(temp, 100, -100, 100);
-            }
-            for (int i = 0; i < 6; i++) {
-                String temp = String.format("Times of Top 2D-Hits in Events with No Top Track - Trigger Phase %d", i);
-                aida.histogram1D(temp, 100, -100, 100);
-                temp = String.format("Times of Bottom 2D-Hits in Events with No Bottom Track - Trigger Phase %d", i);
-                aida.histogram1D(temp, 100, -100, 100);
-            }
-            for (int i = -10; i <= 8; i += 2) {
-                String temp = String.format("Times of Top 2D-Hits in Events with No Top Track - T-B Cluster deltaT %dto%d", i, i + 2);
-                aida.histogram1D(temp, 100, -100, 100);
-                temp = String.format("Times of Bottom 2D-Hits in Events with No Bottom Track - T-B Cluster deltaT %dto%d", i, i + 2);
-                aida.histogram1D(temp, 100, -100, 100);
-                temp = String.format("Top Track Pz - T-B Cluster deltaT %dto%d", i, i + 2);
-                aida.histogram1D(temp, 100, 0, 1.5);
-                temp = String.format("Bot Track Pz - T-B Cluster deltaT %dto%d", i, i + 2);
-                aida.histogram1D(temp, 100, 0, 1.5);
-                temp = String.format("Electron Top Track Pz - T-B Cluster deltaT %dto%d", i, i + 2);
-                aida.histogram1D(temp, 100, 0, 1.5);
-                temp = String.format("Electron Bot Track Pz - T-B Cluster deltaT %dto%d", i, i + 2);
-                aida.histogram1D(temp, 100, 0, 1.5);
-                temp = String.format("Positron Top Track Pz - T-B Cluster deltaT %dto%d", i, i + 2);
-                aida.histogram1D(temp, 100, 0, 1.5);
-                temp = String.format("Positron Bot Track Pz - T-B Cluster deltaT %dto%d", i, i + 2);
-                aida.histogram1D(temp, 100, 0, 1.5);
-            }
-            for (int bh = 0; bh <= 4; bh++) {
-                String temp = String.format("Times of Bottom 2D-Hits in Events with No Bottom Track - BH stage%d", bh);
-                aida.histogram1D(temp, 100, -100, 100);
-                temp = String.format("Times of Top 2D-Hits in Events with No Top Track - BH stage%d", bh);
-                aida.histogram1D(temp, 100, -100, 100);
-            }
-            aida.histogram2D("T-B Cluster deltaT vs Bot Track Pz", 100, 0, 1.5, 400, -10, 10);
-            aida.histogram2D("T-B Cluster deltaT vs Top Track Pz", 100, 0, 1.5, 400, -10, 10);
-            aida.histogram2D("Tight T-B Cluster deltaT vs Bot Track Pz", 100, 0, 1.5, 400, -2, 2);
-            aida.histogram2D("Tight T-B Cluster deltaT vs Top Track Pz", 100, 0, 1.5, 400, -2, 2);
-            aida.histogram2D("Electron T-B Cluster deltaT vs Bot Track Pz", 100, 0, 1.5, 400, -10, 10);
-            aida.histogram2D("Electron T-B Cluster deltaT vs Top Track Pz", 100, 0, 1.5, 400, -10, 10);
-            aida.histogram2D("Electron Tight T-B Cluster deltaT vs Bot Track Pz", 100, 0, 1.5, 400, -2, 2);
-            aida.histogram2D("Electron Tight T-B Cluster deltaT vs Top Track Pz", 100, 0, 1.5, 400, -2, 2);
-            aida.histogram2D("Positron T-B Cluster deltaT vs Bot Track Pz", 100, 0, 1.5, 400, -10, 10);
-            aida.histogram2D("Positron T-B Cluster deltaT vs Top Track Pz", 100, 0, 1.5, 400, -10, 10);
-            aida.histogram2D("Positron Tight T-B Cluster deltaT vs Bot Track Pz", 100, 0, 1.5, 400, -2, 2);
-            aida.histogram2D("Positron Tight T-B Cluster deltaT vs Top Track Pz", 100, 0, 1.5, 400, -2, 2);
-
-            IHistogram2D clusE_2D_both = aida.histogram2D("Top vs Bottom ClusE with tracks in both", 25, 0, 0.75, 25, 0, 0.75);
-            IHistogram2D clusE_2D_top = aida.histogram2D("Top vs Bottom ClusE with track in top", 25, 0, 0.75, 25, 0, 0.75);
-            IHistogram2D clusE_2D_bot = aida.histogram2D("Top vs Bottom ClusE with track in bottom", 25, 0, 0.75, 25, 0, 0.75);
-            IHistogram2D clusE_2D_none = aida.histogram2D("Top vs Bottom ClusE with no tracks", 25, 0, 0.75, 25, 0, 0.75);
-
-            IHistogram1D ESum_Reco_both = aida.histogram1D("Reco ESum with tracks in both", 50, 0, 1.5);
-            IHistogram1D ESum_Reco_top = aida.histogram1D("Reco ESum with track in top", 50, 0, 1.5);
-            IHistogram1D ESum_Reco_bot = aida.histogram1D("Reco ESum with track in bottom", 50, 0, 1.5);
-            IHistogram1D ESum_Reco_none = aida.histogram1D("Reco ESum with no tracks", 50, 0, 1.5);
-            IHistogram1D ESum_Trigger_both = aida.histogram1D("Trigger ESum with tracks in both", 50, 0, 1.5);
-            IHistogram1D ESum_Trigger_top = aida.histogram1D("Trigger ESum with track in top", 50, 0, 1.5);
-            IHistogram1D ESum_Trigger_bot = aida.histogram1D("Trigger ESum with track in bottom", 50, 0, 1.5);
-            IHistogram1D ESum_Trigger_none = aida.histogram1D("Trigger ESum with no tracks", 50, 0, 1.5);
-
-            IHistogram2D topECalExtrap_HighEsum = aida.histogram2D("HighEsum TopTrack ECal Extrap Position", 40, -400, 400, 20, -100, 100);
-            IHistogram2D botECalExtrap_HighEsum = aida.histogram2D("HighEsum BottomTrack ECal Extrap Position", 40, -400, 400, 20, -100, 100);
-            IHistogram2D topECalExtrap_LowEsum = aida.histogram2D("LowEsum TopTrack ECal Extrap Position", 40, -400, 400, 20, -100, 100);
-            IHistogram2D botECalExtrap_LowEsum = aida.histogram2D("LowEsum BottomTrack ECal Extrap Position", 40, -400, 400, 20, -100, 100);
-
-            IHistogram2D botClusE_TrackPz_LowEsum = aida.histogram2D("LowEsum BottomTrack ClusterE vs TrackPz", 50, 0, 1.5, 25, 0, 0.75);
-            IHistogram2D topClusE_TrackPz_LowEsum = aida.histogram2D("LowEsum TopTrack ClusterE vs TrackPz", 50, 0, 1.5, 25, 0, 0.75);
+            //            IHistogram1D botRecoPartTrkPz_HighEclusTop = aida.histogram1D("Reco Bottom Track Pz HighEclusTopEvent", 50, 0, 1.5);
+            //            IHistogram1D topRecoPartTrkPz_HighEclusTop = aida.histogram1D("Reco Top Track Pz HighEclusTopEvent", 50, 0, 1.5);
+            //            IHistogram1D botRecoPartTrkPz_HighEclusBot = aida.histogram1D("Reco Bottom Track Pz HighEclusBotEvent", 50, 0, 1.5);
+            //            IHistogram1D topRecoPartTrkPz_HighEclusBot = aida.histogram1D("Reco Top Track Pz HighEclusBotEvent", 50, 0, 1.5);
+            //            IHistogram1D botRecoPartTrkChi2_HighEclusTop = aida.histogram1D("Reco Bottom Track Chi2 HighEclusTopEvent", 50, 0, 100);
+            //            IHistogram1D topRecoPartTrkChi2_HighEclusTop = aida.histogram1D("Reco Top Track Chi2 HighEclusTopEvent", 50, 0, 100);
+            //            IHistogram1D botRecoPartTrkChi2_HighEclusBot = aida.histogram1D("Reco Bottom Track Chi2 HighEclusBotEvent", 50, 0, 100);
+            //            IHistogram1D topRecoPartTrkChi2_HighEclusBot = aida.histogram1D("Reco Top Track Chi2 HighEclusBotEvent", 50, 0, 100);
+            //            IHistogram1D botRecoPartTrkPz_LowEclusTop = aida.histogram1D("Reco Bottom Track Pz LowEclusTopEvent", 50, 0, 1.5);
+            //            IHistogram1D topRecoPartTrkPz_LowEclusTop = aida.histogram1D("Reco Top Track Pz LowEclusTopEvent", 50, 0, 1.5);
+            //            IHistogram1D botRecoPartTrkPz_LowEclusBot = aida.histogram1D("Reco Bottom Track Pz LowEclusBotEvent", 50, 0, 1.5);
+            //            IHistogram1D topRecoPartTrkPz_LowEclusBot = aida.histogram1D("Reco Top Track Pz LowEclusBotEvent", 50, 0, 1.5);
+            //            IHistogram1D botRecoPartTrkChi2_LowEclusTop = aida.histogram1D("Reco Bottom Track Chi2 LowEclusTopEvent", 50, 0, 100);
+            //            IHistogram1D topRecoPartTrkChi2_LowEclusTop = aida.histogram1D("Reco Top Track Chi2 LowEclusTopEvent", 50, 0, 100);
+            //            IHistogram1D botRecoPartTrkChi2_LowEclusBot = aida.histogram1D("Reco Bottom Track Chi2 LowEclusBotEvent", 50, 0, 100);
+            //            IHistogram1D topRecoPartTrkChi2_LowEclusBot = aida.histogram1D("Reco Top Track Chi2 LowEclusBotEvent", 50, 0, 100);
+            //
+            //            IHistogram1D top3DHitSVTlayers = aida.histogram1D("Top Layers with 3D-Hits in Events with No Top Track", 7, -0.5, 6.5);
+            //            IHistogram1D bot3DHitSVTlayers = aida.histogram1D("Bottom Layers with 3D-Hits in Events with No Bottom Track", 7, -0.5, 6.5);
+            //            IHistogram1D top2DHitSVTlayers = aida.histogram1D("Top Layers with 2D-Hits in Events with No Top Track", 13, -0.5, 12.5);
+            //            IHistogram1D bot2DHitSVTlayers = aida.histogram1D("Bottom Layers with 2D-Hits in Events with No Bottom Track", 13, -0.5, 12.5);
+            //
+            //            IHistogram1D top3DHitSVTtimes = aida.histogram1D("Times of Top 3D-Hits in Events with No Top Track", 30, -15, 15);
+            //            IHistogram1D bot3DHitSVTtimes = aida.histogram1D("Times of Bottom 3D-Hits in Events with No Bottom Track", 30, -15, 15);
+            //            IHistogram1D top2DHitSVTtimes = aida.histogram1D("Times of Top 2D-Hits in Events with No Top Track", 100, -100, 100);
+            //            IHistogram1D bot2DHitSVTtimes = aida.histogram1D("Times of Bottom 2D-Hits in Events with No Bottom Track", 100, -100, 100);
+            //            IHistogram1D top2DHitSVTtimes_ele = aida.histogram1D("Times of Top 2D-Hits in Electron Events with No Top Track", 100, -100, 100);
+            //            IHistogram1D bot2DHitSVTtimes_ele = aida.histogram1D("Times of Bottom 2D-Hits in Electron Events with No Bottom Track", 100, -100, 100);
+            //            IHistogram1D top2DHitSVTtimes_pos = aida.histogram1D("Times of Top 2D-Hits in Positron Events with No Top Track", 100, -100, 100);
+            //            IHistogram1D bot2DHitSVTtimes_pos = aida.histogram1D("Times of Bottom 2D-Hits in Positron Events with No Bottom Track", 100, -100, 100);
+            //            IHistogram1D top2DHitSVTtimes_high = aida.histogram1D("Times of Top 2D-Hits in HighMaxClusE Events with No Top Track", 100, -100, 100);
+            //            IHistogram1D bot2DHitSVTtimes_high = aida.histogram1D("Times of Bottom 2D-Hits in HighMaxClusE Events with No Bottom Track", 100, -100, 100);
+            //            IHistogram1D top2DHitSVTtimes_low = aida.histogram1D("Times of Top 2D-Hits in LowMaxClusE Events with No Top Track", 100, -100, 100);
+            //            IHistogram1D bot2DHitSVTtimes_low = aida.histogram1D("Times of Bottom 2D-Hits in LowMaxClusE Events with No Bottom Track", 100, -100, 100);
+            //            IHistogram1D top2DHitSVTtimes_lowBot = aida.histogram1D("Times of Top 2D-Hits in LowMaxClusEBot Events with No Top Track", 100, -100, 100);
+            //            IHistogram1D bot2DHitSVTtimes_lowBot = aida.histogram1D("Times of Bottom 2D-Hits in LowMaxClusEBot Events with No Bottom Track", 100, -100, 100);
+            //            IHistogram1D top2DHitSVTtimes_lowTop = aida.histogram1D("Times of Top 2D-Hits in LowMaxClusETop Events with No Top Track", 100, -100, 100);
+            //            IHistogram1D bot2DHitSVTtimes_lowTop = aida.histogram1D("Times of Bottom 2D-Hits in LowMaxClusETop Events with No Bottom Track", 100, -100, 100);
+            //            for (int i = 1; i <= 12; i++) {
+            //                String temp = String.format("Times of Top 2D-Hits in Events with No Top Track - Layer %d", i);
+            //                aida.histogram1D(temp, 100, -100, 100);
+            //                temp = String.format("Times of Bottom 2D-Hits in Events with No Bottom Track - Layer %d", i);
+            //                aida.histogram1D(temp, 100, -100, 100);
+            //            }
+            //            for (int i = 0; i < 6; i++) {
+            //                String temp = String.format("Times of Top 2D-Hits in Events with No Top Track - Trigger Phase %d", i);
+            //                aida.histogram1D(temp, 100, -100, 100);
+            //                temp = String.format("Times of Bottom 2D-Hits in Events with No Bottom Track - Trigger Phase %d", i);
+            //                aida.histogram1D(temp, 100, -100, 100);
+            //            }
+            //            for (int i = -10; i <= 8; i += 2) {
+            //                String temp = String.format("Times of Top 2D-Hits in Events with No Top Track - T-B Cluster deltaT %dto%d", i, i + 2);
+            //                aida.histogram1D(temp, 100, -100, 100);
+            //                temp = String.format("Times of Bottom 2D-Hits in Events with No Bottom Track - T-B Cluster deltaT %dto%d", i, i + 2);
+            //                aida.histogram1D(temp, 100, -100, 100);
+            //                temp = String.format("Top Track Pz - T-B Cluster deltaT %dto%d", i, i + 2);
+            //                aida.histogram1D(temp, 100, 0, 1.5);
+            //                temp = String.format("Bot Track Pz - T-B Cluster deltaT %dto%d", i, i + 2);
+            //                aida.histogram1D(temp, 100, 0, 1.5);
+            //                temp = String.format("Electron Top Track Pz - T-B Cluster deltaT %dto%d", i, i + 2);
+            //                aida.histogram1D(temp, 100, 0, 1.5);
+            //                temp = String.format("Electron Bot Track Pz - T-B Cluster deltaT %dto%d", i, i + 2);
+            //                aida.histogram1D(temp, 100, 0, 1.5);
+            //                temp = String.format("Positron Top Track Pz - T-B Cluster deltaT %dto%d", i, i + 2);
+            //                aida.histogram1D(temp, 100, 0, 1.5);
+            //                temp = String.format("Positron Bot Track Pz - T-B Cluster deltaT %dto%d", i, i + 2);
+            //                aida.histogram1D(temp, 100, 0, 1.5);
+            //            }
+            //            for (int bh = 0; bh <= 4; bh++) {
+            //                String temp = String.format("Times of Bottom 2D-Hits in Events with No Bottom Track - BH stage%d", bh);
+            //                aida.histogram1D(temp, 100, -100, 100);
+            //                temp = String.format("Times of Top 2D-Hits in Events with No Top Track - BH stage%d", bh);
+            //                aida.histogram1D(temp, 100, -100, 100);
+            //            }
+            //            aida.histogram2D("T-B Cluster deltaT vs Bot Track Pz", 100, 0, 1.5, 400, -10, 10);
+            //            aida.histogram2D("T-B Cluster deltaT vs Top Track Pz", 100, 0, 1.5, 400, -10, 10);
+            //            aida.histogram2D("Tight T-B Cluster deltaT vs Bot Track Pz", 100, 0, 1.5, 400, -2, 2);
+            //            aida.histogram2D("Tight T-B Cluster deltaT vs Top Track Pz", 100, 0, 1.5, 400, -2, 2);
+            //            aida.histogram2D("Electron T-B Cluster deltaT vs Bot Track Pz", 100, 0, 1.5, 400, -10, 10);
+            //            aida.histogram2D("Electron T-B Cluster deltaT vs Top Track Pz", 100, 0, 1.5, 400, -10, 10);
+            //            aida.histogram2D("Electron Tight T-B Cluster deltaT vs Bot Track Pz", 100, 0, 1.5, 400, -2, 2);
+            //            aida.histogram2D("Electron Tight T-B Cluster deltaT vs Top Track Pz", 100, 0, 1.5, 400, -2, 2);
+            //            aida.histogram2D("Positron T-B Cluster deltaT vs Bot Track Pz", 100, 0, 1.5, 400, -10, 10);
+            //            aida.histogram2D("Positron T-B Cluster deltaT vs Top Track Pz", 100, 0, 1.5, 400, -10, 10);
+            //            aida.histogram2D("Positron Tight T-B Cluster deltaT vs Bot Track Pz", 100, 0, 1.5, 400, -2, 2);
+            //            aida.histogram2D("Positron Tight T-B Cluster deltaT vs Top Track Pz", 100, 0, 1.5, 400, -2, 2);
+            //
+            //            IHistogram2D clusE_2D_both = aida.histogram2D("Top vs Bottom ClusE with tracks in both", 25, 0, 0.75, 25, 0, 0.75);
+            //            IHistogram2D clusE_2D_top = aida.histogram2D("Top vs Bottom ClusE with track in top", 25, 0, 0.75, 25, 0, 0.75);
+            //            IHistogram2D clusE_2D_bot = aida.histogram2D("Top vs Bottom ClusE with track in bottom", 25, 0, 0.75, 25, 0, 0.75);
+            //            IHistogram2D clusE_2D_none = aida.histogram2D("Top vs Bottom ClusE with no tracks", 25, 0, 0.75, 25, 0, 0.75);
+            //
+            //            IHistogram1D ESum_Reco_both = aida.histogram1D("Reco ESum with tracks in both", 50, 0, 1.5);
+            //            IHistogram1D ESum_Reco_top = aida.histogram1D("Reco ESum with track in top", 50, 0, 1.5);
+            //            IHistogram1D ESum_Reco_bot = aida.histogram1D("Reco ESum with track in bottom", 50, 0, 1.5);
+            //            IHistogram1D ESum_Reco_none = aida.histogram1D("Reco ESum with no tracks", 50, 0, 1.5);
+            //            IHistogram1D ESum_Trigger_both = aida.histogram1D("Trigger ESum with tracks in both", 50, 0, 1.5);
+            //            IHistogram1D ESum_Trigger_top = aida.histogram1D("Trigger ESum with track in top", 50, 0, 1.5);
+            //            IHistogram1D ESum_Trigger_bot = aida.histogram1D("Trigger ESum with track in bottom", 50, 0, 1.5);
+            //            IHistogram1D ESum_Trigger_none = aida.histogram1D("Trigger ESum with no tracks", 50, 0, 1.5);
+            //
+            //            IHistogram2D topECalExtrap_HighEsum = aida.histogram2D("HighEsum TopTrack ECal Extrap Position", 40, -400, 400, 20, -100, 100);
+            //            IHistogram2D botECalExtrap_HighEsum = aida.histogram2D("HighEsum BottomTrack ECal Extrap Position", 40, -400, 400, 20, -100, 100);
+            //            IHistogram2D topECalExtrap_LowEsum = aida.histogram2D("LowEsum TopTrack ECal Extrap Position", 40, -400, 400, 20, -100, 100);
+            //            IHistogram2D botECalExtrap_LowEsum = aida.histogram2D("LowEsum BottomTrack ECal Extrap Position", 40, -400, 400, 20, -100, 100);
+            //
+            //            IHistogram2D botClusE_TrackPz_LowEsum = aida.histogram2D("LowEsum BottomTrack ClusterE vs TrackPz", 50, 0, 1.5, 25, 0, 0.75);
+            //            IHistogram2D topClusE_TrackPz_LowEsum = aida.histogram2D("LowEsum TopTrack ClusterE vs TrackPz", 50, 0, 1.5, 25, 0, 0.75);
             //            IHistogram1D botRecoPartTrkPz_LowEclusBot = aida.histogram1D("Reco Particles Bottom Track Pz LowEclusBotEvent", 100, 0, 1.5);
             //            IHistogram1D topRecoPartTrkPz_LowEclusBot = aida.histogram1D("Reco Particles Top Track Pz LowEclusBotEvent", 100, 0, 1.5);
 
