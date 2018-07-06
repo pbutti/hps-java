@@ -41,7 +41,7 @@ public class FullTruthTupleDriverTest extends TestCase {
         //FileCache cache = new FileCache();
         //File lcioInputFile = cache.getCachedFile(testURL);
         int fileNum=0;
-        String aidaOutput = "/nfs/slac/work/mdiamond/WABtilt.root";
+        String aidaOutput = "/nfs/slac/work/mdiamond/WABtilt10.aida";
 
         final DatabaseConditionsManager manager = new DatabaseConditionsManager();
         manager.addConditionsListener(new SvtDetectorSetup());
@@ -53,7 +53,7 @@ public class FullTruthTupleDriverTest extends TestCase {
         rthss.setReadoutCollections(readoutColl);
         loop2.add(rthss);
         
-        loop2.add(new org.hps.recon.filtering.EventFlagFilter());
+        //        loop2.add(new org.hps.recon.filtering.EventFlagFilter());
         
         FullTruthTupleTestDriver ftttd = new FullTruthTupleTestDriver();
         ftttd.setOutputPlots(aidaOutput);
@@ -85,7 +85,7 @@ public class FullTruthTupleDriverTest extends TestCase {
         double tupleTrkPCut = 0.9;
         double tupleMaxSumCut = 1.3;
         private String V0CollectionName = "UnconstrainedV0Candidates";
-        private String trackerHitsCollectionName = "";
+        private String trackerHitsCollectionName = "TrackerHits";
         
         @Override
         public void endOfData() {
@@ -123,9 +123,9 @@ public class FullTruthTupleDriverTest extends TestCase {
         private void setupPlots() {
             aida.histogram1D("Purity", 20, 0, 1.0);
             aida.histogram1D("Tracking Strategy", 128, 0, 128);
-            aida.histogram1D("Good TruthHit in layer", 13, 0, 13);
+            //aida.histogram1D("Good TruthHit in layer", 6, 1, 7);
             for(int layer = 1; layer < 13; layer++)
-                aida.histogram1D(String.format("NTruthParticles in layer %d", layer), 10, 0, 10);
+                aida.histogram1D(String.format("NTruthParticles in layer %d", layer), 6, 1, 7);
         }
         
         @Override
@@ -138,7 +138,7 @@ public class FullTruthTupleDriverTest extends TestCase {
             
             List<SimTrackerHit> trackerHits = null;
             if (event.hasCollection(SimTrackerHit.class, trackerHitsCollectionName))
-                event.get(SimTrackerHit.class, trackerHitsCollectionName);
+                trackerHits = event.get(SimTrackerHit.class, trackerHitsCollectionName);
             else
                 return;
 
@@ -181,9 +181,9 @@ public class FullTruthTupleDriverTest extends TestCase {
 
             aida.histogram1D("Purity").fill(pTruth.getPurity());
             for(int layer = 1; layer < 13; layer++){
-                aida.histogram1D(String.format("NTruthParticles in layer %d", layer)).fill(pTruth.getNumberOfMCParticles(layer));
-                if(pTruth.getHitList(layer) != null && pTruth.getHitList(layer))
-                    aida.histogram1D("Good TruthHit in layer").fill(layer);
+	        aida.histogram1D(String.format("NTruthParticles in layer %d", layer)).fill(pTruth.getNumberOfMCParticles(layer));
+                //if(pTruth.getHitList(layer) != null && pTruth.getHitList(layer))
+                //    aida.histogram1D("Good TruthHit in layer").fill(layer);
             }
         }
         
