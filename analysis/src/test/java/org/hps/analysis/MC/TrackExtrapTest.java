@@ -123,10 +123,14 @@ public class TrackExtrapTest extends TestCase {
             aida.histogram2D("Weird Events: Y vs X Mom of MCParticle", 100,-0.5,0.5,100,-0.5,0.5);
             aida.histogram1D("Weird Events: Z Mom of MCParticle", 100,0,1.5);
             
-            aida.histogram2D("[Extrapolated SimTrackerHit - SimCalorimeterHit] Y vs SimCalorimeterHit Y", 300, -300, 300, 200, -5.0, 5.0);
-            aida.histogram2D("[Extrapolated SimTrackerHit - SimCalorimeterHit] X vs SimCalorimeterHit Y", 300, -300, 300, 200, -5.0, 5.0);
-            aida.histogram2D("[Extrapolated SimTrackerHit - SimCalorimeterHit] Y vs SimCalorimeterHit X", 300, -300, 300, 200, -5.0, 5.0);
-            aida.histogram2D("[Extrapolated SimTrackerHit - SimCalorimeterHit] X vs SimCalorimeterHit X", 300, -300, 300, 200, -5.0, 5.0);
+            aida.histogram2D("[Extrapolated SimTrackerHit - SimCalorimeterHit] Y vs SimCalorimeterHit Y", 300, -300, 300, 200, -10, 10);
+            aida.histogram2D("[Extrapolated SimTrackerHit - SimCalorimeterHit] X vs SimCalorimeterHit Y", 300, -300, 300, 200, -10, 10);
+            aida.histogram2D("[Extrapolated SimTrackerHit - SimCalorimeterHit] Y vs SimCalorimeterHit X", 300, -300, 300, 200, -10, 10);
+            aida.histogram2D("[Extrapolated SimTrackerHit - SimCalorimeterHit] X vs SimCalorimeterHit X", 300, -300, 300, 200, -10, 10);
+            aida.histogram2D("Low Pz [Extrapolated SimTrackerHit - SimCalorimeterHit] X vs SimCalorimeterHit X", 300, -300, 300, 200, -10, 10);
+            aida.histogram2D("Low Pz [Extrapolated SimTrackerHit - SimCalorimeterHit] Y vs SimCalorimeterHit Y", 300, -300, 300, 200, -10, 10);
+            aida.histogram2D("Low Pz [Extrapolated SimTrackerHit - SimCalorimeterHit] X vs SimCalorimeterHit Y", 300, -300, 300, 200, -10, 10);
+            aida.histogram2D("Low Pz [Extrapolated SimTrackerHit - SimCalorimeterHit] Y vs SimCalorimeterHit X", 300, -300, 300, 200, -10, 10);
             
             aida.histogram2D("Extrapolated SimTrackerHit - SimCalorimeterHit: Y vs X", 200, -5.0, 5.0, 200, -5.0, 5.0);
             aida.histogram2D("Extrapolated SimTrackerHit - SimCalorimeterHit Y vs MCParticle Pz", 100, 0, 1.5, 200, -5.0, 5.0);
@@ -251,11 +255,15 @@ public class TrackExtrapTest extends TestCase {
                 // filling plots
                 if (Math.abs(part.getPZ()) < lowMomThresh) {
                     aida.histogram2D("Extrapolated SimTrackerHit - SimCalorimeterHit: Y vs X").fill(residualVec.x(), residualVec.y());
-                    aida.histogram2D("[Extrapolated SimTrackerHit - SimCalorimeterHit] X vs SimCalorimeterHit X").fill(caloHitPos.x(), residualVec.x());
-                    aida.histogram2D("[Extrapolated SimTrackerHit - SimCalorimeterHit] X vs SimCalorimeterHit Y").fill(caloHitPos.y(), residualVec.x());
-                    aida.histogram2D("[Extrapolated SimTrackerHit - SimCalorimeterHit] Y vs SimCalorimeterHit X").fill(caloHitPos.x(), residualVec.y());
-                    aida.histogram2D("[Extrapolated SimTrackerHit - SimCalorimeterHit] Y vs SimCalorimeterHit Y").fill(caloHitPos.y(), residualVec.y());
+                    aida.histogram2D("Low Pz [Extrapolated SimTrackerHit - SimCalorimeterHit] X vs SimCalorimeterHit X").fill(caloHitPos.x(), residualVec.x());
+                    aida.histogram2D("Low Pz [Extrapolated SimTrackerHit - SimCalorimeterHit] X vs SimCalorimeterHit Y").fill(caloHitPos.y(), residualVec.x());
+                    aida.histogram2D("Low Pz [Extrapolated SimTrackerHit - SimCalorimeterHit] Y vs SimCalorimeterHit X").fill(caloHitPos.x(), residualVec.y());
+                    aida.histogram2D("Low Pz [Extrapolated SimTrackerHit - SimCalorimeterHit] Y vs SimCalorimeterHit Y").fill(caloHitPos.y(), residualVec.y());
                 }
+                aida.histogram2D("[Extrapolated SimTrackerHit - SimCalorimeterHit] X vs SimCalorimeterHit X").fill(caloHitPos.x(), residualVec.x());
+                aida.histogram2D("[Extrapolated SimTrackerHit - SimCalorimeterHit] X vs SimCalorimeterHit Y").fill(caloHitPos.y(), residualVec.x());
+                aida.histogram2D("[Extrapolated SimTrackerHit - SimCalorimeterHit] Y vs SimCalorimeterHit X").fill(caloHitPos.x(), residualVec.y());
+                aida.histogram2D("[Extrapolated SimTrackerHit - SimCalorimeterHit] Y vs SimCalorimeterHit Y").fill(caloHitPos.y(), residualVec.y());
                 aida.histogram2D("Extrapolated SimTrackerHit - SimCalorimeterHit Y vs MCParticle Pz").fill(Math.abs(part.getPZ()), residualVec.y());
                 aida.histogram2D("Extrapolated SimTrackerHit - SimCalorimeterHit X vs MCParticle Pz").fill(Math.abs(part.getPZ()), residualVec.x());
                 
