@@ -13,6 +13,7 @@ import hep.physics.vec.Hep3Vector;
 
 import org.lcsim.event.ReconstructedParticle;
 import org.lcsim.event.Vertex;
+import org.lcsim.math.chisq.ChisqProb;
 
 /**
  *
@@ -111,6 +112,10 @@ public class BilliorVertex implements Vertex {
         if (covList.size() > 0)
             _covTrkMomList = covList;
 
+    }
+    
+    public void setProbability(int dof) {
+        _probability = ChisqProb.gammq(dof, _chiSq);
     }
     
     public void setStoreCovTrkMomList(boolean input) {

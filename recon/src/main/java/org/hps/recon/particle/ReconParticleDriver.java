@@ -17,9 +17,11 @@ import org.hps.recon.ecal.cluster.ClusterUtilities;
 import org.hps.recon.tracking.CoordinateTransformations;
 import org.hps.recon.tracking.TrackUtils;
 import org.hps.recon.utils.TrackClusterMatcher;
+import org.hps.record.StandardCuts;
 import org.lcsim.event.Cluster;
 import org.lcsim.event.EventHeader;
 import org.lcsim.event.ReconstructedParticle;
+import org.lcsim.event.RelationalTable;
 import org.lcsim.event.Track;
 import org.lcsim.event.Vertex;
 import org.lcsim.event.base.BaseCluster;
@@ -55,6 +57,9 @@ public abstract class ReconParticleDriver extends Driver {
 
     protected boolean isMC = false;
     private boolean disablePID = false;
+    protected StandardCuts cuts = null;
+    RelationalTable hitToRotated = null;
+    RelationalTable hitToStrips = null;
    
     public void setUseCorrectedClusterPositionsForMatching(boolean val){
         useCorrectedClusterPositionsForMatching = val;
@@ -127,7 +132,7 @@ public abstract class ReconParticleDriver extends Driver {
     /**
      * LCIO collection name for tracks.
      */
-    private String trackCollectionName = "MatchedTracks";
+    private String trackCollectionName = "GBLTracks";
     /**
      * LCIO collection name for reconstructed particles.
      */
@@ -156,6 +161,8 @@ public abstract class ReconParticleDriver extends Driver {
      * LCIO collection name for V0 candidate vertices generated with target constraints.
      */
     protected String targetConV0VerticesColName = null;
+    
+    private String OtherElectronsColName = "OtherElectrons";
 
     // Beam size variables.
     // The beamsize array is in the tracking frame
@@ -366,6 +373,11 @@ public abstract class ReconParticleDriver extends Driver {
                 this.getConditionsManager().getCachedConditions(BeamEnergyCollection.class, "beam_energies").getCachedData();        
             
         matcher.setBeamEnergy(beamEnergyCollection.get(0).getBeamEnergy()); 
+        
+        if (cuts == null)
+            cuts = new StandardCuts();
+        else
+            cuts.changeBeamEnergy(beamEnergyCollection.get(0).getBeamEnergy());
 
     }
 
@@ -444,6 +456,10 @@ public abstract class ReconParticleDriver extends Driver {
                 // try to find a matching cluster:
                 Cluster matchedCluster = null;
                 for (Cluster cluster : clusters) {
+                    double clusTime = ClusterUtilities.getSeedHitTime(cluster);
+                    double trkT = TrackUtils.getTrackTime(track, hitToStrips, hitToRotated);
+                    if (Math.abs(clusTime - trkT - cuts.getTrackClusterTimeOffset()) > cuts.getMaxMatchDt())
+                        continue;
                     
                     //if the option to use corrected cluster positions is selected, then
                     //create a copy of the current cluster, and apply corrections to it
@@ -628,7 +644,10 @@ public abstract class ReconParticleDriver extends Driver {
                 trackCollections.add(new ArrayList<Track>(0));
             }
         }
-
+        
+        hitToRotated = TrackUtils.getHitToRotatedTable(event);
+        hitToStrips = TrackUtils.getHitToStripsTable(event);
+        
         // Instantiate new lists to store reconstructed particles and
         // V0 candidate particles and vertices.
         finalStateParticles = new ArrayList<ReconstructedParticle>();
@@ -671,6 +690,17 @@ public abstract class ReconParticleDriver extends Driver {
         // Form V0 candidate particles and vertices from the electron
         // and positron reconstructed particles.
         findVertices(electrons, positrons);
+        
+        List<ReconstructedParticle> goodFinalStateParticles = particleCuts(finalStateParticles);
+        // VERBOSE :: Output the number of reconstructed particles.
+        printDebug("Final State Particles :: " + goodFinalStateParticles.size());
+        // Add the final state ReconstructedParticles to the event
+        event.put(finalStateParticlesColName, goodFinalStateParticles, ReconstructedParticle.class, 0);
+        for (ReconstructedParticle ele : goodFinalStateParticles) {
+            if (electrons.contains(ele))
+                electrons.remove(ele);
+        }
+        event.put(OtherElectronsColName, electrons, ReconstructedParticle.class, 0);
 
         // Store the V0 candidate particles and vertices for each type
         // of constraint in the appropriate collection in the event,
@@ -700,6 +730,8 @@ public abstract class ReconParticleDriver extends Driver {
             event.put(targetConV0VerticesColName, targetConV0Vertices, Vertex.class, 0);
         }
     }
+    
+    protected abstract List<ReconstructedParticle> particleCuts(List<ReconstructedParticle> finalStateParticles);
 
     /**
      * Sets the LCIO collection names to their default values if they are not already defined.

@@ -57,6 +57,12 @@ public class TestRunReconParticleDriver extends ReconParticleDriver {
         }
     }
     
+    @Override
+    protected List<ReconstructedParticle> particleCuts(List<ReconstructedParticle> finalStateParticles) {
+        // TODO Auto-generated method stub
+        return finalStateParticles;
+    }
+    
     /**
      * Sets the unconstrained A' candidate particle collection name if
      * it has not already been defined.

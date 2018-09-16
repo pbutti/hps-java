@@ -16,6 +16,7 @@ import org.lcsim.event.ReconstructedParticle;
 import org.lcsim.event.Track;
 import org.lcsim.event.Vertex;
 import org.lcsim.event.base.BaseReconstructedParticle;
+import org.hps.recon.ecal.cluster.ClusterUtilities;
 import org.hps.recon.tracking.TrackType;
 import org.hps.recon.tracking.TrackUtils;
 import org.hps.recon.vertexing.BilliorTrack;
@@ -120,6 +121,7 @@ public class HpsReconParticleDriver extends ReconParticleDriver {
 
     private boolean _patchVertexTrackParameters = false;
     private boolean _storeCovTrkMomList = false;
+    private static final int[] DOF = {7,5,4};
 
     /**
      * Processes the track and cluster collections in the event into
@@ -151,6 +153,28 @@ public class HpsReconParticleDriver extends ReconParticleDriver {
     protected void setStoreVertexCovars(boolean input) {
         _storeCovTrkMomList = input;
     }
+    
+    protected List<ReconstructedParticle> particleCuts(List<ReconstructedParticle> finalStateParticles) {
+        List<ReconstructedParticle> goodFinalStateParticles = new ArrayList<ReconstructedParticle>();
+        for (ReconstructedParticle part : finalStateParticles) {
+            // good electrons
+            if (part.getCharge() == -1) {
+                if (part.getMomentum().magnitude() < cuts.getMaxElectronP()) {
+                    if (part.getGoodnessOfPID() < cuts.getMaxMatchChisq())
+                        goodFinalStateParticles.add(part);
+                }
+            }
+            // good positrons
+            else if (part.getCharge() == 1) {
+                if (part.getGoodnessOfPID() < cuts.getMaxMatchChisq())
+                    goodFinalStateParticles.add(part);
+            }
+            // photons
+            else 
+                goodFinalStateParticles.add(part);
+        }
+        return goodFinalStateParticles;
+    }
 
     /**
      * Creates reconstructed V0 candidate particles and vertices for electron
@@ -162,48 +186,56 @@ public class HpsReconParticleDriver extends ReconParticleDriver {
      */
     @Override
     protected void findVertices(List<ReconstructedParticle> electrons, List<ReconstructedParticle> positrons) {
-
-        // Iterate over the positrons and electrons to perform vertexing
-        // on the pairs.
-        for (ReconstructedParticle positron : positrons)
-            for (ReconstructedParticle electron : electrons) {
-
-                // Don't vertex a GBL track with a SeedTrack.
-                if (TrackType.isGBL(positron.getType()) != TrackType.isGBL(electron.getType()))
-                    continue;
-                // Only vertex two particles if at least one strategy found both tracks. Take out this check once we reduce the number of tracks.
-                // This is dumb so I took it out. - Matt Solt
-                /*if ((positron.getType() & electron.getType() & 0x1f) == 0) {
-                 continue;
-                 }*/
-
-                // Make V0 candidates
-                this.makeV0Candidates(electron, positron);
-            }
-
+        findV0s(electrons, positrons);
+        findMollers(electrons);
+    }
+    
+    public void findMollers(List<ReconstructedParticle> electrons) {
         List<ReconstructedParticle> topElectrons = new ArrayList<ReconstructedParticle>();
         List<ReconstructedParticle> botElectrons = new ArrayList<ReconstructedParticle>();
+        
         for (ReconstructedParticle electron : electrons)
             if (electron.getTracks().get(0).getTrackStates().get(0).getTanLambda() > 0)
                 topElectrons.add(electron);
             else
                 botElectrons.add(electron);
-
+         if (topElectrons.size() > 1 || botElectrons.size() > 1)
+            return;
+        
         // Iterate over the collection of electrons and create e-e- pairs 
         for (ReconstructedParticle topElectron : topElectrons)
-
-            for (ReconstructedParticle botElectron : botElectrons) {
-                // Don't vertex a GBL track with a SeedTrack.
-                if (TrackType.isGBL(topElectron.getType()) != TrackType.isGBL(botElectron.getType()))
+              for (ReconstructedParticle botElectron : botElectrons) {
+                 // Don't vertex a GBL track with a SeedTrack.
+                 if (TrackType.isGBL(topElectron.getType()) != TrackType.isGBL(botElectron.getType()))
                     continue;
-
-                // Only vertex two particles if at least one strategy found both tracks. Take out this check once we reduce the number of tracks.
+                 // Only vertex two particles if at least one strategy found both tracks. Take out this check once we reduce the number of tracks.
                 if ((topElectron.getType() & botElectron.getType() & 0x1f) == 0)
                     continue;
-
-                // Make Moller candidates
+                //if ((topElectron.getType() & botElectron.getType() & 0x1f) == 0)
+                //    continue;
+                 // Make Moller candidates
                 this.makeMollerCandidates(topElectron, botElectron);
             }
+    }
+    
+    public void findV0s(List<ReconstructedParticle> electrons, List<ReconstructedParticle> positrons) {
+        List<ReconstructedParticle> goodElectrons = particleCuts(electrons);
+        List<ReconstructedParticle> goodPositrons = particleCuts(positrons);
+        for (ReconstructedParticle positron : goodPositrons) {
+            for (ReconstructedParticle electron : goodElectrons) {
+                // Don't vertex a GBL track with a SeedTrack.
+                if (TrackType.isGBL(positron.getType()) != TrackType.isGBL(electron.getType()))
+                    continue;
+                 // Only vertex two particles if at least one strategy found both tracks. Take out this check once we reduce the number of tracks.
+                 // This is dumb so I took it out. - Matt Solt
+                 /*if ((positron.getType() & electron.getType() & 0x1f) == 0) {
+                  continue;
+                  }*/
+ 
+                // Make V0 candidates
+                this.makeV0Candidates(electron, positron);
+            }
+         }
     }
 
     /**
@@ -275,6 +307,7 @@ public class HpsReconParticleDriver extends ReconParticleDriver {
 
         // Find a vertex based on the tracks.
         BilliorVertex vtx = vtxFitter.fitVertex(billiorTracks);
+        vtx.setProbability(DOF[constraint.ordinal()]);
 
         // mg 8/14/17 
         // if this is an unconstrained or BS constrained vertex, propogate the 
@@ -295,6 +328,7 @@ public class HpsReconParticleDriver extends ReconParticleDriver {
             BilliorVertex vtxNew = vtxFitter.fitVertex(shiftedTracks);
             Hep3Vector vtxPosNew = VecOp.add(vtx.getPosition(), vtxNew.getPosition());//the refit vertex is measured wrt the original vertex position
             vtxNew.setPosition(vtxPosNew);//just change the position...the errors and momenta are correct in re-fit
+            vtxNew.setProbability(DOF[constraint.ordinal()]);
             return vtxNew;
         } else
             return vtx;
@@ -304,14 +338,30 @@ public class HpsReconParticleDriver extends ReconParticleDriver {
      *
      */
     private void makeV0Candidates(ReconstructedParticle electron, ReconstructedParticle positron) {
-
+        boolean eleIsTop = (electron.getTracks().get(0).getTrackerHits().get(0).getPosition()[2] > 0);
+        boolean posIsTop = (positron.getTracks().get(0).getTrackerHits().get(0).getPosition()[2] > 0);
+        
+        if (eleIsTop == posIsTop)
+            return;
+        
+        double eleClusTime = ClusterUtilities.getSeedHitTime(electron.getClusters().get(0));
+        double posClusTime = ClusterUtilities.getSeedHitTime(positron.getClusters().get(0));
+      
+        if (Math.abs(eleClusTime - posClusTime) > cuts.getMaxVertexClusterDt())
+            return;
+   
         // Create candidate particles for each constraint.
         for (Constraint constraint : Constraint.values()) {
 
             // Generate a candidate vertex and particle.
             BilliorVertex vtxFit = fitVertex(constraint, electron, positron);
+            
             ReconstructedParticle candidate = this.makeReconstructedParticle(electron, positron, vtxFit);
-
+            if (candidate.getMomentum().magnitude() > cuts.getMaxVertexP())
+                continue;
+           
+            if (candidate.getStartVertex().getProbability() < cuts.getMinVertexChisqProb())
+                continue;
             // Add the candidate vertex and particle to the
             // appropriate LCIO collection.
             switch (constraint) {
@@ -350,6 +400,11 @@ public class HpsReconParticleDriver extends ReconParticleDriver {
             BilliorVertex vtxFit = fitVertex(constraint, topElectron, botElectron);
             ReconstructedParticle candidate = makeReconstructedParticle(topElectron, botElectron, vtxFit);
 
+            if (candidate.getMomentum().magnitude() > cuts.getMaxVertexP() || candidate.getMomentum().magnitude() < cuts.getMinMollerP())
+                continue;
+            if (candidate.getStartVertex().getProbability() < cuts.getMinMollerChisqProb())
+                continue;
+            
             // Add the candidate vertex and particle to the
             // appropriate LCIO collection.
             switch (constraint) {
@@ -388,6 +443,7 @@ public class HpsReconParticleDriver extends ReconParticleDriver {
      */
     public static ReconstructedParticle makeReconstructedParticle(ReconstructedParticle electron, ReconstructedParticle positron, BilliorVertex vtxFit) {
 
+        
         // Create a new reconstructed particle to represent the V0
         // candidate and populate it with the electron and positron.
         ReconstructedParticle candidate = new BaseReconstructedParticle();

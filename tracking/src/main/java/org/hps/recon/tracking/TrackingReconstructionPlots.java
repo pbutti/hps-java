@@ -24,6 +24,7 @@ import org.lcsim.event.LCRelation;
 import org.lcsim.event.RawTrackerHit;
 import org.lcsim.event.RelationalTable;
 import org.lcsim.event.Track;
+import org.lcsim.event.TrackState;
 import org.lcsim.event.TrackerHit;
 import org.lcsim.geometry.Detector;
 import org.lcsim.geometry.IDDecoder;
@@ -54,7 +55,7 @@ public class TrackingReconstructionPlots extends Driver {
     private boolean doElectronPositronPlots = false;
     private boolean doStripHitPlots = false;
 
-    private String trackCollectionName = "MatchedTracks";
+    private String trackCollectionName = "GBLTracks";
     String ecalSubdetectorName = "Ecal";
     String ecalCollectionName = "EcalClusters";
     IDDecoder dec;
@@ -219,6 +220,17 @@ public class TrackingReconstructionPlots extends Driver {
         aida.histogram1D("Tracks per Event", 3, 0, 3).fill(tracks.size());
 
         for (Track trk : tracks) {
+
+            List<TrackState> tsList = trk.getTrackStates();
+            boolean hasCal = false;
+            System.out.println("Getting trackStates for track:");
+            for (TrackState ts : tsList) {
+                //System.out.printf("   loc %d \n", ts.getLocation());
+                if (ts.getLocation() == TrackState.AtCalorimeter)
+                    hasCal = true;
+            }
+            if (!hasCal)
+                System.out.println("Track has no cal state");
 
             boolean isTop = false;
             if (trk.getTrackerHits().get(0).getPosition()[2] > 0) {

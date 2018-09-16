@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.hps.record.StandardCuts;
 import org.lcsim.event.EventHeader;
 import org.lcsim.event.Track;
 import org.lcsim.geometry.Detector;
@@ -36,6 +37,7 @@ public class MergeTrackCollections extends Driver {
     boolean isTransient = false;
     private AmbiguityResolver ambi;
     // private AcceptanceHelper acc;
+    private StandardCuts cuts = null;
 
     private AIDA aida2 = AIDA.defaultInstance();
 
@@ -115,6 +117,9 @@ public class MergeTrackCollections extends Driver {
         // acc.initializeMaps(detector, "Tracker");
         ambi = new SimpleAmbiguityResolver();
 
+        if (cuts == null)
+            cuts = new StandardCuts();
+
         if (doPlots) {
             trackScoresPreAmbi = aida2.histogram1D("trackScoresPreAmbi", 200, -100, 100);
             trackScoresPostAmbi = aida2.histogram1D("trackScoresPostAmbi", 200, -100, 100);
@@ -161,6 +166,9 @@ public class MergeTrackCollections extends Driver {
         ((SimpleAmbiguityResolver) (ambi)).setMode(SimpleAmbiguityResolver.AmbiMode.DUPS);
         ambi.resolve();
         ((SimpleAmbiguityResolver) (ambi)).setMode(SimpleAmbiguityResolver.AmbiMode.PARTIALS);
+        ambi.resolve();
+        ((SimpleAmbiguityResolver) (ambi)).setMode(SimpleAmbiguityResolver.AmbiMode.SHARED);
+        ((SimpleAmbiguityResolver) (ambi)).setShareThreshold(cuts.getMaxSharedHitsPerTrack());
         ambi.resolve();
         List<Track> deduplicatedTracks = ambi.getTracks();
         // List<Track> partialTracks = ambi.getPartialTracks();
