@@ -24,8 +24,8 @@ import org.lcsim.util.aida.AIDA;
 import org.lcsim.util.loop.LCSimLoop;
 
 public class CompareCollections extends TestCase {
-    //String oldFileName = "/nfs/slac/g/hps3/data/objectStandardization/engrun2015/5772_pass8_goldenV0.slcio";
-    String oldFileName = "/nfs/slac/work/mdiamond/hps-java/outputMaster.slcio";
+    String oldFileName = "/nfs/slac/g/hps3/data/objectStandardization/engrun2015/5772_pass8_goldenV0.slcio";
+    //String oldFileName = "/nfs/slac/work/mdiamond/hps-java/outputPass8.slcio";
     String[] newFileName = {"/nfs/slac/work/mdiamond/hps-java/outputMouse.slcio"};
     int nEvents = 1000;
 
@@ -71,6 +71,8 @@ public class CompareCollections extends TestCase {
                 aida = AIDA.defaultInstance();
             aida.tree().cd("/");
             setupPlots();
+
+	    System.out.printf("Detector name %s \n", detector.getName());
             
             cuts = new StandardCuts();
         }
@@ -159,56 +161,39 @@ public class CompareCollections extends TestCase {
                     aida.histogram1D("same half").fill(0);
                     aida.histogram1D("cut flow").fill(1);
                 }
-                
-                if (!p1.getClusters().isEmpty() && !p2.getClusters().isEmpty()) {
-                    double clus1 = ClusterUtilities.getSeedHitTime(p1.getClusters().get(0));
-                    double clus2 = ClusterUtilities.getSeedHitTime(p2.getClusters().get(0));
-                    double diff = Math.abs(clus1 - clus2);
-                    aida.histogram1D("V0 Cluster dt").fill(diff);
-                    if (diff < cuts.getMaxVertexClusterDt()) {
-                        if (passes)
-                            aida.histogram1D("cut flow").fill(2);
-                    }
-                    else
-                        passes = false;   
-                }
-                
-                aida.histogram1D("V0 Chi2").fill(v.getChi2());
-                double vProb = 1.0 - new ChiSquaredDistribution(4).cumulativeProbability(v.getChi2());
-                if (vProb > cuts.getMinVertexChisqProb()) {
-                    if (passes)
-                        aida.histogram1D("cut flow").fill(3);
-                }
-                else
-                    passes = false;
+
                 
                 aida.histogram1D("V0 P").fill(V0.getMomentum().magnitude());
                 if (V0.getMomentum().magnitude() < cuts.getMaxVertexP()) {
                     if (passes)
-                        aida.histogram1D("cut flow").fill(4);
+                        aida.histogram1D("cut flow").fill(2);
                 }
-                else
+                else {
                     passes = false;
-                
+		    
+		}
+
                 // electron/positron components
                 List<ReconstructedParticle> parts = V0.getParticles();
-                boolean passPID = true;
+                //boolean passPID = true;
                 boolean passChi2 = true;
                 boolean passTiming = true;
+		boolean passElectronP = true;
 		double maxChi2 = 0;
+		double electronP = 0;
+		double maxDt = 0;
+		double maxPID = 0;
+		boolean passPID = true;
                 if (parts != null && !parts.isEmpty()) {
                     for (ReconstructedParticle part : parts) {
                         if (part.getCharge() == -1) {
-                            aida.histogram1D("Electron P").fill(part.getMomentum().magnitude());
-                            if (part.getMomentum().magnitude() < cuts.getMaxElectronP()) {
-                                if (passes)
-                                    aida.histogram1D("cut flow").fill(5);
-                            }
-                            else
-                                passes = false;
+			    electronP = part.getMomentum().magnitude();
+                            if (part.getMomentum().magnitude() > cuts.getMaxElectronP()) 
+                                passElectronP = false;
                         }
                         if (part.getCharge() != 0) {
-                            aida.histogram1D("Match GoodnessOfPID").fill(part.getGoodnessOfPID());
+			    if (part.getGoodnessOfPID() > maxPID)
+				maxPID = part.getGoodnessOfPID();
                             if (part.getGoodnessOfPID() > cuts.getMaxMatchChisq())
                                 passPID = false;
                         }
@@ -224,26 +209,66 @@ public class CompareCollections extends TestCase {
                                     Cluster clus = part.getClusters().get(0);
                                     double clusTime = ClusterUtilities.getSeedHitTime(clus);
                                     double trkT = TrackUtils.getTrackTime(trk, hitToStrips, hitToRotated);
-                                    aida.histogram1D("Track-Cluster dt").fill(clusTime - trkT - timeOffset);
-                                    if (Math.abs(clusTime - trkT - timeOffset) > cuts.getMaxMatchDt())
+                                    double temp = Math.abs(clusTime - trkT - timeOffset);
+				    if (temp > maxDt)
+					maxDt = temp;
+                                    if (temp > cuts.getMaxMatchDt())
                                         passTiming = false;
                                 }
+				else
+				    passes=false;
                             }
+			    else
+				passes=false;
                         }
-                        
-                    }
-                    if (passes) {
-                        if (passPID) {
-                            aida.histogram1D("cut flow").fill(6);
-                            if (passTiming) {
-                                aida.histogram1D("cut flow").fill(7);
-				aida.histogram1D("Track Chi2").fill(maxChi2);
-                                if (passChi2) {
-                                    aida.histogram1D("cut flow").fill(8);
-                                }
-                            }   
+			else
+			    passes=false;
+			     
+		    }
+
+		    boolean passVtiming = false;
+		    double diff = 0;
+		    if (!p1.getClusters().isEmpty() && !p2.getClusters().isEmpty()) {
+			double clus1 = ClusterUtilities.getSeedHitTime(p1.getClusters().get(0));
+			double clus2 = ClusterUtilities.getSeedHitTime(p2.getClusters().get(0));
+			diff = Math.abs(clus1 - clus2);
+                        if (diff < cuts.getMaxVertexClusterDt()) {
+			    passVtiming = true;
                         }
-                    }
+
+		    }
+		    else
+			passes=false;
+
+		    if (!passes)
+			continue;
+
+		    double vProb = 1.0 - new ChiSquaredDistribution(4).cumulativeProbability(v.getChi2());
+
+		    aida.histogram1D("Track-Cluster dt").fill(maxDt);
+		    if (passTiming) {
+			aida.histogram1D("cut flow").fill(3);
+			aida.histogram1D("Match GoodnessOfPID").fill(maxPID);
+		    
+			if (passPID) {
+			    aida.histogram1D("cut flow").fill(4);
+			    aida.histogram1D("Electron P").fill(electronP);
+			    if (passElectronP) {
+				aida.histogram1D("V0 Cluster dt").fill(diff);
+				aida.histogram1D("cut flow").fill(5);
+				if (passVtiming) {
+				    aida.histogram1D("cut flow").fill(6);
+				    aida.histogram1D("V0 Chi2").fill(v.getChi2());
+				    if (vProb > cuts.getMinVertexChisqProb()) {
+					aida.histogram1D("cut flow").fill(7);
+					aida.histogram1D("Track Chi2").fill(maxChi2);
+					if (passChi2)
+					    aida.histogram1D("cut flow").fill(8);
+				    }
+				}
+			    }
+			}
+		    }
                 }
             }
         }
