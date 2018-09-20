@@ -97,6 +97,17 @@ public class HpsReconParticleDriver extends ReconParticleDriver {
      * constraints.
      */
     protected List<Vertex> targetConMollerVertices;
+    
+    // converted V0 collections
+    protected String unconstrainedVcCandidatesColName = null;
+ 
+    protected String unconstrainedVcVerticesColName = null;
+    
+    protected List<ReconstructedParticle> unconstrainedVcCandidates;
+     protected List<Vertex> unconstrainedVcVertices;
+    
+    private boolean makeConversionCols = true;
+    private boolean makeMollerCols = true;
 
     /**
      * Represents a type of constraint for vertex fitting.
@@ -133,25 +144,46 @@ public class HpsReconParticleDriver extends ReconParticleDriver {
     @Override
     protected void process(EventHeader event) {
 
-        unconstrainedMollerCandidates = new ArrayList<ReconstructedParticle>();
-        beamConMollerCandidates = new ArrayList<ReconstructedParticle>();
-        targetConMollerCandidates = new ArrayList<ReconstructedParticle>();
-        unconstrainedMollerVertices = new ArrayList<Vertex>();
-        beamConMollerVertices = new ArrayList<Vertex>();
-        targetConMollerVertices = new ArrayList<Vertex>();
+        if (makeMollerCols) {
+            unconstrainedMollerCandidates = new ArrayList<ReconstructedParticle>();
+            beamConMollerCandidates = new ArrayList<ReconstructedParticle>();
+            targetConMollerCandidates = new ArrayList<ReconstructedParticle>();
+            unconstrainedMollerVertices = new ArrayList<Vertex>();
+            beamConMollerVertices = new ArrayList<Vertex>();
+            targetConMollerVertices = new ArrayList<Vertex>();
+        }
+        if (makeConversionCols) {
+            unconstrainedVcCandidates = new ArrayList<ReconstructedParticle>();
+            unconstrainedVcVertices = new ArrayList<Vertex>();
+        }
 
         super.process(event);
 
-        event.put(unconstrainedMollerCandidatesColName, unconstrainedMollerCandidates, ReconstructedParticle.class, 0);
-        event.put(beamConMollerCandidatesColName, beamConMollerCandidates, ReconstructedParticle.class, 0);
-        event.put(targetConMollerCandidatesColName, targetConMollerCandidates, ReconstructedParticle.class, 0);
-        event.put(unconstrainedMollerVerticesColName, unconstrainedMollerVertices, Vertex.class, 0);
-        event.put(beamConMollerVerticesColName, beamConMollerVertices, Vertex.class, 0);
-        event.put(targetConMollerVerticesColName, targetConMollerVertices, Vertex.class, 0);
+        if (makeMollerCols) {
+            event.put(unconstrainedMollerCandidatesColName, unconstrainedMollerCandidates, ReconstructedParticle.class, 0);
+            event.put(beamConMollerCandidatesColName, beamConMollerCandidates, ReconstructedParticle.class, 0);
+            event.put(targetConMollerCandidatesColName, targetConMollerCandidates, ReconstructedParticle.class, 0);
+            event.put(unconstrainedMollerVerticesColName, unconstrainedMollerVertices, Vertex.class, 0);
+            event.put(beamConMollerVerticesColName, beamConMollerVertices, Vertex.class, 0);
+            event.put(targetConMollerVerticesColName, targetConMollerVertices, Vertex.class, 0);
+        }
+
+        if (makeConversionCols) {
+            event.put(unconstrainedVcCandidatesColName, unconstrainedVcCandidates, ReconstructedParticle.class, 0);
+            event.put(unconstrainedVcVerticesColName, unconstrainedVcVertices, Vertex.class, 0);
+        }
     }
 
-    protected void setStoreVertexCovars(boolean input) {
+    public void setStoreVertexCovars(boolean input) {
         _storeCovTrkMomList = input;
+    }
+    
+    public void setMakeConversionCols(boolean input) {
+        makeConversionCols = input;
+    }
+    
+    public void setMakeMollerCols(boolean input) {
+        makeMollerCols = input;
     }
 
     protected List<ReconstructedParticle> particleCuts(List<ReconstructedParticle> finalStateParticles) {
@@ -187,7 +219,8 @@ public class HpsReconParticleDriver extends ReconParticleDriver {
     @Override
     protected void findVertices(List<ReconstructedParticle> electrons, List<ReconstructedParticle> positrons) {
         findV0s(electrons, positrons);
-        findMollers(electrons);
+        if (makeMollerCols)
+            findMollers(electrons);
     }
 
     public void findMollers(List<ReconstructedParticle> electrons) {
@@ -244,20 +277,11 @@ public class HpsReconParticleDriver extends ReconParticleDriver {
      */
     @Override
     protected void startOfData() {
-        // If the LCIO collection names have not been defined, assign
-        // them to the default names.
-        if (unconstrainedV0CandidatesColName == null)
-            unconstrainedV0CandidatesColName = "UnconstrainedV0Candidates";
-        if (beamConV0CandidatesColName == null)
-            beamConV0CandidatesColName = "BeamspotConstrainedV0Candidates";
-        if (targetConV0CandidatesColName == null)
-            targetConV0CandidatesColName = "TargetConstrainedV0Candidates";
-        if (unconstrainedV0VerticesColName == null)
-            unconstrainedV0VerticesColName = "UnconstrainedV0Vertices";
-        if (beamConV0VerticesColName == null)
-            beamConV0VerticesColName = "BeamspotConstrainedV0Vertices";
-        if (targetConV0VerticesColName == null)
-            targetConV0VerticesColName = "TargetConstrainedV0Vertices";
+        super.startOfData();
+        if (unconstrainedVcCandidatesColName == null)
+            unconstrainedVcCandidatesColName = unconstrainedV0CandidatesColName.replaceAll("V0", "Vc");
+        if (unconstrainedVcVerticesColName == null)
+            unconstrainedVcVerticesColName = unconstrainedV0VerticesColName.replaceAll("V0", "Vc");
     }
 
     /**
@@ -341,7 +365,7 @@ public class HpsReconParticleDriver extends ReconParticleDriver {
         boolean eleIsTop = (electron.getTracks().get(0).getTrackerHits().get(0).getPosition()[2] > 0);
         boolean posIsTop = (positron.getTracks().get(0).getTrackerHits().get(0).getPosition()[2] > 0);
 
-        if (eleIsTop == posIsTop)
+        if ((eleIsTop == posIsTop) && (!makeConversionCols))
             return;
 
         if (electron.getClusters() == null || positron.getClusters() == null)
@@ -375,18 +399,28 @@ public class HpsReconParticleDriver extends ReconParticleDriver {
                     // patch the track parameters at the found vertex
                     if (_patchVertexTrackParameters)
                         patchVertex(vtxFit);
-                    unconstrainedV0Vertices.add(vtxFit);
-                    unconstrainedV0Candidates.add(candidate);
+                    if (eleIsTop != posIsTop) {
+                        unconstrainedV0Vertices.add(vtxFit);
+                        unconstrainedV0Candidates.add(candidate);
+                    }
+                    else {
+                        unconstrainedVcVertices.add(vtxFit);
+                        unconstrainedVcCandidates.add(candidate); 
+                    }
                     break;
 
                 case BS_CONSTRAINED:
-                    beamConV0Vertices.add(vtxFit);
-                    beamConV0Candidates.add(candidate);
+                    if (eleIsTop != posIsTop) {
+                        beamConV0Vertices.add(vtxFit);
+                        beamConV0Candidates.add(candidate);
+                    }
                     break;
 
                 case TARGET_CONSTRAINED:
-                    targetConV0Vertices.add(vtxFit);
-                    targetConV0Candidates.add(candidate);
+                    if (eleIsTop != posIsTop) {
+                        targetConV0Vertices.add(vtxFit);
+                        targetConV0Candidates.add(candidate);
+                    }
                     break;
 
             }
