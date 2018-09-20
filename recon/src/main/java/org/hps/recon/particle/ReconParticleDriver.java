@@ -664,12 +664,6 @@ public abstract class ReconParticleDriver extends Driver {
         // create final state particles.
         finalStateParticles.addAll(makeReconstructedParticles(clusters, trackCollections));
 
-        // VERBOSE :: Output the number of reconstructed particles.
-        printDebug("Final State Particles :: " + finalStateParticles.size());
-
-        // Add the final state ReconstructedParticles to the event
-        event.put(finalStateParticlesColName, finalStateParticles, ReconstructedParticle.class, 0);
-
         // Separate the reconstructed particles into electrons and
         // positrons so that V0 candidates can be generated from them.
         for (ReconstructedParticle finalStateParticle : finalStateParticles) {
