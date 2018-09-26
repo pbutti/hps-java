@@ -1,5 +1,6 @@
 package org.hps.analysis;
 
+import hep.physics.vec.BasicHep3Vector;
 import hep.physics.vec.Hep3Vector;
 
 import java.io.File;
@@ -35,7 +36,7 @@ public class CompareCollections extends TestCase {
     public void testClear() throws Exception {
         File oldFile = new File(oldFileName);
         LCSimLoop loop = new LCSimLoop();
-        
+
         loop.setLCIORecordSource(oldFile);
         CompareCollectionsDriver ccd = new CompareCollectionsDriver();
         ccd.setOverlayFiles(newFileName);
@@ -48,9 +49,10 @@ public class CompareCollections extends TestCase {
         }
         loop.dispose();
     }
-    
+
     protected class CompareCollectionsDriver extends org.lcsim.util.OverlayDriver {
-        String unconstrainedV0CandidatesColName = "TargetConstrainedV0Candidates";
+        String V0CandidatesColName = "TargetConstrainedV0Candidates";
+        String MollerCandidatesColName = "TargetConstrainedMollerCandidates";
         String fspColName = "OtherElectrons";
         private String outputPlots = "CompareCollPlots.aida";
         public AIDA aida = null;
@@ -58,7 +60,7 @@ public class CompareCollections extends TestCase {
         private double minClusTime = 40;
         private double maxClusTime = 55;
         StandardCuts cuts;
-        
+
         @Override
         public void endOfData() {
             if (outputPlots != null) {
@@ -70,7 +72,7 @@ public class CompareCollections extends TestCase {
                 }
             }
         }
-        
+
         @Override 
         protected void detectorChanged(Detector detector) {
             if (aida == null)
@@ -78,102 +80,120 @@ public class CompareCollections extends TestCase {
             aida.tree().cd("/");
             setupPlots();
 
-	    System.out.printf("Detector name %s \n", detector.getName());
-            
+            System.out.printf("Detector name %s \n", detector.getName());
+
             cuts = new StandardCuts();
         }
-        
+
         protected void setV0CandidatesColName(String input) {
-            unconstrainedV0CandidatesColName = input;
+            V0CandidatesColName = input;
         }
-        
+
         protected void setFspColName(String input) {
             fspColName = input;
         }
-        
+
         protected void process(EventHeader event) {
             EventHeader extraEvent = getNextEvent(overlayEvents);
-//            List<ReconstructedParticle> V0sNew = null;
-//            List<ReconstructedParticle> V0sOld = null;
-            List<ReconstructedParticle> fspsNew = null;
-            List<ReconstructedParticle> fspsOld = null;
-            
-            
+            //            List<ReconstructedParticle> V0sNew = null;
+            //            List<ReconstructedParticle> V0sOld = null;
+            //            List<ReconstructedParticle> fspsNew = null;
+            //            List<ReconstructedParticle> fspsOld = null;
+
+            List<ReconstructedParticle> MollersNew = null;
+            List<ReconstructedParticle> MollersOld = null;
+
+
             if (extraEvent == null) {
                 System.out.printf("error: null extraEvent %d \n", event.getEventNumber());
                 return;
             }
             //System.out.println("Got extra event");
-//            if (!extraEvent.hasCollection(ReconstructedParticle.class, unconstrainedV0CandidatesColName)) {
-//                System.out.printf("error: extraEvent has no V0 collection %d \n", event.getEventNumber());
-//                return;
-//            }
-//            V0sNew = extraEvent.get(ReconstructedParticle.class, unconstrainedV0CandidatesColName);
-//
-//            if (!event.hasCollection(ReconstructedParticle.class, unconstrainedV0CandidatesColName)) {
-//                System.out.printf("error: event has no V0 collection %d \n", event.getEventNumber());
-//                return;
-//            }
-//            V0sOld = event.get(ReconstructedParticle.class, unconstrainedV0CandidatesColName);
-//            
-            
-            if (!extraEvent.hasCollection(ReconstructedParticle.class, fspColName)) {
-                System.out.printf("error: extraEvent has no extraElectrons collection %d \n", event.getEventNumber());
-                return;
-            }
-            fspsNew = extraEvent.get(ReconstructedParticle.class, fspColName);
+            //            if (!extraEvent.hasCollection(ReconstructedParticle.class, unconstrainedV0CandidatesColName)) {
+            //                System.out.printf("error: extraEvent has no V0 collection %d \n", event.getEventNumber());
+            //                return;
+            //            }
+            //            V0sNew = extraEvent.get(ReconstructedParticle.class, unconstrainedV0CandidatesColName);
+            //
+            //            if (!event.hasCollection(ReconstructedParticle.class, unconstrainedV0CandidatesColName)) {
+            //                System.out.printf("error: event has no V0 collection %d \n", event.getEventNumber());
+            //                return;
+            //            }
+            //            V0sOld = event.get(ReconstructedParticle.class, unconstrainedV0CandidatesColName);
+            //            
+
+            //            if (!extraEvent.hasCollection(ReconstructedParticle.class, fspColName)) {
+            //                System.out.printf("error: extraEvent has no extraElectrons collection %d \n", event.getEventNumber());
+            //                return;
+            //            }
+            //            fspsNew = extraEvent.get(ReconstructedParticle.class, fspColName);
             //if (!extraEvent.hasCollection(ReconstructedParticle.class, "FinalStateParticles")) {
             //    System.out.printf("error: extraEvent has no fsp collection %d \n", event.getEventNumber());
             //    return;
             //}
-	    //fspsNew.addAll(extraEvent.get(ReconstructedParticle.class, "FinalStateParticles"));
+            //fspsNew.addAll(extraEvent.get(ReconstructedParticle.class, "FinalStateParticles"));
 
-            if (!event.hasCollection(ReconstructedParticle.class, "FinalStateParticles")) {
-                System.out.printf("error: event has no fsp collection %d \n", event.getEventNumber());
+            //            if (!event.hasCollection(ReconstructedParticle.class, "FinalStateParticles")) {
+            //                System.out.printf("error: event has no fsp collection %d \n", event.getEventNumber());
+            //                return;
+            //            }
+            //            fspsOld = event.get(ReconstructedParticle.class, "FinalStateParticles");
+            //            
+            //            List<ReconstructedParticle> goodFsps = fspSelection(fspsOld);
+            // 
+            if (!event.hasCollection(ReconstructedParticle.class, MollerCandidatesColName)) {
+                System.out.printf("error: event has no moller collection %d \n", event.getEventNumber());
                 return;
             }
-            fspsOld = event.get(ReconstructedParticle.class, "FinalStateParticles");
-            
-            List<ReconstructedParticle> goodFsps = fspSelection(fspsOld);
-            
-	    RelationalTable hitToRotatedTable = TrackUtils.getHitToRotatedTable(event);
-	    RelationalTable hitToStripsTable = TrackUtils.getHitToStripsTable(event);
-            for (ReconstructedParticle fsp : goodFsps) {
-		ReconstructedParticle matchMe = matchFsp(fsp, fspsNew);
-                if (matchMe == null) {
-                    System.out.printf("FEE missed: event num %d \n", event.getEventNumber());
-                    doRecoParticle(fsp);
-                }
-		else {
-		    if (!matchValue(matchMe.getEnergy(), fsp.getEnergy(), 0.05)) {
-			System.out.printf("FEE unmatched: event num %d: old E %f new E %f \n", event.getEventNumber(), fsp.getEnergy(), matchMe.getEnergy());
-			aida.histogram1D("cut flow").fill(4);
-
-			Track trk = fsp.getTracks().get(0);
-			Cluster clus = fsp.getClusters().get(0);
-			double clusTime = ClusterUtilities.getSeedHitTime(clus);
-			double trkT = TrackUtils.getTrackTime(trk, hitToStripsTable, hitToRotatedTable);
-			double temp = Math.abs(clusTime - trkT - timeOffset);
-			aida.histogram1D("Track-Cluster dt").fill(temp);
-			if (temp < cuts.getMaxMatchDt())
-			    aida.histogram1D("cut flow").fill(5);
-
-			aida.histogram1D("Match GoodnessOfPID").fill(fsp.getGoodnessOfPID());
-
-		    }
-		}
+            MollersOld = event.get(ReconstructedParticle.class, MollerCandidatesColName);
+            if (!extraEvent.hasCollection(ReconstructedParticle.class, MollerCandidatesColName)) {
+                System.out.printf("error: extraEvent has no moller collection %d \n", event.getEventNumber());
+                return;
             }
-            
-            
-//            if (!V0sOld.isEmpty() && V0sNew.isEmpty()) {
-//                RelationalTable hitToRotatedTable = TrackUtils.getHitToRotatedTable(event);
-//                RelationalTable hitToStripsTable = TrackUtils.getHitToStripsTable(event);
-//                System.out.printf("new V0 empty: event num %d \n", event.getEventNumber());
-//                doRecoParticles(V0sOld, hitToStripsTable, hitToRotatedTable);
+            MollersNew = event.get(ReconstructedParticle.class, MollerCandidatesColName);
+            RelationalTable hitToRotatedTable = TrackUtils.getHitToRotatedTable(event);
+            RelationalTable hitToStripsTable = TrackUtils.getHitToStripsTable(event);
+            List<ReconstructedParticle> goodMollers = MollerSelection(MollersOld, hitToStripsTable, hitToRotatedTable);
+            if (goodMollers.size() > MollersNew.size()) {
+                System.out.printf("Moller missing: event num %d \n", event.getEventNumber());
+            }
+
+//            for (ReconstructedParticle fsp : goodFsps) {
+//                ReconstructedParticle matchMe = matchFsp(fsp, fspsNew);
+//                if (matchMe == null) {
+//                    System.out.printf("FEE missed: event num %d \n", event.getEventNumber());
+//                    doRecoParticle(fsp);
+//                }
+//                else {
+//                    if (!matchValue(matchMe.getEnergy(), fsp.getEnergy(), 0.05)) {
+//                        System.out.printf("FEE unmatched: event num %d: old E %f new E %f \n", event.getEventNumber(), fsp.getEnergy(), matchMe.getEnergy());
+//                        aida.histogram1D("cut flow").fill(4);
+//
+//                        Track trk = fsp.getTracks().get(0);
+//                        Cluster clus = fsp.getClusters().get(0);
+//                        double clusTime = ClusterUtilities.getSeedHitTime(clus);
+//                        double trkT = TrackUtils.getTrackTime(trk, hitToStripsTable, hitToRotatedTable);
+//                        double temp = Math.abs(clusTime - trkT - timeOffset);
+//                        aida.histogram1D("Track-Cluster dt").fill(temp);
+//                        if (temp < cuts.getMaxMatchDt())
+//                            aida.histogram1D("cut flow").fill(5);
+//
+//                        aida.histogram1D("Match GoodnessOfPID").fill(fsp.getGoodnessOfPID());
+//
+//                    }
+//                }
 //            }
 
+
+            //            if (!V0sOld.isEmpty() && V0sNew.isEmpty()) {
+            //                RelationalTable hitToRotatedTable = TrackUtils.getHitToRotatedTable(event);
+            //                RelationalTable hitToStripsTable = TrackUtils.getHitToStripsTable(event);
+            //                System.out.printf("new V0 empty: event num %d \n", event.getEventNumber());
+            //                doRecoParticles(V0sOld, hitToStripsTable, hitToRotatedTable);
+            //            }
+
         }
-        
+
         boolean matchValue(double val1, double val2, double eps) {
             if (val1 != 0) {
                 if (Math.abs((val1 - val2) / val1) > eps)
@@ -185,14 +205,14 @@ public class CompareCollections extends TestCase {
             }
             return true;
         }
-        
+
         ReconstructedParticle matchFsp(ReconstructedParticle matchMe, List<ReconstructedParticle> fsps) {
             double eps = 0.05;
-	    ReconstructedParticle returnMe = null;
+            ReconstructedParticle returnMe = null;
             for (ReconstructedParticle fsp : fsps) {
                 if (!matchValue(fsp.getCharge(),matchMe.getCharge(),eps))
                     continue;
-		//                if (fsp.getType() != matchMe.getType())
+                //                if (fsp.getType() != matchMe.getType())
                 //    continue;
                 //if (!matchValue(matchMe.getEnergy(), fsp.getEnergy(), eps))
                 //    continue;
@@ -205,11 +225,62 @@ public class CompareCollections extends TestCase {
                 if (!matchValue(fspMom1.z(), matchMom1.z(), eps))
                     continue;
 
-		returnMe = fsp;
+                returnMe = fsp;
                 break;
             }
-            
+
             return returnMe;
+        }
+
+        List<ReconstructedParticle> MollerSelection(List<ReconstructedParticle> mollers, RelationalTable hitToStrips, RelationalTable hitToRotated) {
+            List<ReconstructedParticle> goodMollers = new ArrayList<ReconstructedParticle>();
+            for (ReconstructedParticle moller : mollers) {
+                if (moller.getMomentum().magnitude() < 0.8)
+                    continue;
+                if (moller.getMomentum().magnitude() > 1.18)
+                    continue; 
+                if (moller.getStartVertex().getChi2() > 75)
+                    continue;
+                int goodEls = 0;
+                double clusTime1 = 0;
+                double clusPos = 0;
+                List<ReconstructedParticle> els = moller.getParticles();
+                for (ReconstructedParticle el : els) {
+                    Track trk = el.getTracks().get(0);
+                    if (el.getGoodnessOfPID() > 5)
+                        continue;
+                    if (trk.getChi2() > 40)
+                        continue;
+                    Hep3Vector mom = new BasicHep3Vector(trk.getTrackStates().get(0).getMomentum());
+                    if (mom.magnitude() > 0.75)
+                        continue;
+                    List<Cluster> clusList = el.getClusters();
+                    if (clusList == null || clusList.isEmpty())
+                        continue;
+                    Cluster clus = clusList.get(0);
+                    double clusTime = ClusterUtilities.getSeedHitTime(clus);
+                    if (clusTime1 == 0)
+                        clusTime1 = clusTime;
+                    else
+                        clusTime1 = Math.abs(clusTime1 - clusTime);
+                    if (clusPos == 0)
+                        clusPos = clus.getPosition()[0];
+                    else
+                        clusPos *= clus.getPosition()[0];
+                    double trkT = TrackUtils.getTrackTime(trk, hitToStrips, hitToRotated);
+                    double temp = Math.abs(clusTime - trkT - timeOffset);
+                    if (temp > 4.5)
+                        continue;
+                    
+                    goodEls++;
+                }
+                
+                if (goodEls > 1) {
+                    if (clusTime1 < 2.0 && clusPos >= 0)
+                        goodMollers.add(moller);
+                }
+            }
+            return goodMollers;
         }
         
         List<ReconstructedParticle> fspSelection(List<ReconstructedParticle> fsps) {
@@ -217,7 +288,7 @@ public class CompareCollections extends TestCase {
             for (ReconstructedParticle fsp : fsps) {
                 if (fsp.getCharge() != -1)
                     continue;
-                
+
                 List<Cluster> clusList = fsp.getClusters();
                 if (clusList == null || clusList.isEmpty())
                     continue;
@@ -229,7 +300,7 @@ public class CompareCollections extends TestCase {
                     continue;
                 if (clus.getCalorimeterHits() == null || clus.getCalorimeterHits().size() < 3)
                     continue;
-                
+
                 List<Track> trackList = fsp.getTracks();
                 if (trackList == null || trackList.isEmpty())
                     continue;
@@ -237,13 +308,13 @@ public class CompareCollections extends TestCase {
                     continue;
                 if (fsp.getGoodnessOfPID() > 5)
                     continue;
-                
+
                 goodFsps.add(fsp);
-                
+
             }
             return goodFsps;
         }
-        
+
         private void setupPlots() {
             aida.histogram1D("Match GoodnessOfPID", 100, 0, 25);
             aida.histogram1D("Track-Cluster dt", 50, -10, 10);
@@ -255,7 +326,7 @@ public class CompareCollections extends TestCase {
             aida.histogram1D("same half", 2, -0.5, 1.5);
             aida.histogram1D("cut flow", 10, -0.5, 9.5);
         }
-        
+
         private void doRecoParticle(ReconstructedParticle fsp) {
             if (!TrackType.isGBL(fsp.getType()))
                 return;
@@ -264,16 +335,16 @@ public class CompareCollections extends TestCase {
             if (!fsp.getTracks().isEmpty()) {
                 Track trk = fsp.getTracks().get(0);
                 if (trk != null) {
-		    aida.histogram1D("cut flow").fill(1);
+                    aida.histogram1D("cut flow").fill(1);
                     if (trk.getChi2() < cuts.getMaxTrackChisq(trk.getTrackerHits().size()))
                         aida.histogram1D("cut flow").fill(2);
-		    else
-			aida.histogram1D("Track Chi2").fill(trk.getChi2());
-		}
-	    }
-	}
-    
-        
+                    else
+                        aida.histogram1D("Track Chi2").fill(trk.getChi2());
+                }
+            }
+        }
+
+
         private void doRecoParticles(List<ReconstructedParticle> V0s, RelationalTable hitToStrips, RelationalTable hitToRotated) {
 
 
