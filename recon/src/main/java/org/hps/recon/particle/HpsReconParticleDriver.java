@@ -104,7 +104,7 @@ public class HpsReconParticleDriver extends ReconParticleDriver {
     protected String unconstrainedVcVerticesColName = null;
     
     protected List<ReconstructedParticle> unconstrainedVcCandidates;
-     protected List<Vertex> unconstrainedVcVertices;
+    protected List<Vertex> unconstrainedVcVertices;
     
     private boolean makeConversionCols = true;
     private boolean makeMollerCols = true;
