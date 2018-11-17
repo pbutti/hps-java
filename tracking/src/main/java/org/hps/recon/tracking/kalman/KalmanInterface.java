@@ -38,7 +38,7 @@ public class KalmanInterface {
     private ArrayList<int[]> trackHitsKalman;
     private ArrayList<SiModule> SiMlist;
     private List<Integer> SeedTrackLayers = null;
-    public boolean verbose = true;
+    public boolean verbose;
 
     static Vec convertMomentumToHps(Vec kalMom, double bfield) {
         return kalMom.scale(fieldConversion * bfield);
@@ -49,6 +49,10 @@ public class KalmanInterface {
     }
 
     public KalmanInterface() {
+        this(false);
+    }
+
+    public KalmanInterface(boolean verbose) {
         hitMap = new HashMap<Measurement, TrackerHit>();
         moduleMap = new HashMap<SiModule, SiStripPlane>();
         trackHitsKalman = new ArrayList<int[]>();
@@ -66,7 +70,7 @@ public class KalmanInterface {
                 HpsToKalmanMatrix.setElement(i, j, HpsToKalmanVals[i][j]);
         }
         KalmanToHps = HpsToKalman.invert();
-
+        this.verbose = verbose;
     }
 
     static Vec vectorGlbToKalman(double[] HPSvec) { // Convert a vector from global coordinates to Kalman coordinates
@@ -318,6 +322,7 @@ public class KalmanInterface {
             if (verbose) {
                 System.out.printf("HPSsensor raw info: %s : v %s w %s, origin %s, stereo %f \n", temp.getName(), v.toString(), w.toString(), inputPlane.origin().toString(), stereo);
                 System.out.printf("    Building with Kalman plane: point %s normal %s \n", new BasicHep3Vector(pointOnPlaneTransformed.v).toString(), new BasicHep3Vector(normalToPlaneTransformed.v).toString());
+                System.out.printf("    Width = %10.4f, Length = %10.4f, Layer=%d\n", inputPlane.getWidth(), inputPlane.getLength(), temp.getLayerNumber());
             }
             Plane p = new Plane(pointOnPlaneTransformed, normalToPlaneTransformed);
             SiModule newMod = new SiModule(temp.getLayerNumber(), p, temp.isStereo(), stereo, inputPlane.getWidth(), inputPlane.getLength(), inputPlane.getThickness(), fm);
