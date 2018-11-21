@@ -23,11 +23,6 @@ public class HpsSiTrackerHitStrip1D extends SiTrackerHitStrip1D {
         timeError = input;
     }
 
-    // TODO
-    public double calculateTimeError(List<FittedRawTrackerHit> rawHits) {
-        return 0;
-    }
-
     public HpsSiTrackerHitStrip1D(Hep3Vector position_vector, SymmetricMatrix covariance_matrix, double energy, double time, List<RawTrackerHit> raw_hits, TrackerHitType decoded_type) {
         super(position_vector, covariance_matrix, energy, time, raw_hits, decoded_type);
     }

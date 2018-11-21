@@ -3,6 +3,7 @@ package org.hps.recon.tracking;
 import java.util.List;
 import java.util.Map;
 
+import org.hps.util.Pair;
 import org.lcsim.detector.tracker.silicon.SiSensor;
 import org.lcsim.detector.tracker.silicon.SiSensorElectrodes;
 import org.lcsim.detector.tracker.silicon.SiStrips;
@@ -11,11 +12,11 @@ import hep.physics.vec.BasicHep3Vector;
 import hep.physics.vec.Hep3Vector;
 import hep.physics.vec.VecOp;
 
-public class DefaultSiliconResolutionModel implements SiliconResolutionModel{
+public class DefaultSiliconResolutionModel implements SiliconResolutionModel {
 
     @Override
-    public double getMeasuredResolution(List<FittedRawTrackerHit> cluster, SiSensorElectrodes electrodes) 
-    
+    public double getMeasuredResolution(List<FittedRawTrackerHit> cluster, SiSensorElectrodes electrodes)
+
     {
         double measured_resolution;
 
@@ -51,16 +52,15 @@ public class DefaultSiliconResolutionModel implements SiliconResolutionModel{
         return hit_length / Math.sqrt(12);
     }
 
-    
     //perhaps the best values for these are .19, .12 and .2?    
     private double _oneClusterErr = 1 / Math.sqrt(12);
     private double _twoClusterErr = 1 / 5.;
     private double _threeClusterErr = 1 / 3.;
     private double _fourClusterErr = 1 / 2.;
     private double _fiveClusterErr = 1;
-    
+
     private boolean _useWeights = true;
-    
+
     public void setOneClusterErr(double err) {
         _oneClusterErr = err;
     }
@@ -80,11 +80,11 @@ public class DefaultSiliconResolutionModel implements SiliconResolutionModel{
     public void setFiveClusterErr(double err) {
         _fiveClusterErr = err;
     }
-    
-    public void setUseWeights(boolean useWeights){
+
+    public void setUseWeights(boolean useWeights) {
         _useWeights = useWeights;
     }
-    
+
     @Override
     public Hep3Vector weightedAveragePosition(List<Double> signals, List<Hep3Vector> positions) {
         double total_weight = 0;
@@ -92,7 +92,7 @@ public class DefaultSiliconResolutionModel implements SiliconResolutionModel{
 
         for (int istrip = 0; istrip < signals.size(); istrip++) {
             double signal = signals.get(istrip);
-            
+
             double weight = _useWeights ? signal : 1;
             total_weight += weight;
             position = VecOp.add(position, VecOp.mult(weight, positions.get(istrip)));
@@ -104,5 +104,24 @@ public class DefaultSiliconResolutionModel implements SiliconResolutionModel{
 
         return VecOp.mult(1 / total_weight, position);
     }
-   
+
+    @Override
+    public Pair<Double, Double> getTime(List<FittedRawTrackerHit> cluster) {
+        double time_sum = 0;
+        double signal_sum = 0;
+
+        //        System.out.format("Hits:\n");
+        for (FittedRawTrackerHit hit : cluster) {
+
+            double signal = hit.getAmp();
+            double time = hit.getT0();
+            //        System.out.format("t0=%f\tA=%f\n",hit.getT0(),hit.getAmp());
+
+            time_sum += time * signal * signal;
+            signal_sum += signal * signal;
+
+        }
+        return new Pair<Double, Double>(time_sum / signal_sum, 0.0);
+    }
+
 }

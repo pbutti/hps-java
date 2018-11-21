@@ -9,6 +9,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.hps.util.Pair;
 import org.lcsim.detector.IDetectorElement;
 import org.lcsim.detector.IReadout;
 import org.lcsim.detector.identifier.IIdentifier;
@@ -171,16 +172,16 @@ public class StripMaker {
         }
         Hep3Vector position = getPosition(cluster, electrodes);
         SymmetricMatrix covariance = getCovariance(cluster, electrodes);
-        double time = getTime(cluster);
+        Pair<Double, Double> time = _res_model.getTime(cluster);
         double energy = getEnergy(cluster);
         TrackerHitType type = new TrackerHitType(TrackerHitType.CoordinateSystem.GLOBAL, TrackerHitType.MeasurementType.STRIP_1D);
         List<RawTrackerHit> rth_cluster = new ArrayList<RawTrackerHit>();
         for (FittedRawTrackerHit bth : cluster) {
             rth_cluster.add(bth.getRawTrackerHit());
         }
-        HpsSiTrackerHitStrip1D hit = new HpsSiTrackerHitStrip1D(position, covariance, energy, time, rth_cluster, type);
+        HpsSiTrackerHitStrip1D hit = new HpsSiTrackerHitStrip1D(position, covariance, energy, time.getFirstElement(), rth_cluster, type);
         if (doHitTimeErrors)
-            hit.calculateTimeError(cluster);
+            hit.setTimeError(time.getSecondElement());
         if (_debug) {
             System.out.println(this.getClass().getSimpleName() + " SiTrackerHitStrip1D created at " + position + "(" + hit.getPositionAsVector().toString() + ")" + " E " + energy + " time " + time);
         }
@@ -254,24 +255,6 @@ public class StripMaker {
 
         return ((SiSensor) electrodes.getDetectorElement()).getGeometry().getLocalToGlobal().transformed(position);
         // return electrodes.getLocalToGlobal().transformed(position);
-    }
-
-    private double getTime(List<FittedRawTrackerHit> cluster) {
-        double time_sum = 0;
-        double signal_sum = 0;
-
-        //        System.out.format("Hits:\n");
-        for (FittedRawTrackerHit hit : cluster) {
-
-            double signal = hit.getAmp();
-            double time = hit.getT0();
-            //        System.out.format("t0=%f\tA=%f\n",hit.getT0(),hit.getAmp());
-
-            time_sum += time * signal * signal;
-            signal_sum += signal * signal;
-
-        }
-        return time_sum / signal_sum;
     }
 
     private SymmetricMatrix getCovariance(List<FittedRawTrackerHit> cluster, SiSensorElectrodes electrodes) {

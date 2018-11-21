@@ -9,10 +9,8 @@ import org.lcsim.detector.IDetectorElement;
 import org.lcsim.detector.tracker.silicon.SiSensor;
 import org.lcsim.event.EventHeader;
 import org.lcsim.event.LCRelation;
-import org.lcsim.event.RawTrackerHit;
 import org.lcsim.event.base.MyLCRelation;
 import org.lcsim.geometry.Detector;
-import org.lcsim.lcio.LCIOConstants;
 import org.lcsim.lcio.LCIOUtil;
 import org.lcsim.recon.tracking.digitization.sisim.CDFSiSensorSim;
 import org.lcsim.recon.tracking.digitization.sisim.SiTrackerHit;
@@ -208,7 +206,11 @@ public class DataTrackerHitDriver extends Driver {
 
         // Set the cluster errors.
 
-        DefaultSiliconResolutionModel model = new DefaultSiliconResolutionModel();
+        DefaultSiliconResolutionModel model = null;
+        if (doHitTimeErrors)
+            model = new TimedSiliconResolutionModel();
+        else
+            model = new DefaultSiliconResolutionModel();
 
         model.setOneClusterErr(oneClusterErr);
         model.setTwoClusterErr(twoClusterErr);
