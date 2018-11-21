@@ -30,6 +30,10 @@ public class FittedRawTrackerHit extends BaseLCRelation {
         return getShapeFitParameters().getT0();
     }
 
+    public double getT0Err() {
+        return getShapeFitParameters().getT0Err();
+    }
+
     public double getAmp() {
         return getShapeFitParameters().getAmp();
     }

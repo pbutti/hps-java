@@ -8,7 +8,11 @@ import java.util.Set;
 import org.lcsim.detector.IDetectorElement;
 import org.lcsim.detector.tracker.silicon.SiSensor;
 import org.lcsim.event.EventHeader;
+import org.lcsim.event.LCRelation;
+import org.lcsim.event.RawTrackerHit;
+import org.lcsim.event.base.MyLCRelation;
 import org.lcsim.geometry.Detector;
+import org.lcsim.lcio.LCIOConstants;
 import org.lcsim.lcio.LCIOUtil;
 import org.lcsim.recon.tracking.digitization.sisim.CDFSiSensorSim;
 import org.lcsim.recon.tracking.digitization.sisim.SiTrackerHit;
@@ -25,6 +29,7 @@ public class DataTrackerHitDriver extends Driver {
     // Debug switch for development.
 
     private boolean debug = false;
+    private boolean doHitTimeErrors = false;
     // Collection name.
     // private String readoutCollectionName = "TrackerHits";
     // Subdetector name.
@@ -61,9 +66,25 @@ public class DataTrackerHitDriver extends Driver {
     private StripMaker stripClusterer;
     // private DumbShaperFit shaperFit;
     int[][] counts = new int[2][10];
+    private List<HitTimeData> hitTimes = null;
+    private List<LCRelation> hitTimeRelations = null;
+    private String hitTimesCollectionName = "SiTrackerHitStrip1D_TimeErrors";
+    private String hitTimesRelationsName = "SiTrackerHitStrip1D_TimeErrorsRelations";
+
+    public void setHitTimesCollectionName(String input) {
+        hitTimesCollectionName = input;
+    }
+
+    public void setHitTimesRelationsName(String input) {
+        hitTimesRelationsName = input;
+    }
 
     public void setDebug(boolean debug) {
         this.debug = debug;
+    }
+
+    public void setDoHitTimeErrors(boolean input) {
+        doHitTimeErrors = input;
     }
 
     // public void setReadoutCollectionName(String readoutCollectionName) {
@@ -129,10 +150,10 @@ public class DataTrackerHitDriver extends Driver {
         this.fiveClusterErr = fiveClusterErr;
     }
 
-    public void setUseWeights(boolean useWeights){
+    public void setUseWeights(boolean useWeights) {
         this.useWeights = useWeights;
     }
-    
+
     /**
      * Creates a new instance of TrackerHitDriver.
      */
@@ -181,12 +202,12 @@ public class DataTrackerHitDriver extends Driver {
         // hitMaker=new HPSFittedRawTrackerHitMaker(shaperFit);
         // Create the clusterers and set hit-making parameters.
         stripClusterer = new StripMaker(stripSim, stripClusteringAlgo);
-
+        stripClusterer.setDoHitTimeErrors(doHitTimeErrors);
         stripClusterer.setMaxClusterSize(clusterMaxSize);
         stripClusterer.setCentralStripAveragingThreshold(clusterCentralStripAveragingThreshold);
 
         // Set the cluster errors.
-        
+
         DefaultSiliconResolutionModel model = new DefaultSiliconResolutionModel();
 
         model.setOneClusterErr(oneClusterErr);
@@ -195,9 +216,8 @@ public class DataTrackerHitDriver extends Driver {
         model.setFourClusterErr(fourClusterErr);
         model.setFiveClusterErr(fiveClusterErr);
         model.setUseWeights(useWeights);
-        
+
         stripClusterer.setResolutionModel(model);
-        
 
         // Set the detector to process.
         processPaths.add(subdetectorName);
@@ -225,6 +245,19 @@ public class DataTrackerHitDriver extends Driver {
             stripHits1D.addAll(stripClusterer.makeHits(sensor));
         }
 
+        if (doHitTimeErrors) {
+            hitTimes = new ArrayList<HitTimeData>();
+            hitTimeRelations = new ArrayList<LCRelation>();
+            for (SiTrackerHit stripHit1D : stripHits1D) {
+                HpsSiTrackerHitStrip1D temp = (HpsSiTrackerHitStrip1D) (stripHit1D);
+                if (temp == null)
+                    continue;
+                HitTimeData hitTime = new HitTimeData(temp.getTimeError());
+                hitTimes.add(hitTime);
+                hitTimeRelations.add(new MyLCRelation(stripHit1D, hitTime));
+            }
+        }
+
         // Debug prints.
         if (debug) {
             // List<SimTrackerHit> simHits = event.get(SimTrackerHit.class,
@@ -241,6 +274,10 @@ public class DataTrackerHitDriver extends Driver {
         // event.put(this.rawTrackerHitOutputCollectionName, rawHits, RawTrackerHit.class, flag,
         // toString());
         event.put(this.stripHitOutputCollectionName, stripHits1D, SiTrackerHitStrip1D.class, 0, toString());
+        if (doHitTimeErrors) {
+            event.put(hitTimesRelationsName, hitTimeRelations, LCRelation.class, 0);
+            event.put(hitTimesCollectionName, hitTimes, HitTimeData.class, 0);
+        }
         if (debug) {
             System.out.println("[ DataTrackerHitDriver ] - " + this.stripHitOutputCollectionName + " has " + stripHits1D.size() + " hits.");
         }

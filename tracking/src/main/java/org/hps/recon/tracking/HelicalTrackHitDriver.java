@@ -91,8 +91,30 @@ public class HelicalTrackHitDriver extends org.lcsim.fit.helicaltrack.HelicalTra
     private boolean _saveAxialHits = false;
     private final String _axialname = "AxialTrackHits";
     private final String _axialmcrelname = "AxialTrackHitsMCRelations";
+    private String inputHitTimesRelationsName = "SiTrackerHitStrip1D_TimeErrorsRelations";
+    private String hitTimesCollectionName = "HelicalTrackHit_TimeErrors";
+    private String hitTimesRelationsName = "HelicalTrackHit_TimeErrorsRelations";
+    private List<HitTimeData> hitTimes = null;
+    private List<LCRelation> hitTimeRelations = null;
+    private boolean doHitTimeErrors = false;
     private boolean rejectGhostHits = false;
     private boolean allowHoleSlotCombo = false;
+
+    public void setDoHitTimes(boolean input) {
+        doHitTimeErrors = input;
+    }
+
+    public void setHitTimesCollectionName(String input) {
+        hitTimesCollectionName = input;
+    }
+
+    public void setInputHitTimesRelationsName(String input) {
+        inputHitTimesRelationsName = input;
+    }
+
+    public void setHitTimesRelationsName(String input) {
+        hitTimesRelationsName = input;
+    }
 
     /**
      * Default Ctor
@@ -230,6 +252,20 @@ public class HelicalTrackHitDriver extends org.lcsim.fit.helicaltrack.HelicalTra
 
         List<HelicalTrack2DHit> axialhits = new ArrayList<>();
         List<LCRelation> axialmcrelations = new ArrayList<LCRelation>();
+
+        RelationalTable hitTimesTable = null;
+        if (doHitTimeErrors && event.hasCollection(LCRelation.class, inputHitTimesRelationsName)) {
+            hitTimesTable = new BaseRelationalTable(RelationalTable.Mode.ONE_TO_ONE, RelationalTable.Weighting.UNWEIGHTED);
+            List<LCRelation> temp = event.get(LCRelation.class, inputHitTimesRelationsName);
+            for (LCRelation relation : temp) {
+                if (relation != null && relation.getFrom() != null && relation.getTo() != null) {
+                    hitTimesTable.add(relation.getFrom(), relation.getTo());
+                }
+            }
+            hitTimes = new ArrayList<HitTimeData>();
+            hitTimeRelations = new ArrayList<LCRelation>();
+        }
+
         // Loop over the input collection names we want to make hits out of
         // ...for HPS, probably this is just a single one...
         for (String _colname : this._colnames) {
@@ -338,6 +374,14 @@ public class HelicalTrackHitDriver extends org.lcsim.fit.helicaltrack.HelicalTra
             }
 
             stereoCrosses.addAll(helicalTrackCrosses);
+            if (doHitTimeErrors) {
+                for (HelicalTrackCross cross : helicalTrackCrosses) {
+                    Collection<TrackerHit> hitsList = hittostrip.allFrom(cross);
+                    HitTimeData htd = new HitTimeData(TrackerHitUtils.calculateHitTimeError(hitsList, hitTimesTable));
+                    hitTimes.add(htd);
+                    hitTimeRelations.add(new MyLCRelation(cross, htd));
+                }
+            }
 
             if (_debug) {
                 System.out.printf("%s: added %d stereo hits from %s collection \n", this.getClass().getSimpleName(), helicalTrackCrosses.size(), _colname);
@@ -372,6 +416,10 @@ public class HelicalTrackHitDriver extends org.lcsim.fit.helicaltrack.HelicalTra
             if (_saveAxialHits) {
                 addRotated2DHitsToEvent(event, axialhits);
             }
+        }
+        if (doHitTimeErrors) {
+            event.put(hitTimesRelationsName, hitTimeRelations, LCRelation.class, 0);
+            event.put(hitTimesCollectionName, hitTimes, HitTimeData.class, 0);
         }
     } // Process()
 

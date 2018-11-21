@@ -44,15 +44,19 @@ public class StripMaker {
     SiTrackerIdentifierHelper _sid_helper;
     // Temporary map connecting hits to strip numbers for sake of speed (reset once per sensor)
     Map<FittedRawTrackerHit, Integer> _strip_map = new HashMap<FittedRawTrackerHit, Integer>();
-    
 
     boolean _debug = false;
+    private boolean doHitTimeErrors = false;
     private SiliconResolutionModel _res_model = new DefaultSiliconResolutionModel();
 
-    public void setResolutionModel(SiliconResolutionModel model){
+    public void setDoHitTimeErrors(boolean input) {
+        doHitTimeErrors = input;
+    }
+
+    public void setResolutionModel(SiliconResolutionModel model) {
         _res_model = model;
     }
-    
+
     public StripMaker(ClusteringAlgorithm algo) {
         _clustering = algo;
     }
@@ -153,8 +157,6 @@ public class StripMaker {
         return hits;
     }
 
-    
-
     public void setCentralStripAveragingThreshold(int max_noaverage_nstrips) {
         _max_noaverage_nstrips = max_noaverage_nstrips;
     }
@@ -163,7 +165,7 @@ public class StripMaker {
         _max_cluster_nstrips = max_cluster_nstrips;
     }
 
-    private SiTrackerHitStrip1D makeTrackerHit(List<FittedRawTrackerHit> cluster, SiSensorElectrodes electrodes) {
+    private HpsSiTrackerHitStrip1D makeTrackerHit(List<FittedRawTrackerHit> cluster, SiSensorElectrodes electrodes) {
         if (_debug) {
             System.out.println(this.getClass().getSimpleName() + " makeTrackerHit ");
         }
@@ -176,7 +178,9 @@ public class StripMaker {
         for (FittedRawTrackerHit bth : cluster) {
             rth_cluster.add(bth.getRawTrackerHit());
         }
-        SiTrackerHitStrip1D hit = new SiTrackerHitStrip1D(position, covariance, energy, time, rth_cluster, type);
+        HpsSiTrackerHitStrip1D hit = new HpsSiTrackerHitStrip1D(position, covariance, energy, time, rth_cluster, type);
+        if (doHitTimeErrors)
+            hit.calculateTimeError(cluster);
         if (_debug) {
             System.out.println(this.getClass().getSimpleName() + " SiTrackerHitStrip1D created at " + position + "(" + hit.getPositionAsVector().toString() + ")" + " E " + energy + " time " + time);
         }
@@ -223,9 +227,8 @@ public class StripMaker {
             System.out.println(this.getClass().getSimpleName() + " Calculate charge weighted mean for " + signals.size() + " signals");
         }
 
-        
         Hep3Vector position = _res_model.weightedAveragePosition(signals, positions);
-        
+
         if (_debug) {
             System.out.println(this.getClass().getSimpleName() + " charge weighted position " + position.toString() + " (before trans)");
         }
@@ -257,12 +260,12 @@ public class StripMaker {
         double time_sum = 0;
         double signal_sum = 0;
 
-//        System.out.format("Hits:\n");
+        //        System.out.format("Hits:\n");
         for (FittedRawTrackerHit hit : cluster) {
 
             double signal = hit.getAmp();
             double time = hit.getT0();
-//        System.out.format("t0=%f\tA=%f\n",hit.getT0(),hit.getAmp());
+            //        System.out.format("t0=%f\tA=%f\n",hit.getT0(),hit.getAmp());
 
             time_sum += time * signal * signal;
             signal_sum += signal * signal;
@@ -298,8 +301,6 @@ public class StripMaker {
         //
         // return new SymmetricMatrix((Matrix)covariance_global);
     }
-
-    
 
     private double getEnergy(List<FittedRawTrackerHit> cluster) {
         double total_charge = 0.0;

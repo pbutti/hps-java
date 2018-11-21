@@ -7,10 +7,10 @@ import hep.physics.vec.Hep3Vector;
 import hep.physics.vec.VecOp;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 
 //===> import org.hps.conditions.deprecated.SvtUtils;
 import org.lcsim.detector.IDetectorElement;
@@ -25,7 +25,9 @@ import org.lcsim.detector.tracker.silicon.HpsSiSensor;
 import org.lcsim.detector.tracker.silicon.SiSensor;
 import org.lcsim.detector.tracker.silicon.SiSensorElectrodes;
 import org.lcsim.event.RawTrackerHit;
+import org.lcsim.event.RelationalTable;
 import org.lcsim.event.SimTrackerHit;
+import org.lcsim.event.TrackerHit;
 import org.lcsim.fit.helicaltrack.HelicalTrackFit;
 import org.lcsim.fit.helicaltrack.HelicalTrackStrip;
 import org.lcsim.fit.helicaltrack.HelixUtils;
@@ -54,12 +56,27 @@ public class TrackerHitUtils {
         return (BasicHep3Matrix) CoordinateTransformations.getMatrix();
     }
 
+    public static double calculateHitTimeError(Collection<TrackerHit> strips, RelationalTable stripTimeRelations) {
+        if (strips.size() != 2)
+            return 0;
+        double err = 0;
+        // time = (t_hit1 + t_hit2) / 2
+        for (TrackerHit strip : strips) {
+            Object hitTime = stripTimeRelations.from(strip);
+            if (hitTime == null)
+                return 0;
+            err += Math.pow(((HitTimeData) (hitTime)).getHitTimeError(), 2);
+        }
+
+        return 0.5 * Math.sqrt(err);
+    }
+
     public ITransform3D GetGlobalToLocal(HelicalTrackStrip strip) {
         // Transform from JLab frame (RawTrackerHit) to sensor frame (i.e. u,v,w)
         RawTrackerHit rth = (RawTrackerHit) strip.rawhits().get(0);
         IDetectorElement ide = rth.getDetectorElement();
         SiSensor sensor = ide.findDescendants(SiSensor.class).get(0);
-        SiSensorElectrodes electrodes = sensor.getReadoutElectrodes(ChargeCarrier.HOLE);        
+        SiSensorElectrodes electrodes = sensor.getReadoutElectrodes(ChargeCarrier.HOLE);
         return electrodes.getGlobalToLocal();
     }
 
