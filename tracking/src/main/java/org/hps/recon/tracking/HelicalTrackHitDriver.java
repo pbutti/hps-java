@@ -100,7 +100,7 @@ public class HelicalTrackHitDriver extends org.lcsim.fit.helicaltrack.HelicalTra
     private boolean rejectGhostHits = false;
     private boolean allowHoleSlotCombo = false;
 
-    public void setDoHitTimes(boolean input) {
+    public void setDoHitTimeErrors(boolean input) {
         doHitTimeErrors = input;
     }
 

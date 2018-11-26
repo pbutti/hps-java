@@ -11,17 +11,13 @@ public class TimedSiliconResolutionModel extends DefaultSiliconResolutionModel {
         double signal_sum = 0;
         double err_sum = 0;
 
-        //        System.out.format("Hits:\n");
         for (FittedRawTrackerHit hit : cluster) {
 
             double signal = hit.getAmp();
             double time = hit.getT0();
-            //        System.out.format("t0=%f\tA=%f\n",hit.getT0(),hit.getAmp());
-
             time_sum += time * signal * signal;
             signal_sum += signal * signal;
             err_sum += Math.pow(hit.getT0Err(), 2) * Math.pow(signal, 4);
-
         }
         return new Pair<Double, Double>(time_sum / signal_sum, Math.sqrt(err_sum) / signal_sum);
     }

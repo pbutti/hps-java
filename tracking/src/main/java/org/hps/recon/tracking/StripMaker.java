@@ -48,7 +48,7 @@ public class StripMaker {
 
     boolean _debug = false;
     private boolean doHitTimeErrors = false;
-    private SiliconResolutionModel _res_model = new DefaultSiliconResolutionModel();
+    private SiliconResolutionModel _res_model = null;
 
     public void setDoHitTimeErrors(boolean input) {
         doHitTimeErrors = input;
@@ -60,11 +60,19 @@ public class StripMaker {
 
     public StripMaker(ClusteringAlgorithm algo) {
         _clustering = algo;
+        _res_model = new DefaultSiliconResolutionModel();
     }
 
     public StripMaker(SiSensorSim simulation, ClusteringAlgorithm algo) {
         _clustering = algo;
         _simulation = simulation;
+        _res_model = new DefaultSiliconResolutionModel();
+    }
+
+    public StripMaker(SiSensorSim simulation, ClusteringAlgorithm algo, SiliconResolutionModel mod) {
+        _clustering = algo;
+        _simulation = simulation;
+        _res_model = mod;
     }
 
     public String getName() {
@@ -180,8 +188,9 @@ public class StripMaker {
             rth_cluster.add(bth.getRawTrackerHit());
         }
         HpsSiTrackerHitStrip1D hit = new HpsSiTrackerHitStrip1D(position, covariance, energy, time.getFirstElement(), rth_cluster, type);
-        if (doHitTimeErrors)
+        if (doHitTimeErrors) {
             hit.setTimeError(time.getSecondElement());
+        }
         if (_debug) {
             System.out.println(this.getClass().getSimpleName() + " SiTrackerHitStrip1D created at " + position + "(" + hit.getPositionAsVector().toString() + ")" + " E " + energy + " time " + time);
         }

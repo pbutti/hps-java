@@ -197,20 +197,20 @@ public class DataTrackerHitDriver extends Driver {
         stripClusteringAlgo.setTimeWindow(timeWindow);
         stripClusteringAlgo.setNeighborDeltaT(neighborDeltaT);
 
-        // hitMaker=new HPSFittedRawTrackerHitMaker(shaperFit);
-        // Create the clusterers and set hit-making parameters.
-        stripClusterer = new StripMaker(stripSim, stripClusteringAlgo);
-        stripClusterer.setDoHitTimeErrors(doHitTimeErrors);
-        stripClusterer.setMaxClusterSize(clusterMaxSize);
-        stripClusterer.setCentralStripAveragingThreshold(clusterCentralStripAveragingThreshold);
-
-        // Set the cluster errors.
-
         DefaultSiliconResolutionModel model = null;
         if (doHitTimeErrors)
             model = new TimedSiliconResolutionModel();
         else
             model = new DefaultSiliconResolutionModel();
+
+        // hitMaker=new HPSFittedRawTrackerHitMaker(shaperFit);
+        // Create the clusterers and set hit-making parameters.
+        stripClusterer = new StripMaker(stripSim, stripClusteringAlgo, model);
+        stripClusterer.setDoHitTimeErrors(doHitTimeErrors);
+        stripClusterer.setMaxClusterSize(clusterMaxSize);
+        stripClusterer.setCentralStripAveragingThreshold(clusterCentralStripAveragingThreshold);
+
+        // Set the cluster errors.
 
         model.setOneClusterErr(oneClusterErr);
         model.setTwoClusterErr(twoClusterErr);
@@ -218,8 +218,6 @@ public class DataTrackerHitDriver extends Driver {
         model.setFourClusterErr(fourClusterErr);
         model.setFiveClusterErr(fiveClusterErr);
         model.setUseWeights(useWeights);
-
-        stripClusterer.setResolutionModel(model);
 
         // Set the detector to process.
         processPaths.add(subdetectorName);

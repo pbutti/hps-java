@@ -103,12 +103,14 @@ public class ReconTestSkeleton extends TestCase {
 
             org.hps.recon.tracking.DataTrackerHitDriver dthd = new org.hps.recon.tracking.DataTrackerHitDriver();
             dthd.setNeighborDeltaT(8.0);
+            dthd.setDoHitTimeErrors(true);
             add(dthd);
 
             org.hps.recon.tracking.HelicalTrackHitDriver hthd = new org.hps.recon.tracking.HelicalTrackHitDriver();
             hthd.setClusterTimeCut(12.0);
             hthd.setClusterAmplitudeCut(400.0);
             hthd.setMaxDt(16.0);
+            hthd.setDoHitTimeErrors(true);
             add(hthd);
 
             org.hps.recon.tracking.TrackerReconDriver trd2 = new org.hps.recon.tracking.TrackerReconDriver();
@@ -117,17 +119,17 @@ public class ReconTestSkeleton extends TestCase {
             trd2.setTrackCollectionName("s123_c5_e56");
             add(trd2);
 
-            org.hps.recon.tracking.TrackerReconDriver trd3 = new org.hps.recon.tracking.TrackerReconDriver();
-            trd3.setStrategyResource("HPS_s456_c3_e21.xml");
-            trd3.setRmsTimeCut(8.0);
-            trd3.setTrackCollectionName("s456_c3_e21");
-            add(trd3);
-
-            org.hps.recon.tracking.TrackerReconDriver trd4 = new org.hps.recon.tracking.TrackerReconDriver();
-            trd4.setStrategyResource("HPS_s345_c2_e16.xml");
-            trd4.setRmsTimeCut(8.0);
-            trd4.setTrackCollectionName("s345_c2_e16");
-            add(trd4);
+            //            org.hps.recon.tracking.TrackerReconDriver trd3 = new org.hps.recon.tracking.TrackerReconDriver();
+            //            trd3.setStrategyResource("HPS_s456_c3_e21.xml");
+            //            trd3.setRmsTimeCut(8.0);
+            //            trd3.setTrackCollectionName("s456_c3_e21");
+            //            add(trd3);
+            //
+            //            org.hps.recon.tracking.TrackerReconDriver trd4 = new org.hps.recon.tracking.TrackerReconDriver();
+            //            trd4.setStrategyResource("HPS_s345_c2_e16.xml");
+            //            trd4.setRmsTimeCut(8.0);
+            //            trd4.setTrackCollectionName("s345_c2_e16");
+            //            add(trd4);
 
             org.hps.recon.tracking.MergeTrackCollections mtc = new org.hps.recon.tracking.MergeTrackCollections();
             mtc.setInputTrackCollectionName("");

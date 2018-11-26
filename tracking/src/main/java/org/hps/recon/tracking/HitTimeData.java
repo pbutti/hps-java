@@ -67,6 +67,8 @@ public class HitTimeData implements GenericObject {
     @Override
     public double getDoubleVal(int index) {
         // TODO Auto-generated method stub
+        if (index == 0)
+            return hitTimeError.get(0);
         return 0;
     }
 }
