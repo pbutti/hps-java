@@ -410,7 +410,8 @@ public abstract class TupleMaker extends Driver {
                 "PhiKink2/D", "PhiKink3/D", "PhiKink4/D", "PhiKink5/D", "PhiKink6/D","NTrackHits/I",  "HitsSharedP/D", 
                 "MaxHitsShared/I", "SharedTrkChisq/D", "SharedTrkEcalX/D", "SharedTrkEcalY/D", "MatchChisq/D", "ClT/D",
                 "ClE/D", "ClSeedE/D", "ClX/D", "ClY/D", "ClZ/D", "ClHits/I", "Clix/I", "Cliy/I", "UncorrClT/D",
-                "UncorrClE/D", "UncorrClX/D", "UncorrClY/D", "UncorrClZ/D", "TrkD0Err/D", "TrkZ0Err/D", "TrkLambdaErr/D", "TrkPhiErr/D", "TrkOmegaErr/D"};
+                "UncorrClE/D", "UncorrClX/D", "UncorrClY/D", "UncorrClZ/D", "TrkD0Err/D", "TrkZ0Err/D", "TrkLambdaErr/D", "TrkPhiErr/D", "TrkOmegaErr/D",
+                "TrkExtrpXAtTarg", "TrkExtrpYAtTarg", "TrkExtrpXAtTargErr", "TrkExtrpYAtTargErr", "TrkExtrpXAtVz", "TrkExtrpYAtVz", "TrkExtrpXAtVzErr", "TrkExtrpYAtVzErr"};
         for (int i = 0; i < newVars.length; i++) {
             newVars[i] = prefix + newVars[i];
         }
@@ -969,6 +970,11 @@ public abstract class TupleMaker extends Driver {
         Hep3Vector pRot = VecOp.mult(beamAxisRotation, CoordinateTransformations
                 .transformVectorToDetector(new BasicHep3Vector(baseTrackState.getMomentum())));
 
+        Hep3Vector trkAtTarg = TrackUtils.extrapolateTrackPositionToZ(track, -4.3, 1, 1, bFieldMap);
+        Hep3Vector trkAtTargErr = TrackUtils.extrapolateTrackCovToZ(track, -4.3, 1, 1, bFieldMap);
+        Hep3Vector trkAtVz = TrackUtils.extrapolateTrackPositionToZ(track, -4.3, 1, 1, bFieldMap);
+        Hep3Vector trkAtVzErr = TrackUtils.extrapolateTrackCovToZ(track, -4.3, 1, 1, bFieldMap);
+        
         if (doTrkExtrap) 
             fillParticleVariablesTrkExtrap(prefix, track);
 
@@ -1107,6 +1113,15 @@ public abstract class TupleMaker extends Driver {
         tupleMap.put(prefix + "HitsSharedP/D", momentumOfShared);
         tupleMap.put(prefix + "MaxHitsShared/I", (double) maxShared);
         tupleMap.put(prefix + "SharedTrkChisq/D", trackShared.getChi2());
+        
+        tupleMap.put(prefix + "TrkExtrpXAtTarg/D", trkAtTarg.x());
+        tupleMap.put(prefix + "TrkExtrpYAtTarg/D", trkAtTarg.y());
+        tupleMap.put(prefix + "TrkExtrpXAtTargErr/D", trkAtTargErr.x());
+        tupleMap.put(prefix + "TrkExtrpYAtTargErr/D", trkAtTargErr.y());
+        tupleMap.put(prefix + "TrkExtrpXAtVz/D", trkAtVz.x());
+        tupleMap.put(prefix + "TrkExtrpYAtVz/D", trkAtVz.y());
+        tupleMap.put(prefix + "TrkExtrpXAtVzErr/D", trkAtVzErr.x());
+        tupleMap.put(prefix + "TrkExtrpYAtVzErr/D", trkAtVzErr.y());
 
         tupleMap.put(prefix + "LambdaKink0/D", kinks != null ? GBLKinkData.getLambdaKink(kinks, 0) : 0);
         tupleMap.put(prefix + "LambdaKink1/D", kinks != null ? GBLKinkData.getLambdaKink(kinks, 1) : 0);
