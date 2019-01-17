@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.math3.util.Pair;
 import org.hps.analysis.ecal.MassCalculator;
 import org.hps.conditions.beam.BeamEnergy;
 import org.hps.recon.ecal.cluster.ClusterUtilities;
@@ -116,6 +117,7 @@ public abstract class TupleMaker extends Driver {
     Map<ReconstructedParticle, ReconstructedParticle> unc2bsc = null;
     Map<ReconstructedParticle, ReconstructedParticle> unc2tar = null;
     boolean cutTuple = true;
+    protected Detector det;
 
     abstract boolean passesCuts();
     
@@ -170,6 +172,8 @@ public abstract class TupleMaker extends Driver {
         bFieldMap = detector.getFieldMap();
 
         bFieldMap = detector.getFieldMap();
+        
+        det = detector;
 
         if (Double.isNaN(ebeam)) {
             try {
@@ -411,7 +415,7 @@ public abstract class TupleMaker extends Driver {
                 "MaxHitsShared/I", "SharedTrkChisq/D", "SharedTrkEcalX/D", "SharedTrkEcalY/D", "MatchChisq/D", "ClT/D",
                 "ClE/D", "ClSeedE/D", "ClX/D", "ClY/D", "ClZ/D", "ClHits/I", "Clix/I", "Cliy/I", "UncorrClT/D",
                 "UncorrClE/D", "UncorrClX/D", "UncorrClY/D", "UncorrClZ/D", "TrkD0Err/D", "TrkZ0Err/D", "TrkLambdaErr/D", "TrkPhiErr/D", "TrkOmegaErr/D",
-                "TrkExtrpXAtTarg", "TrkExtrpYAtTarg", "TrkExtrpXAtTargErr", "TrkExtrpYAtTargErr", "TrkExtrpXAtVz", "TrkExtrpYAtVz", "TrkExtrpXAtVzErr", "TrkExtrpYAtVzErr"};
+                "TrkExtrpXAtTarg/D", "TrkExtrpYAtTarg/D", "TrkExtrpXAtTargErr/D", "TrkExtrpYAtTargErr/D", "TrkExtrpXAtVz/D", "TrkExtrpYAtVz/D", "TrkExtrpXAtVzErr/D", "TrkExtrpYAtVzErr/D"};
         for (int i = 0; i < newVars.length; i++) {
             newVars[i] = prefix + newVars[i];
         }
@@ -970,10 +974,8 @@ public abstract class TupleMaker extends Driver {
         Hep3Vector pRot = VecOp.mult(beamAxisRotation, CoordinateTransformations
                 .transformVectorToDetector(new BasicHep3Vector(baseTrackState.getMomentum())));
 
-        Hep3Vector trkAtTarg = TrackUtils.extrapolateTrackPositionToZ(track, -4.3, 1, 1, bFieldMap);
-        Hep3Vector trkAtTargErr = TrackUtils.extrapolateTrackCovToZ(track, -4.3, 1, 1, bFieldMap);
-        Hep3Vector trkAtVz = TrackUtils.extrapolateTrackPositionToZ(track, -4.3, 1, 1, bFieldMap);
-        Hep3Vector trkAtVzErr = TrackUtils.extrapolateTrackCovToZ(track, -4.3, 1, 1, bFieldMap);
+        Pair<Hep3Vector,Hep3Vector> trkAtTarg = TrackUtils.extrapolateTrackAndError(track, -4.3, det);
+        Pair<Hep3Vector,Hep3Vector> trkAtVz = TrackUtils.extrapolateTrackAndError(track, 0, det);
         
         if (doTrkExtrap) 
             fillParticleVariablesTrkExtrap(prefix, track);
@@ -1114,14 +1116,14 @@ public abstract class TupleMaker extends Driver {
         tupleMap.put(prefix + "MaxHitsShared/I", (double) maxShared);
         tupleMap.put(prefix + "SharedTrkChisq/D", trackShared.getChi2());
         
-        tupleMap.put(prefix + "TrkExtrpXAtTarg/D", trkAtTarg.x());
-        tupleMap.put(prefix + "TrkExtrpYAtTarg/D", trkAtTarg.y());
-        tupleMap.put(prefix + "TrkExtrpXAtTargErr/D", trkAtTargErr.x());
-        tupleMap.put(prefix + "TrkExtrpYAtTargErr/D", trkAtTargErr.y());
-        tupleMap.put(prefix + "TrkExtrpXAtVz/D", trkAtVz.x());
-        tupleMap.put(prefix + "TrkExtrpYAtVz/D", trkAtVz.y());
-        tupleMap.put(prefix + "TrkExtrpXAtVzErr/D", trkAtVzErr.x());
-        tupleMap.put(prefix + "TrkExtrpYAtVzErr/D", trkAtVzErr.y());
+        tupleMap.put(prefix + "TrkExtrpXAtTarg/D", trkAtTarg.getFirst().x());
+        tupleMap.put(prefix + "TrkExtrpYAtTarg/D", trkAtTarg.getFirst().y());
+        tupleMap.put(prefix + "TrkExtrpXAtTargErr/D", trkAtTarg.getSecond().x());
+        tupleMap.put(prefix + "TrkExtrpYAtTargErr/D", trkAtTarg.getSecond().y());
+        tupleMap.put(prefix + "TrkExtrpXAtVz/D", trkAtVz.getFirst().x());
+        tupleMap.put(prefix + "TrkExtrpYAtVz/D", trkAtVz.getFirst().y());
+        tupleMap.put(prefix + "TrkExtrpXAtVzErr/D", trkAtVz.getSecond().x());
+        tupleMap.put(prefix + "TrkExtrpYAtVzErr/D", trkAtVz.getSecond().y());
 
         tupleMap.put(prefix + "LambdaKink0/D", kinks != null ? GBLKinkData.getLambdaKink(kinks, 0) : 0);
         tupleMap.put(prefix + "LambdaKink1/D", kinks != null ? GBLKinkData.getLambdaKink(kinks, 1) : 0);

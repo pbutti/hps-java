@@ -725,6 +725,64 @@ public class TrackUtils {
         return new BasicHep3Vector(x, y, z);
     }
 
+    public static Pair<Hep3Vector,Hep3Vector> extrapolateTrackAndError(Track track, double z, Detector detector) {
+        //TrackState tState = track.getTrackStates().get(0);
+        HelicalTrackFit htf = getHTF(track);
+        double s = HelixUtils.PathToXPlane(htf, z, 0., 0).get(0);
+        //double tanLambda = tState.getTanLambda();
+        //double phi0 = tState.getPhi();
+        double tanLambda = htf.slope();
+        double phi0 = htf.phi0();
+        //double[] cov = tState.getCovMatrix();
+        double omega = htf.curvature();
+        //double z0Err = cov[0];
+        double z0Err = htf.getZ0Error();
+        double tanLambdaErr = htf.getSlopeError();
+        //double tanLambdaErr = cov[0];
+        double omegaErr = htf.getCurveError();
+        //double omegaErr = cov[0];
+        //double phi0Err = cov[0];
+        double phi0Err = htf.getPhi0Error();
+        double d0Err = htf.getDcaError();
+        
+        double R = htf.curvature();
+        double RErr = 1/Power(omega,2) * omegaErr;
+        
+        
+        
+        double x0 = htf.x0();
+        double y0 = htf.y0();
+
+        double xc=htf.xc();
+        double yc=htf.yc();
+        double RC = htf.R();
+        double y=yc+Math.signum(RC)*Math.sqrt(RC*RC-Math.pow(z-xc,2));
+        double yErr = R/Math.sqrt(RC*RC-Math.pow(z-xc,2))*RErr;
+        
+        
+        double phi1 = Math.atan2(y0 - yc, x0 - xc);
+        double phi2 = Math.atan2(y - yc, z - xc);
+        double dphi = phi2 - phi1;
+        double phi = phi0 - s/R;
+        
+        double phi1Err = 1/(1+Power((y0-yc)/(x0-xc),2))*(d0Err/(x0-xc)+(y0-yc)/Power((x0-xc),2));
+        double phi2Err = 1/(1+Power((y-yc)/(z-xc),2))*(yErr/(z-xc));
+        double dphiErr = Math.sqrt(Power(phi1Err,2) + Power(phi2Err,2));
+        double sErr = RErr*dphi + R*dphiErr;
+        double phiErr = phi0Err + s/Power(R,2) * RErr + sErr/R;
+        
+        System.out.println(phi0Err + " " + s/Power(R,2) + " " + sErr/R + " " + s + " " + Power(R,2));
+        
+        double dx = abs(R*Cos(phi)*dphiErr) + abs(RErr * Sin(phi));
+        double dy = abs(R*Sin(phi)*dphiErr) + abs(RErr * Cos(phi));
+        double dz = Math.sqrt(Power(z0Err,2) + Power(s*tanLambdaErr + sErr *tanLambda,2));
+        
+        //System.out.println(dy + " " + R + " " + Sin(phi) + " " + phiErr + " " + RErr + " " + Cos(phi));
+        
+        Hep3Vector extrpPosErr = new BasicHep3Vector(dy,dz,dx);
+        Hep3Vector extrpPos = extrapolateTrack(track, z, detector);
+        return new Pair<>(extrpPos,extrpPosErr);
+    }
     /**
      * Extrapolate helix to given position
      *
