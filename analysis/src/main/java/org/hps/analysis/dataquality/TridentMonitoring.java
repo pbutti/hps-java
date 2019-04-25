@@ -332,7 +332,7 @@ public class TridentMonitoring extends DataQualityMonitor {
     @Override
     protected void detectorChanged(Detector detector) {
         super.detectorChanged(detector);
-        /* tab */LOGGER.info("TridendMonitoring::detectorChanged  Setting up the plotter");
+        /* tab */LOGGER.info("TridentMonitoring::detectorChanged  Setting up the plotter");
         beamAxisRotation.setActiveEuler(Math.PI / 2, -0.0305, -Math.PI / 2);
 
         aida.tree().cd("/");
@@ -1100,15 +1100,15 @@ public class TridentMonitoring extends DataQualityMonitor {
     @Override
     // TODO: Change from System.out to use logger instead.
     public void printDQMData() {
-        System.out.println("TridendMonitoring::printDQMData");
+        System.out.println("TridentMonitoring::printDQMData");
         for (Entry<String, Double> entry : monitoredQuantityMap.entrySet()) {
             System.out.println(entry.getKey() + " = " + entry.getValue());
         }
         System.out.println("*******************************");
 
-        System.out.println("TridendMonitoring::Tridend Selection Summary: " + (isGBL ? "GBLTrack" : "SeedTrack"));
+        System.out.println("TridentMonitoring::Trident Selection Summary: " + (isGBL ? "GBLTrack" : "SeedTrack"));
 
-        System.out.println("\t\t\tTridend Selection Summary");
+        System.out.println("\t\t\tTrident Selection Summary");
         System.out
                 .println("******************************************************************************************");
         System.out.println(String.format("Number of      V0:\t%8.0f\t%8.6f\t%8.6f\t%8.6f\n", nRecoV0,

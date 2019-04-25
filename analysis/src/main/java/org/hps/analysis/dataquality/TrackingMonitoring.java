@@ -43,7 +43,7 @@ public class TrackingMonitoring extends DataQualityMonitor {
     private final String rotatedTrackHitCollectionName = "RotatedHelicalTrackHits";
     private final String helicalTrackHitRelationsCollectionName = "HelicalTrackHitRelations";
     private final String rotatedHelicalTrackHitRelationsCollectionName = "RotatedHelicalTrackHitRelations";
-    private String trackCollectionName = "MatchedTracks";
+    private String trackCollectionName = "GBLTracks";
     private final String trackerName = "Tracker";
     private static final String nameStrip = "Tracker_TestRunModule_";
     String ecalSubdetectorName = "Ecal";
