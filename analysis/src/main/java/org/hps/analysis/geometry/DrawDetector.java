@@ -219,6 +219,15 @@ public class DrawDetector extends Driver {
             System.out.println("    P=o+(u+v)--o-u+v--o-u-v--o+u-v--cycle;");
             System.out.println("    return P;");
             System.out.println("}");
+            System.out.println(" void drawAxes(triple o, triple u, triple v)");
+            System.out.println(" {");
+            System.out.println("pen p = red;");
+            System.out.println(" draw(Label(\"$u$\",1),(o--o+u),p,Arrow3);");
+            System.out.println("p=green;");
+            System.out.println(" draw(Label(\"$v$\",1),(o--o+v),p,Arrow3);");
+            System.out.println("p=blue;");
+            System.out.println(" draw(Label(\"$w$\",1),(o--o+10.*cross(unit(u),unit(v))),p,Arrow3);");
+            System.out.println(" }");
 
             // ECal crystal frustum volume
             // use volumes for hit crystals in event data
@@ -277,6 +286,16 @@ public class DrawDetector extends Driver {
                 sb.append(h + "*( " + df.format(u.x()) + " , " + df.format(u.y()) + " , " + df.format(u.z()) + " ), ");
                 //v coordinate
                 sb.append(l + "*( " + df.format(v.x()) + " , " + df.format(v.y()) + " , " + df.format(v.z()) + " )  ) ), fill, " + planeType + "Edge); ");
+
+                System.out.println(sb.toString());
+                // sensor axes
+                sb = new StringBuffer("drawAxes( ");
+                //origin
+                sb.append("( " + df.format(o.x()) + " , " + df.format(o.y()) + " , " + df.format(o.z()) + " ), ");
+                //u coordinate
+                sb.append(h + "*( " + df.format(u.x()) + " , " + df.format(u.y()) + " , " + df.format(u.z()) + " ), ");
+                //v coordinate
+                sb.append(l + "*( " + df.format(v.x()) + " , " + df.format(v.y()) + " , " + df.format(v.z()) + " ) ); ");
 
                 System.out.println(sb.toString());
             }
