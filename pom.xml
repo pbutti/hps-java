@@ -128,6 +128,7 @@
     <module>tracking</module>
     <module>util</module>
     <module>integration-tests</module>
+    <module>hodo-recon</module>
   </modules>
   
   <dependencies>
@@ -213,10 +214,10 @@
         <groupId>org.hps</groupId>
         <artifactId>hps-ecal-recon</artifactId>
         <version>${project.version}</version>
-      </dependency>
+	</dependency>
       <dependency>
         <groupId>org.hps</groupId>
-        <artifactId>hps-hodo-recon</artifactId>
+        <artifactId>hodo-recon</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
