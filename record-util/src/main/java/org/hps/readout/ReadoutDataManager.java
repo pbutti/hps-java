@@ -109,6 +109,12 @@ public class ReadoutDataManager extends Driver {
      */
     private static LCIOCollection<GenericObject> triggerBankParams = null;
     
+    /**
+     * Specifies whether to write out on-trigger objects and
+     * initialization data.
+     */
+    private static boolean verbose = false;
+    
     @Override
     public void startOfData() {
         // Instantiate the readout LCIO file.
@@ -136,27 +142,31 @@ public class ReadoutDataManager extends Driver {
         double longestDisplacedAfter = 0.0;
         double longestTriggerDisplacement = 0.0;
         
-        System.out.println("Getting longest trigger time displacement...");
+        if(verbose) { System.out.println("Getting longest trigger time displacement..."); }
         for(Entry<ReadoutDriver, Double> entry : triggerTimeDisplacementMap.entrySet()) {
-            System.out.printf("\t%-30s :: %.0f%n", entry.getKey().getClass().getSimpleName(), entry.getValue().doubleValue());
+            if(verbose) { System.out.printf("\t%-30s :: %.0f%n", entry.getKey().getClass().getSimpleName(), entry.getValue().doubleValue()); }
             longestTriggerDisplacement = Math.max(longestTriggerDisplacement, entry.getValue().doubleValue());
         }
-        System.out.println("Longest is: " + longestTriggerDisplacement);
-        System.out.println("\n");
-        
-        System.out.println("Getting longest driver collection buffers...");
+        if(verbose) {
+            System.out.println("Longest is: " + longestTriggerDisplacement);
+            System.out.println("\n");
+            
+            System.out.println("Getting longest driver collection buffers...");
+        }
         for(ManagedLCIOData<?> data : collectionMap.values()) {
             double before = Double.isNaN(data.getCollectionParameters().getWindowBefore()) ? 0.0 : data.getCollectionParameters().getWindowBefore();
             double after = Double.isNaN(data.getCollectionParameters().getWindowAfter()) ? 0.0 : data.getCollectionParameters().getWindowAfter();
             double displacement = data.getCollectionParameters().getProductionDriver().getTimeDisplacement();
             double local = data.getCollectionParameters().getProductionDriver().getTimeNeededForLocalOutput();
             
-            System.out.println("\t" + data.getCollectionParameters().getCollectionName());
-            System.out.printf("\t\t%-20s :: %.0f%n", "Buffer Before", before);
-            System.out.printf("\t\t%-20s :: %.0f%n", "Buffer After", after);
-            System.out.printf("\t\t%-20s :: %.0f%n", "Local Buffer", local);
-            System.out.printf("\t\t%-20s :: %.0f%n", "Displacement", displacement);
-            System.out.printf("\t\t%-20s :: %.0f%n", "Displaced After", (displacement + after));
+            if(verbose) {
+                System.out.println("\t" + data.getCollectionParameters().getCollectionName());
+                System.out.printf("\t\t%-20s :: %.0f%n", "Buffer Before", before);
+                System.out.printf("\t\t%-20s :: %.0f%n", "Buffer After", after);
+                System.out.printf("\t\t%-20s :: %.0f%n", "Local Buffer", local);
+                System.out.printf("\t\t%-20s :: %.0f%n", "Displacement", displacement);
+                System.out.printf("\t\t%-20s :: %.0f%n", "Displaced After", (displacement + after));
+            }
             
             longestBufferBefore = Math.max(longestBufferBefore, before);
             longestBufferAfter = Math.max(longestBufferAfter, after);
@@ -164,27 +174,26 @@ public class ReadoutDataManager extends Driver {
             longestTimeDisplacement = Math.max(longestTimeDisplacement, displacement);
             longestDisplacedAfter = Math.max(longestDisplacedAfter, displacement + after);
         }
-        System.out.println("Longest (before) is: " + longestBufferBefore);
-        System.out.println("Longest (after) is: " + longestBufferAfter);
-        System.out.println("Longest (local) is: " + longestLocalBuffer);
-        System.out.println("Longest (displacement) is: " + longestTimeDisplacement);
-        System.out.println("Longest (displacemed after) is: " + longestDisplacedAfter);
-        System.out.println("\n");
-        
-        System.out.println("Readout Window: " + readoutWindow);
-        System.out.println("Trigger Offset: " + triggerTimeDisplacement);
-        System.out.println("Default Before: " + triggerTimeDisplacement);
-        System.out.println("Default After : " + (readoutWindow - triggerTimeDisplacement));
-        System.out.println("\n");
+        if(verbose) {
+            System.out.println("Longest (before) is: " + longestBufferBefore);
+            System.out.println("Longest (after) is: " + longestBufferAfter);
+            System.out.println("Longest (local) is: " + longestLocalBuffer);
+            System.out.println("Longest (displacement) is: " + longestTimeDisplacement);
+            System.out.println("Longest (displacemed after) is: " + longestDisplacedAfter);
+            System.out.println("\n");
+            
+            System.out.println("Readout Window: " + readoutWindow);
+            System.out.println("Trigger Offset: " + triggerTimeDisplacement);
+            System.out.println("Default Before: " + triggerTimeDisplacement);
+            System.out.println("Default After : " + (readoutWindow - triggerTimeDisplacement));
+            System.out.println("\n");
+        }
         
         triggerDelay = Math.max(longestTriggerDisplacement, longestDisplacedAfter);
         triggerDelay = Math.max(triggerDelay, longestLocalBuffer);
         double totalNeededDisplacement = triggerDelay + longestBufferBefore + 150;
         
-        //double totalNeededDisplacement = Math.max(longestTriggerDisplacement, longestDisplacedAfter);
-        //totalNeededDisplacement = Math.max(totalNeededDisplacement, longestLocalBuffer) + longestBufferBefore + 150;
-        
-        System.out.println("Total Time Needed: " + totalNeededDisplacement);
+        if(verbose) { System.out.println("Total Time Needed: " + totalNeededDisplacement); }
         
         // Determine the total amount of time that must be included
         // in the data buffer in order to safely write out all data.
@@ -232,8 +241,12 @@ public class ReadoutDataManager extends Driver {
                 // a manually specified output range.
                 double startTime = trigger.getTriggerTime() - triggerTimeDisplacement;
                 double endTime = startTime + readoutWindow;
-                System.out.println("Trigger Time: " + trigger.getTriggerTime());
-                System.out.println("Default Time Range: " + startTime + " - " + endTime);
+                if(verbose) {
+                    System.out.println("Trigger Time: " + trigger.getTriggerTime());
+                    System.out.println("Default Time Range: " + startTime + " - " + endTime);
+                } else {
+                    System.out.println("Wrote trigger at time t = " + trigger.getTriggerTime() + " ns.");
+                }
                 
                 // All readout output is initially stored in a single
                 // object. This allows the readout from multiple
@@ -619,14 +632,16 @@ public class ReadoutDataManager extends Driver {
         // Store the readout driver in the driver set.
         driverSet.add(params.getProductionDriver());
         
-        System.out.println("Registered collection \"" + managedParams.getCollectionName() + "\" of class type "
-                + managedParams.getObjectType().getSimpleName() + ".");
-        
-        System.out.println("\tCollection Name   :: " + params.getCollectionName());
-        System.out.println("\tFlags             :: " + Integer.toHexString(params.getFlags()));
-        System.out.println("\tObject Type       :: " + params.getObjectType().getSimpleName());
-        System.out.println("\tReadout Name      :: " + params.getReadoutName());
-        System.out.println("\tProduction Driver :: " + params.getProductionDriver().getClass().getSimpleName());
+        if(verbose) {
+            System.out.println("Registered collection \"" + managedParams.getCollectionName() + "\" of class type "
+                    + managedParams.getObjectType().getSimpleName() + ".");
+            
+            System.out.println("\tCollection Name   :: " + params.getCollectionName());
+            System.out.println("\tFlags             :: " + Integer.toHexString(params.getFlags()));
+            System.out.println("\tObject Type       :: " + params.getObjectType().getSimpleName());
+            System.out.println("\tReadout Name      :: " + params.getReadoutName());
+            System.out.println("\tProduction Driver :: " + params.getProductionDriver().getClass().getSimpleName());
+        }
     }
     
     /**
@@ -647,7 +662,7 @@ public class ReadoutDataManager extends Driver {
         
         // Add the readout driver.
         driverSet.add(productionDriver);
-        System.out.println("Registered driver: " + productionDriver.getClass().getSimpleName());
+        if(verbose) { System.out.println("Registered driver: " + productionDriver.getClass().getSimpleName()); }
     }
     
     /**
@@ -660,7 +675,7 @@ public class ReadoutDataManager extends Driver {
         
         // Store the time displacement in the trigger driver map.
         triggerTimeDisplacementMap.put(triggerDriver, timeDisplacement);
-        System.out.println("Registered trigger: " + triggerDriver.getClass().getSimpleName());
+        if(verbose) { System.out.println("Registered trigger: " + triggerDriver.getClass().getSimpleName()); }
     }
     
     /**
@@ -716,8 +731,10 @@ public class ReadoutDataManager extends Driver {
         
         // Add the trigger to the trigger queue.
         triggerQueue.add(new TriggerTime(triggerTime, driver));
-        System.out.println("Added trigger to queue with trigger time " + triggerTime + " and readout time " + (triggerTime + bufferTotal) + " from driver "
-                + driver.getClass().getSimpleName() + ".");
+        if(verbose) {
+            System.out.println("Added trigger to queue with trigger time " + triggerTime + " and readout time " + (triggerTime + bufferTotal) + " from driver "
+                    + driver.getClass().getSimpleName() + ".");
+        }
     }
     
     /**
@@ -946,7 +963,7 @@ public class ReadoutDataManager extends Driver {
             event.put(collectionName, dataList, objectType, flags, readoutName);
         }
         
-        System.out.printf("\tOutput %d objects of type %s to collection \"%s\".%n", dataList.size(), objectType.getSimpleName(), collectionName);
+        if(verbose) { System.out.printf("\tOutput %d objects of type %s to collection \"%s\".%n", dataList.size(), objectType.getSimpleName(), collectionName); }
     }
     
     /**
@@ -1030,5 +1047,15 @@ public class ReadoutDataManager extends Driver {
      */
     public static final void setReadoutWindow(int nanoseconds) {
         readoutWindow = nanoseconds;
+    }
+    
+    /**
+     * Sets whether or not the driver should output initialization
+     * information and trigger output collection names.
+     * @param state - <code>true</code> outputs additional data and
+     * <code>false</code> does not.
+     */
+    public static final void setVerbose(boolean state) {
+        verbose = state;
     }
 }
