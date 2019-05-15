@@ -280,7 +280,7 @@ public class HodoscopePlotsDriver extends ReadoutDriver {
             }
             
             // Fill the plots.
-            fillPlots(typeID, indices[0], indices[1], indices[2], indices[3], energy);
+            fillPlots(typeID, indices[0], indices[1], indices[2], indices[3], energy * 1000);
         }
     }
     
@@ -606,7 +606,7 @@ public class HodoscopePlotsDriver extends ReadoutDriver {
      * @return Returns the newly created plot.
      */
     private static final IHistogram1D makeEnergyPlot(String plotName) {
-        return aida.histogram1D(plotName, 250, 0.000, 0.005);
+        return aida.histogram1D(plotName, 250, 0.000, 5.000);
     }
     
     /**
