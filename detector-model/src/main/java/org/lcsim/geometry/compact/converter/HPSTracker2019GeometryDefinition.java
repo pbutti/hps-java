@@ -108,8 +108,8 @@ public class HPSTracker2019GeometryDefinition extends HPSTracker2014v1GeometryDe
         surveyVolumes.add(uChannelL46TopPlate);
 
         LOGGER.info("Construct modules");
-
-        for (int l = 1; l <= 7; ++l) {
+        for (int l = 1; l < 7; ++l) {
+        //for (int l = 1; l <= 7; ++l) {
             if (doLayer(l)) {
                 LOGGER.info("Construct layer " + l + " modules");
 
@@ -177,12 +177,14 @@ public class HPSTracker2019GeometryDefinition extends HPSTracker2014v1GeometryDe
             bundle = new ShortModuleBundle(module);
             addModuleBundle(bundle);
             if (doAxial) {
-                makeShortHalfModule("axial", "hole", module);
+                //makeShortHalfModule("axial", "hole", module);
+                makeShortHalfModule("axial", module);
                 //makeShortHalfModule("axial", "slot", module);
             }
             // if(doColdBlock) makeColdBlock(module);
             if (doStereo) {
-                makeShortHalfModule("stereo", "hole", module);
+                //makeShortHalfModule("stereo", "hole", module);
+                makeShortHalfModule("stereo", module);
                 //makeShortHalfModule("stereo", "slot", module);
             }
         } else if (layer > 2 && layer <= 4) {
@@ -970,6 +972,65 @@ public class HPSTracker2019GeometryDefinition extends HPSTracker2014v1GeometryDe
      * @param type - hole or slot
      * @param mother to the half-module
      */
+    
+    protected void makeShortHalfModule(String side, BaseModule mother) {
+
+        String moduleName = mother.getName();
+
+        if (isDebug())
+            System.out.printf("%s: makeHalfModule for %s %s %s \n", this.getClass().getSimpleName(), moduleName, side);
+
+        String volName = moduleName + "_halfmodule_" + side;
+
+        // top or bottom?
+        String half = mother.getHalf();
+        boolean isTopLayer = !mother.isBottom();
+
+        // find layer
+        int layer = mother.getLayer();
+
+        // axial or stereo
+        boolean isAxial = isAxialFromName(volName);
+        
+        //Make Millepede Layer always hole for short sensor
+        boolean isHole = true;
+
+        // find layer according to Millepede layer definition
+        int millepedeLayer = getMillepedeLayer(isTopLayer, layer, isAxial, isHole);
+
+        // find alignment correction to this volume
+        AlignmentCorrection alignmentCorrection = getHalfModuleAlignmentCorrection(isTopLayer, millepedeLayer);
+        alignmentCorrection.setNode(node);
+
+        // find the module bundle that it will be added to
+        // TestRunModuleBundle bundle =
+        // (TestRunModuleBundle)getModuleBundle(mother);
+        // TestRunHalfModuleBundle halfModuleBundle;
+        ShortModuleBundle bundle = (ShortModuleBundle) getModuleBundle(mother);
+
+        // Build the half-module bundle and half-module
+        // TODO clean this up to a separate method
+        ShortHalfModule halfModule;
+        HalfModuleBundle halfModuleBundle;
+        if (isAxial) {
+            halfModuleBundle = new ShortHalfModuleBundle();
+            halfModule = new ShortAxialHoleHalfModule(volName, mother, alignmentCorrection, layer, half);
+            bundle.halfModuleAxialHole = halfModuleBundle;
+        } else {
+            halfModuleBundle = new ShortHalfModuleBundle();
+            halfModule = new ShortStereoHoleHalfModule(volName, mother, alignmentCorrection, layer, half);
+            bundle.halfModuleStereoHole = halfModuleBundle;
+        }
+        halfModuleBundle.halfModule = halfModule;
+
+        // create the half module components
+        makeShortHalfModuleComponentSensor(halfModule);
+        // makeShortHalfModuleComponentKapton(halfModule);
+        // makeHalfModuleComponentCF(halfModule);
+        // makeHalfModuleComponentHybrid(halfModule);
+
+    }
+    
     protected void makeShortHalfModule(String side, String type, BaseModule mother) {
 
         String moduleName = mother.getName();
