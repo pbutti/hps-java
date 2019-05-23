@@ -1,5 +1,8 @@
 package org.lcsim.detector.tracker.silicon;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import hep.physics.matrix.BasicMatrix;
 import hep.physics.vec.BasicHep3Vector;
 import hep.physics.vec.Hep3Vector;
@@ -13,6 +16,7 @@ import org.lcsim.detector.Transform3D;
 import org.lcsim.detector.Translation3D;
 import org.lcsim.detector.identifier.IIdentifier;
 import org.lcsim.detector.solids.Box;
+import org.lcsim.detector.solids.Point3D;
 import org.lcsim.detector.solids.Polygon3D;
 
 /**
@@ -88,6 +92,7 @@ public class HpsThinSiSensor extends HpsSiSensor {
         // n side collects electrons.
         this.setBiasSurface(ChargeCarrier.ELECTRON, nSide);
 
+        System.out.println("Half Length Y " + sensorSolid.getYHalfLength());
         Hep3Vector electrodeShift = new BasicHep3Vector(0,-sensorSolid.getYHalfLength()/2,0);
         // Translate to the outside of the sensor solid in order to setup the electrodes
         final ITranslation3D electrodesPosition1 = new Translation3D(VecOp.add(VecOp.mult(-pSide.getDistance(), pSide.getNormal()),electrodeShift));
@@ -97,20 +102,43 @@ public class HpsThinSiSensor extends HpsSiSensor {
         System.out.println("electrodesPosition2 " + electrodesPosition2);
 
         // Align the strips with the edge of the sensor.
-        final IRotation3D electrodesRotation = new RotationPassiveXYZ(0, 0, 0);
-        final Transform3D electrodesTransform1 = new Transform3D(electrodesPosition1, electrodesRotation);
-        final Transform3D electrodesTransform2 = new Transform3D(electrodesPosition2, electrodesRotation);
+        final IRotation3D electrodesRotation1 = new RotationPassiveXYZ(0, 0, 0);
+        final IRotation3D electrodesRotation2 = new RotationPassiveXYZ(0, 0, Math.PI);
+        final Transform3D electrodesTransform1 = new Transform3D(electrodesPosition1, electrodesRotation1);
+        final Transform3D electrodesTransform2 = new Transform3D(electrodesPosition2, electrodesRotation2);
         
-        System.out.println("electrodesRotation " + electrodesRotation);
+        System.out.println("electrodesRotation1 " + electrodesRotation1);
+        System.out.println("electrodesRotation2 " + electrodesRotation2);
         System.out.println("electrodesTransform1 " + electrodesTransform1);
         System.out.println("electrodesTransform2 " + electrodesTransform2);
 
         // Set the number of readout and sense electrodes.
-        final SiStrips readoutElectrodes1 = new SiStrips(ChargeCarrier.HOLE, getReadoutStripPitch(), this,electrodesTransform1);
-        final SiStrips senseElectrodes1 = new SiStrips(ChargeCarrier.HOLE, getSenseStripPitch(),this.getNumberOfSenseStrips(), this, electrodesTransform1);
-        final SiStrips readoutElectrodes2 = new SiStrips(ChargeCarrier.HOLE, getReadoutStripPitch(), this,electrodesTransform2);
-        final SiStrips senseElectrodes2 = new SiStrips(ChargeCarrier.HOLE, getSenseStripPitch(),this.getNumberOfSenseStrips(), this, electrodesTransform2);
+        final SiStripsThinSensor readoutElectrodes1 = new SiStripsThinSensor(ChargeCarrier.HOLE, getReadoutStripPitch(), this,electrodesTransform1);
+        final SiStripsThinSensor senseElectrodes1 = new SiStripsThinSensor(ChargeCarrier.HOLE, getSenseStripPitch(),this.getNumberOfSenseStrips(), this, electrodesTransform1);
+        final SiStripsThinSensor readoutElectrodes2 = new SiStripsThinSensor(ChargeCarrier.HOLE, getReadoutStripPitch(), this,electrodesTransform2);
+        final SiStripsThinSensor senseElectrodes2 = new SiStripsThinSensor(ChargeCarrier.HOLE, getSenseStripPitch(),this.getNumberOfSenseStrips(), this, electrodesTransform2);
 
+        System.out.println("Geometry " + readoutElectrodes1.getGeometry());
+        
+        List<Point3D> vertices = readoutElectrodes1.getGeometry().getVertices();
+        Point3D point1 = vertices.get(0);
+        Point3D point2 = vertices.get(1);
+        Point3D point3 = vertices.get(2);
+        Point3D point4 = new Point3D(new BasicHep3Vector(0,0,0));
+        //System.out.println("Point1 " + point1);
+        //System.out.println("Point2 " + point2);
+        //System.out.println("Point3 " + point3);
+        //System.out.println("Point4 " + point4);
+        List<Point3D> newvertices = new ArrayList<>();
+        newvertices.add(point1);
+        newvertices.add(point2);
+        newvertices.add(point3);
+        newvertices.add(point4);
+        
+        readoutElectrodes1.setGeometry(new Polygon3D(newvertices));
+        
+        System.out.println("Geometry Redo " + readoutElectrodes1.getGeometry());
+        
         System.out.println("readoutElectrodes1 " + readoutElectrodes1);
         System.out.println("senseElectrodes1 " + senseElectrodes1);
         System.out.println("readoutElectrodes2 " + readoutElectrodes2);
