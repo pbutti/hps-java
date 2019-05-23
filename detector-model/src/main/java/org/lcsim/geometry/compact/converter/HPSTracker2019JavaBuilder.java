@@ -44,14 +44,14 @@ public class HPSTracker2019JavaBuilder extends HPSTracker2014v1JavaBuilder {
         add(lcddM);
         if (bundle.halfModuleAxialHole != null)
             addLongHalfModule(bundle.halfModuleAxialHole, lcddM);
-        if (bundle.halfModuleAxialSlot != null)
-            addLongHalfModule(bundle.halfModuleAxialSlot, lcddM);
+        //if (bundle.halfModuleAxialSlot != null)
+        //    addLongHalfModule(bundle.halfModuleAxialSlot, lcddM);
         // if(bundle.coldBlock!=null) add(new LCDDSurveyVolume(bundle.coldBlock,
         // lcdd, lcddM));
         if (bundle.halfModuleStereoHole != null)
             addLongHalfModule(bundle.halfModuleStereoHole, lcddM);
-        if (bundle.halfModuleStereoSlot != null)
-            addLongHalfModule(bundle.halfModuleStereoSlot, lcddM);
+        //if (bundle.halfModuleStereoSlot != null)
+        //    addLongHalfModule(bundle.halfModuleStereoSlot, lcddM);
     }
 
 }

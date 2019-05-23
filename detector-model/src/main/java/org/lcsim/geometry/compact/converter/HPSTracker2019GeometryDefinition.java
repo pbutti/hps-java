@@ -178,12 +178,12 @@ public class HPSTracker2019GeometryDefinition extends HPSTracker2014v1GeometryDe
             addModuleBundle(bundle);
             if (doAxial) {
                 makeShortHalfModule("axial", "hole", module);
-                makeShortHalfModule("axial", "slot", module);
+                //makeShortHalfModule("axial", "slot", module);
             }
             // if(doColdBlock) makeColdBlock(module);
             if (doStereo) {
                 makeShortHalfModule("stereo", "hole", module);
-                makeShortHalfModule("stereo", "slot", module);
+                //makeShortHalfModule("stereo", "slot", module);
             }
         } else if (layer > 2 && layer <= 4) {
             bundle = new TestRunModuleBundle(module);
@@ -670,7 +670,8 @@ public class HPSTracker2019GeometryDefinition extends HPSTracker2014v1GeometryDe
     public static class ShortSensor extends BaseSensor {
 
         // static final double length= 10.00 + 1.00;
-        static final double length = 10.00;
+        //static final double length = 10.00;
+        static final double length = 10.00*2;
         static final double width = 14.080 + 2 * 0.250;
         static final double thickness = 0.200; // 0.250;
         static final double height = thickness;
