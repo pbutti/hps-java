@@ -121,10 +121,10 @@ public class HpsThinSiSensor extends HpsSiSensor {
         System.out.println("Geometry " + readoutElectrodes1.getGeometry());
         
         List<Point3D> vertices = readoutElectrodes1.getGeometry().getVertices();
-        Point3D point1 = vertices.get(0);
-        Point3D point2 = vertices.get(1);
-        Point3D point3 = vertices.get(2);
-        Point3D point4 = new Point3D(new BasicHep3Vector(0,0,0));
+        Point3D point1 = new Point3D(new BasicHep3Vector(vertices.get(0).x(),vertices.get(0).y()-sensorSolid.getYHalfLength()/2,vertices.get(0).z()));
+        Point3D point2 = new Point3D(new BasicHep3Vector(vertices.get(1).x(),vertices.get(1).y()-sensorSolid.getYHalfLength()/2,vertices.get(1).z()));
+        Point3D point3 = new Point3D(new BasicHep3Vector(vertices.get(2).x(),vertices.get(2).y()+sensorSolid.getYHalfLength()/2,vertices.get(2).z()));
+        Point3D point4 = new Point3D(new BasicHep3Vector(vertices.get(3).x(),vertices.get(3).y()+sensorSolid.getYHalfLength()/2,vertices.get(3).z()));
         //System.out.println("Point1 " + point1);
         //System.out.println("Point2 " + point2);
         //System.out.println("Point3 " + point3);
@@ -136,13 +136,14 @@ public class HpsThinSiSensor extends HpsSiSensor {
         newvertices.add(point4);
         
         readoutElectrodes1.setGeometry(new Polygon3D(newvertices));
+        senseElectrodes1.setGeometry(new Polygon3D(newvertices));
+        readoutElectrodes2.setGeometry(new Polygon3D(newvertices));
+        senseElectrodes2.setGeometry(new Polygon3D(newvertices));
         
-        System.out.println("Geometry Redo " + readoutElectrodes1.getGeometry());
-        
-        System.out.println("readoutElectrodes1 " + readoutElectrodes1);
-        System.out.println("senseElectrodes1 " + senseElectrodes1);
-        System.out.println("readoutElectrodes2 " + readoutElectrodes2);
-        System.out.println("senseElectrodes2 " + senseElectrodes2);
+        System.out.println("Geometry Redo Readout 1" + readoutElectrodes1.getGeometry());
+        System.out.println("Geometry Redo Sense 2" + senseElectrodes1.getGeometry());
+        System.out.println("Geometry Redo Readout 1" + readoutElectrodes2.getGeometry());
+        System.out.println("Geometry Redo Sense 2" + senseElectrodes2.getGeometry());
 
         final double readoutCapacitance = this.getStripLength() > this.longSensorLengthThreshold ? this.readoutLongStripCapacitanceSlope
                 : this.readoutStripCapacitanceSlope;

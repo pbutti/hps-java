@@ -11,8 +11,10 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.jdom.Element;
 import org.lcsim.geometry.compact.converter.HPSTestRunTracker2014GeometryDefinition.BaseModule;
 import org.lcsim.geometry.compact.converter.HPSTestRunTracker2014GeometryDefinition.BaseSensor;
+//import org.lcsim.geometry.compact.converter.HPSTestRunTracker2014GeometryDefinition.TestRunHalfModuleBundle;
 // import org.lcsim.geometry.compact.converter.HPSTestRunTracker2014GeometryDefinition.HalfModuleComponent;
 // import org.lcsim.geometry.compact.converter.HPSTestRunTracker2014GeometryDefinition.Sensor;
+import org.lcsim.geometry.compact.converter.HPSTrackerGeometryDefinition.TestRunModuleBundle;
 
 /**
  * Updated geometry information for the HPS tracker 2019
@@ -174,7 +176,8 @@ public class HPSTracker2019GeometryDefinition extends HPSTracker2014v1GeometryDe
         BaseModuleBundle bundle;
 
         if (layer <= 2) {
-            bundle = new ShortModuleBundle(module);
+            //bundle = new ShortModuleBundle(module);
+            bundle = new ShortModuleBundleOneSensor(module);
             addModuleBundle(bundle);
             if (doAxial) {
                 //makeShortHalfModule("axial", "hole", module);
@@ -993,10 +996,11 @@ public class HPSTracker2019GeometryDefinition extends HPSTracker2014v1GeometryDe
         boolean isAxial = isAxialFromName(volName);
         
         //Make Millepede Layer always hole for short sensor
-        boolean isHole = true;
+        //boolean isHole = true;
 
         // find layer according to Millepede layer definition
-        int millepedeLayer = getMillepedeLayer(isTopLayer, layer, isAxial, isHole);
+        //int millepedeLayer = getMillepedeLayer(isTopLayer, layer, isAxial, isHole);
+        int millepedeLayer = getMillepedeLayer(volName);
 
         // find alignment correction to this volume
         AlignmentCorrection alignmentCorrection = getHalfModuleAlignmentCorrection(isTopLayer, millepedeLayer);
@@ -1006,7 +1010,8 @@ public class HPSTracker2019GeometryDefinition extends HPSTracker2014v1GeometryDe
         // TestRunModuleBundle bundle =
         // (TestRunModuleBundle)getModuleBundle(mother);
         // TestRunHalfModuleBundle halfModuleBundle;
-        ShortModuleBundle bundle = (ShortModuleBundle) getModuleBundle(mother);
+        ShortModuleBundleOneSensor bundle = (ShortModuleBundleOneSensor) getModuleBundle(mother);
+        //TestRunModuleBundle bundle = (TestRunModuleBundle) getModuleBundle(mother);
 
         // Build the half-module bundle and half-module
         // TODO clean this up to a separate method
@@ -1015,11 +1020,11 @@ public class HPSTracker2019GeometryDefinition extends HPSTracker2014v1GeometryDe
         if (isAxial) {
             halfModuleBundle = new ShortHalfModuleBundle();
             halfModule = new ShortAxialHoleHalfModule(volName, mother, alignmentCorrection, layer, half);
-            bundle.halfModuleAxialHole = halfModuleBundle;
+            bundle.halfModuleAxial = halfModuleBundle;
         } else {
             halfModuleBundle = new ShortHalfModuleBundle();
             halfModule = new ShortStereoHoleHalfModule(volName, mother, alignmentCorrection, layer, half);
-            bundle.halfModuleStereoHole = halfModuleBundle;
+            bundle.halfModuleStereo = halfModuleBundle;
         }
         halfModuleBundle.halfModule = halfModule;
 
@@ -1174,6 +1179,18 @@ public class HPSTracker2019GeometryDefinition extends HPSTracker2014v1GeometryDe
             super(hm);
         }
     }
+    
+    /*public static class ShortHalfModuleBundleOneSensor extends TestRunHalfModuleBundle {
+        protected static SurveyVolume carbonFiber = null;
+    
+        public ShortHalfModuleBundleOneSensor() {
+            super(carbonFiber);
+        }
+
+        public ShortHalfModuleBundleOneSensor(SurveyVolume hm) {
+            super(hm);
+        }
+    }*/
 
     /**
      * @author Per Hansson Adrian <phansson@slac.stanford.edu>
@@ -1183,6 +1200,29 @@ public class HPSTracker2019GeometryDefinition extends HPSTracker2014v1GeometryDe
         public ShortModuleBundle(BaseModule m) {
             super(m);
         }
+
+    }
+    
+    public static class ShortModuleBundleOneSensor extends TestRunModuleBundle {
+
+       // public HalfModuleBundle halfModuleStereo = null;
+        //public HalfModuleBundle halfModuleAxial = null;
+        //protected SurveyVolume coldBlock = null;
+
+        public ShortModuleBundleOneSensor(BaseModule m) {
+            super(m);
+        }
+
+        /*public void print() {
+            if (module != null)
+                System.out.printf("%s: %s\n", this.getClass().getSimpleName(), module.toString());
+            if (halfModuleAxial != null)
+                halfModuleAxial.print();
+            if (coldBlock != null)
+                System.out.printf("%s: %s\n", this.getClass().getSimpleName(), coldBlock.getName());
+            if (halfModuleStereo != null)
+                halfModuleStereo.print();
+        }*/
 
     }
 
