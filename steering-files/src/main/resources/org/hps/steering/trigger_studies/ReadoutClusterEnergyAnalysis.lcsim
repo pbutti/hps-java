@@ -186,7 +186,7 @@
         
         <driver name="ClusterPlotsDriver" type="org.hps.readout.triggerstudies.ClusterEnergyDistributionDriver">
             <clusterCollectionName>EcalClustersGTP</clusterCollectionName>
-            <outputFilepath>${outputFile}</outputFilepath>
+            <outputFile>${outputFile}</outputFile>
         </driver>
         
         <driver name="ReadoutManagerDriver" type="org.hps.readout.ReadoutDataManager">
