@@ -1,6 +1,5 @@
 package org.hps.readout.triggerstudies;
 
-import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Collection;
@@ -12,6 +11,7 @@ import org.lcsim.event.EventHeader;
 import org.lcsim.util.aida.AIDA;
 
 import hep.aida.IHistogram1D;
+import hep.aida.IHistogram2D;
 
 /**
  * Driver <code>ClusterEnergyDistributionDriver</code> is designed to
@@ -23,16 +23,36 @@ public class ClusterEnergyDistributionDriver extends ReadoutDriver {
     private double localTime = 0.0;
     private String outputFilepath = "";
     private String clusterCollectionName = "EcalClustersGTP";
-    private final static String PLOT_NAME = "Trigger Studies/Pre-Readout/All Cluster Energy Distribution";
+    private final static String ENERGY_PLOT_NAME = "Trigger Studies/Pre-Readout/All Cluster Total Energy Distribution";
+    private final static String SEED_PLOT_NAME = "Trigger Studies/Pre-Readout/All Cluster Seed Energy Distribution";
+    private final static String SEED_VS_N_PLOT_NAME = "Trigger Studies/Pre-Readout/All Cluster Multiplicity vs. Seed Energy Distribution";
+    private final static String SEED_VS_ENERGY_PLOT_NAME = "Trigger Studies/Pre-Readout/All Cluster Total Energy vs. Energy Distribution";
+    
+    private final static String CLUSTER_TOTAL_PLOT_SUFFIX = "-clusterEnergyDistro.dat";
+    private final static String CLUSTER_SEED_PLOT_SUFFIX = "-clusterSeedDistro.dat";
+    private final static String CLUSTER_SEED_VS_N_PLOT_SUFFIX = "-seedVsVDistro.dat";
+    private final static String CLUSTER_SEED_VS_TOTAL_PLOT_SUFFIX = "-seedVsEnergyDistro.dat";
     
     @Override
     public void endOfData() {
         // Write the plot as a Mathematica-compatible file.
         try {
-            FileWriter writer = new FileWriter(outputFilepath);
-            String outputText = aidaToMathematica(AIDA.defaultInstance().histogram1D(PLOT_NAME));
-            writer.write(outputText);
-            writer.close();
+            final String[] plotNames = { ENERGY_PLOT_NAME, SEED_PLOT_NAME, SEED_VS_N_PLOT_NAME, SEED_VS_ENERGY_PLOT_NAME };
+            final String[] plotSuffixes = { CLUSTER_TOTAL_PLOT_SUFFIX, CLUSTER_SEED_PLOT_SUFFIX, CLUSTER_SEED_VS_N_PLOT_SUFFIX, CLUSTER_SEED_VS_TOTAL_PLOT_SUFFIX };
+            final Class<?>[] type = { IHistogram1D.class, IHistogram1D.class, IHistogram2D.class, IHistogram2D.class};
+            
+            FileWriter writer = null;
+            String outputText = null;
+            for(int i = 0; i < plotNames.length; i++) {
+                writer = new FileWriter(outputFilepath + plotSuffixes[i]);
+                if(type[i] == IHistogram1D.class) {
+                    outputText = aidaToMathematica(AIDA.defaultInstance().histogram1D(plotNames[i]));
+                } else {
+                    outputText = aidaToMathematica(AIDA.defaultInstance().histogram2D(plotNames[i]));
+                }
+                writer.write(outputText);
+                writer.close();
+            }
         } catch(IOException e) {
             throw new RuntimeException(e);
         }
@@ -50,7 +70,11 @@ public class ClusterEnergyDistributionDriver extends ReadoutDriver {
         
         // Plot the cluster energies.
         for(Cluster cluster : clusters) {
-            AIDA.defaultInstance().histogram1D(PLOT_NAME).fill(cluster.getEnergy());
+            double seedEnergy = cluster.getCalorimeterHits().get(0).getCorrectedEnergy();
+            AIDA.defaultInstance().histogram1D(SEED_PLOT_NAME).fill(seedEnergy);
+            AIDA.defaultInstance().histogram1D(ENERGY_PLOT_NAME).fill(cluster.getEnergy());
+            AIDA.defaultInstance().histogram2D(SEED_VS_ENERGY_PLOT_NAME).fill(seedEnergy, cluster.getEnergy());
+            AIDA.defaultInstance().histogram2D(SEED_VS_N_PLOT_NAME).fill(seedEnergy, cluster.getCalorimeterHits().size());
         }
         
         // Increment the local time.
@@ -67,11 +91,11 @@ public class ClusterEnergyDistributionDriver extends ReadoutDriver {
     }
     
     /**
-     * Defines the output file where the plot data will be saved.
-     * @param filepath - The filepath to where the plot should be
-     * saved.
+     * Defines the root name of the output files. All files will use
+     * this as a prefix.
+     * @param filepath - The root name of the output files.
      */
-    public void setOutputFilepath(String filepath) {
+    public void setOutputFile(String filepath) {
         outputFilepath = filepath;
     }
     
@@ -81,19 +105,12 @@ public class ClusterEnergyDistributionDriver extends ReadoutDriver {
         addDependency(clusterCollectionName);
         
         // Instantiate the cluster plot.
-        AIDA.defaultInstance().histogram1D(PLOT_NAME, 500, 0.000, 5.000);
-        
-        // Validate that an appropriate output filepath was given.
-        File outputFile = new File(outputFilepath);
-        if(outputFile.isDirectory()) {
-            throw new IllegalArgumentException("Output file can not be a directory.");
-        } else if(outputFile.getParentFile() == null || outputFile.getParentFile().exists()) {
-            if(outputFile.exists()) { outputFile.delete(); }
-        } else {
-            throw new IllegalArgumentException("Output file directory not found!");
-        }
+        AIDA.defaultInstance().histogram1D(SEED_PLOT_NAME, 500, 0.000, 5.000);
+        AIDA.defaultInstance().histogram1D(ENERGY_PLOT_NAME, 500, 0.000, 5.000);
+        AIDA.defaultInstance().histogram2D(SEED_VS_N_PLOT_NAME, 500, 0.000, 5.000, 10, -0.5, 9.5);
+        AIDA.defaultInstance().histogram2D(SEED_VS_ENERGY_PLOT_NAME, 500, 0.000, 5.000, 500, 0.000, 5.000);
     }
-
+    
     @Override
     protected double getTimeDisplacement() {
         return 0;
@@ -119,6 +136,29 @@ public class ClusterEnergyDistributionDriver extends ReadoutDriver {
         
         for(int x = 0; x < bins; x++) {
             outputBuffer.append(String.format("%f,%f%n",plot.axis().binCenter(x), plot.binHeight(x)));
+        }
+        
+        return outputBuffer.toString();
+    }
+    
+    /**
+     * Converts an AIDA histogram to a text file formatted for import
+     * into Wolfram Mathematica as a list of points. Note that this
+     * method does not handle writing the output file.
+     * @param plot - The plot to convert.
+     * @return Returns a {@link java.util.String} object that can be
+     * read into Mathematica as a list of points.
+     */
+    private static final String aidaToMathematica(IHistogram2D plot) {
+        StringBuffer outputBuffer = new StringBuffer();
+        
+        int xBins = plot.xAxis().bins();
+        int yBins = plot.yAxis().bins();
+        
+        for(int x = 0; x < xBins; x++) {
+            for(int y = 0; y < yBins; y++) {
+                outputBuffer.append(String.format("%f,%f,%f%n",plot.xAxis().binCenter(x), plot.yAxis().binCenter(y), plot.binHeight(x, y)));
+            }
         }
         
         return outputBuffer.toString();

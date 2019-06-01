@@ -186,12 +186,12 @@
         
         <driver name="ClusterPlotsDriver" type="org.hps.readout.triggerstudies.ClusterEnergyDistributionDriver">
             <clusterCollectionName>EcalClustersGTP</clusterCollectionName>
-            <outputFilepath>${outputFile}.dat</outputFilepath>
+            <outputFilepath>${outputFile}</outputFilepath>
         </driver>
         
         <driver name="ReadoutManagerDriver" type="org.hps.readout.ReadoutDataManager">
             <readoutWindow>200</readoutWindow>
-            <outputFile>THIS_SHOULDNT_EXIST.slcio</outputFile>
+            <outputFile>${outputFile}.slcio</outputFile>
         </driver>
     </drivers>
 </lcsim>
