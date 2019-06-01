@@ -186,7 +186,7 @@
         
         <driver name="ClusterPlotsDriver" type="org.hps.readout.triggerstudies.ClusterEnergyDistributionDriver">
             <clusterCollectionName>EcalClustersGTP</clusterCollectionName>
-            <outputFilepath>C:\Users\Kyle\Desktop\HodoPlots\Trigger Studies 2019\Data\clusters_pretrigger.dat</outputFilepath>
+            <outputFilepath>${outputFile}.dat</outputFilepath>
         </driver>
         
         <driver name="ReadoutManagerDriver" type="org.hps.readout.ReadoutDataManager">
