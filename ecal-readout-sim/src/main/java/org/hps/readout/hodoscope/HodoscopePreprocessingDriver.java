@@ -155,6 +155,9 @@ public class HodoscopePreprocessingDriver extends ReadoutDriver {
         LCIOCollectionFactory.setReadoutName("HodoscopeHits");
         LCIOCollection<SimCalorimeterHit> hitCollectionParams = LCIOCollectionFactory.produceLCIOCollection(SimCalorimeterHit.class);
         ReadoutDataManager.registerCollection(hitCollectionParams, false);
+        
+        // Add the driver dependencies.
+        addDependency(truthHitCollectionName);
     }
     
     @Override
