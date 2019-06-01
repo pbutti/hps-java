@@ -30,7 +30,7 @@ public class ClusterEnergyDistributionDriver extends ReadoutDriver {
     
     private final static String CLUSTER_TOTAL_PLOT_SUFFIX = "-clusterEnergyDistro.dat";
     private final static String CLUSTER_SEED_PLOT_SUFFIX = "-clusterSeedDistro.dat";
-    private final static String CLUSTER_SEED_VS_N_PLOT_SUFFIX = "-seedVsVDistro.dat";
+    private final static String CLUSTER_SEED_VS_N_PLOT_SUFFIX = "-seedVsNDistro.dat";
     private final static String CLUSTER_SEED_VS_TOTAL_PLOT_SUFFIX = "-seedVsEnergyDistro.dat";
     
     @Override
