@@ -46,9 +46,9 @@ public class ClusterEnergyDistributionDriver extends ReadoutDriver {
             for(int i = 0; i < plotNames.length; i++) {
                 writer = new FileWriter(outputFilepath + plotSuffixes[i]);
                 if(type[i] == IHistogram1D.class) {
-                    outputText = aidaToMathematica(AIDA.defaultInstance().histogram1D(plotNames[i]));
+                    outputText = PlotToTextModule.aidaToMathematica(AIDA.defaultInstance().histogram1D(plotNames[i]));
                 } else {
-                    outputText = aidaToMathematica(AIDA.defaultInstance().histogram2D(plotNames[i]));
+                    outputText = PlotToTextModule.aidaToMathematica(AIDA.defaultInstance().histogram2D(plotNames[i]));
                 }
                 writer.write(outputText);
                 writer.close();
@@ -119,48 +119,5 @@ public class ClusterEnergyDistributionDriver extends ReadoutDriver {
     @Override
     protected double getTimeNeededForLocalOutput() {
         return 0;
-    }
-    
-    /**
-     * Converts an AIDA histogram to a text file formatted for import
-     * into Wolfram Mathematica as a list of points. Note that this
-     * method does not handle writing the output file.
-     * @param plot - The plot to convert.
-     * @return Returns a {@link java.util.String} object that can be
-     * read into Mathematica as a list of points.
-     */
-    private static final String aidaToMathematica(IHistogram1D plot) {
-        StringBuffer outputBuffer = new StringBuffer();
-        
-        int bins = plot.axis().bins();
-        
-        for(int x = 0; x < bins; x++) {
-            outputBuffer.append(String.format("%f,%f%n",plot.axis().binCenter(x), plot.binHeight(x)));
-        }
-        
-        return outputBuffer.toString();
-    }
-    
-    /**
-     * Converts an AIDA histogram to a text file formatted for import
-     * into Wolfram Mathematica as a list of points. Note that this
-     * method does not handle writing the output file.
-     * @param plot - The plot to convert.
-     * @return Returns a {@link java.util.String} object that can be
-     * read into Mathematica as a list of points.
-     */
-    private static final String aidaToMathematica(IHistogram2D plot) {
-        StringBuffer outputBuffer = new StringBuffer();
-        
-        int xBins = plot.xAxis().bins();
-        int yBins = plot.yAxis().bins();
-        
-        for(int x = 0; x < xBins; x++) {
-            for(int y = 0; y < yBins; y++) {
-                outputBuffer.append(String.format("%f,%f,%f%n",plot.xAxis().binCenter(x), plot.yAxis().binCenter(y), plot.binHeight(x, y)));
-            }
-        }
-        
-        return outputBuffer.toString();
     }
 }
