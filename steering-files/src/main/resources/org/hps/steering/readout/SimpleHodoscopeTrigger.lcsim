@@ -185,6 +185,13 @@
              GTP clusters if cluster output is enabled.
           -->
         <driver name="EcalRawConverterDriver" type="org.hps.readout.ecal.updated.EcalRawConverterReadoutDriver">
+		    <!--
+				Define the LCIO collection names. The input collection should
+				come from the digitization driver.
+			-->
+			<inputCollectionName>EcalRawHits</inputCollectionName>
+			<outputHitCollectionName>EcalCorrectedHits</outputHitCollectionName>
+		    
             <!--
                 NSA and NSB must match the digitization driver settings.
             -->
@@ -303,6 +310,13 @@
              converter driver.
           -->
         <driver name="HodoscopeRawConverterDriver" type="org.hps.readout.hodoscope.HodoscopeRawConverterReadoutDriver">
+		    <!--
+				Define the LCIO collection names. The input collection should
+				come from the digitization driver.
+			-->
+			<inputCollectionName>HodoscopeRawHits</inputCollectionName>
+			<outputHitCollectionName>HodoscopeCorrectedHits</outputHitCollectionName>
+			
             <!--
                 NSA and NSB must match the digitization driver settings.
             -->
@@ -316,7 +330,7 @@
                 clusters will automatically be included if GTP clusters are
                 persisted.
             -->
-            <persistent>false</persistent>
+            <persistent>true</persistent>
         </driver>
         
         <!--
