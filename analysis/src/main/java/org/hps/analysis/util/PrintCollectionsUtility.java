@@ -100,6 +100,11 @@ public class PrintCollectionsUtility {
         File inputFile = new File(fileName);
         if(!inputFile.exists()) { throw new RuntimeException("Error: Input file \"" + args[0] + "\" does not exist."); }
         
+        // Track the number of objects stored in each collection and
+        // also the total number of events in the file.
+        int events = 0;
+        Map<String, Integer> collectionCountMap = new HashMap<String, Integer>();
+        
         // Initialize the file reader.
         LCIOReader reader = new LCIOReader(inputFile);
         
@@ -109,16 +114,40 @@ public class PrintCollectionsUtility {
         Map<String, Class<?>> collectionMap = new HashMap<String, Class<?>>();
         eventLoop:
         while(true) {
+            // Get the event data.
             EventHeader event = null;
             try { event = reader.read(); }
             catch(EOFException e) { break eventLoop; }
             
+            // Increment the event count.
+            events++;
+            
+            // Get all of the collections data and store any new
+            // collections in the tracker objects.
             @SuppressWarnings("rawtypes")
             Set<List> eventCollections = event.getLists();
             for(List<?> eventCollection : eventCollections) {
                 LCMetaData collectionMetaData = event.getMetaData(eventCollection);
                 collectionSet.add(new Pair<String, String>(collectionMetaData.getName(), collectionMetaData.getType().getSimpleName()));
                 collectionMap.put(collectionMetaData.getName(), collectionMetaData.getType());
+            }
+            
+            // Track the instances of each object stored in the
+            // collection data.
+            for(Map.Entry<String, Class<?>> entry : collectionMap.entrySet()) {
+                // If the collection count map does not already have
+                // this collection, add it.
+                if(!collectionCountMap.containsKey(entry.getKey())) {
+                    collectionCountMap.put(entry.getKey(), Integer.valueOf(0));
+                }
+                
+                // Increment the collection count by the amount of
+                // objects in the collection.
+                if(event.hasCollection(entry.getValue(), entry.getKey())) {
+                    List<?> collection = event.get(entry.getValue(), entry.getKey());
+                    int count = collectionCountMap.get(entry.getKey()).intValue() + collection.size();
+                    collectionCountMap.put(entry.getKey(), Integer.valueOf(count));
+                }
             }
             
             // If no collections were specified for printing, then
@@ -193,13 +222,31 @@ public class PrintCollectionsUtility {
             longestNameLength = Math.max(longestNameLength, collectionName.getFirstElement().length());
         }
         
+        // Get the longest object type.
+        int longestTypeLength = 0;
+        for(Class<?> type : collectionMap.values()) {
+            longestTypeLength = Math.max(longestTypeLength, type.getSimpleName().length());
+        }
+        
+        // Get the collection entry count.
+        int longestCountLength = 0;
+        for(Integer count : collectionCountMap.values()) {
+            longestCountLength = Math.max(longestCountLength, count.toString().length());
+        }
+        
+        // Create the output format string.
+        String outputString = "\tName = " + BashParameter.format("%-" + longestNameLength + "s", BashParameter.TEXT_YELLOW)
+                + BashParameter.format(" | ", BashParameter.TEXT_LIGHT_GREY, BashParameter.PROPERTY_DIM)
+                + "Type = " + BashParameter.format("%-" + longestTypeLength + "s", BashParameter.TEXT_YELLOW)
+                + BashParameter.format(" | ", BashParameter.TEXT_LIGHT_GREY, BashParameter.PROPERTY_DIM)
+                + "Count = " + BashParameter.format("%-" + longestCountLength + "d", BashParameter.TEXT_YELLOW) + "%n";
+        
         // Print the collections.
+        System.out.println(BashParameter.format("Total Events: ", BashParameter.TEXT_LIGHT_BLUE) + BashParameter.format(Integer.toString(events), BashParameter.TEXT_YELLOW));
         System.out.println(BashParameter.format("All File Collections:", BashParameter.TEXT_LIGHT_BLUE));
         for(Pair<String, String> collectionName : collectionNames) {
-            System.out.printf("\tName = " + BashParameter.format("%-" + longestNameLength + "s", BashParameter.TEXT_YELLOW)
-                    + BashParameter.format(" | ", BashParameter.TEXT_LIGHT_GREY, BashParameter.PROPERTY_DIM)
-                    + "Type = " + BashParameter.format("%s", BashParameter.TEXT_YELLOW) + "%n",
-                    collectionName.getFirstElement(), collectionName.getSecondElement());
+            System.out.printf(outputString, collectionName.getFirstElement(), collectionName.getSecondElement(),
+                    collectionCountMap.get(collectionName.getFirstElement()));
         }
     }
     
