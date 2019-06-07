@@ -178,11 +178,19 @@ public class HpsThinSiSensor extends HpsSiSensor {
         senseElectrodes2.setCapacitanceIntercept(this.senseStripCapacitanceIntercept);
         senseElectrodes2.setCapacitanceSlope(senseCapacitance);
 
+        /*List<SiStrips> senseElectrodes = new ArrayList<>();
+        List<SiStrips> readoutElectrodes = new ArrayList<>();
+        senseElectrodes.add(senseElectrodes1);
+        senseElectrodes.add(senseElectrodes2);
+        readoutElectrodes.add(readoutElectrodes1);
+        readoutElectrodes.add(readoutElectrodes2);*/
+        
+        
         // Set sense and readout electrodes.
-        this.setSenseElectrodes(senseElectrodes1);
-        this.setReadoutElectrodes(readoutElectrodes1);
-        this.setSenseElectrodes(senseElectrodes2);
-        this.setReadoutElectrodes(readoutElectrodes2);
+        this.setSenseElectrodes(senseElectrodes1.getChargeCarrier(),senseElectrodes1);
+        this.setReadoutElectrodes(readoutElectrodes1.getChargeCarrier(),readoutElectrodes1);
+        this.setSenseElectrodes(senseElectrodes2.getChargeCarrier(),senseElectrodes2);
+        this.setReadoutElectrodes(readoutElectrodes2.getChargeCarrier(),readoutElectrodes2);
         
         System.out.println("Sense Electrodes 1 " + senseElectrodes1 + "  readoutElectrodes 1 " + readoutElectrodes1);
         System.out.println("Sense Electrodes 2 " + senseElectrodes2 + "  readoutElectrodes 2 " + readoutElectrodes2);
@@ -193,5 +201,15 @@ public class HpsThinSiSensor extends HpsSiSensor {
         final double[][] transferEfficiencies = {{this.getReadoutTransferEfficiency(), this.getSenseTransferEfficiency()}};
         this.setTransferEfficiencies(ChargeCarrier.HOLE, new BasicMatrix(transferEfficiencies));
 
+    }
+    
+    public void setSenseElectrodes(ChargeCarrier carrier, SiSensorElectrodes sense_electrodes)
+    {
+        _sense_electrodes.put(carrier,sense_electrodes);
+    }
+    
+    public void setReadoutElectrodes(ChargeCarrier carrier, SiSensorElectrodes readout_electrodes)
+    {
+        _readout_electrodes.put(carrier,readout_electrodes);
     }
 }
