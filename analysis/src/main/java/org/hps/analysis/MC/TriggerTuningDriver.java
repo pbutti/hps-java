@@ -10,6 +10,7 @@ import org.hps.conditions.database.DatabaseConditionsManager;
 import org.hps.conditions.hodoscope.HodoscopeChannel;
 import org.hps.conditions.hodoscope.HodoscopeChannel.HodoscopeChannelCollection;
 import org.hps.detector.hodoscope.HodoscopeDetectorElement;
+import org.hps.readout.triggerstudies.Coordinate;
 import org.hps.readout.triggerstudies.PlotToTextModule;
 import org.hps.record.triggerbank.TriggerModule;
 import org.lcsim.event.CalorimeterHit;
@@ -103,6 +104,88 @@ public class TriggerTuningDriver extends Driver {
                     new File(outputDirectory + File.separator + "tuning_clusterTrackMatching_BNX.dat"));
             PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(false, false, false)),
                     new File(outputDirectory + File.separator + "tuning_clusterTrackMatching_BNY.dat"));
+            
+            // Define the cluster/track matching fit threshold.
+            double clusterTrackMatchingFitThreshold = 0.95;
+            
+            // Get the upper and lower bounds of the distribution for
+            // each data type.
+            // Top Positrons
+            Coordinate[] positronTopXLowerBound =
+                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(true, true, true)),
+                    0, clusterTrackMatchingFitThreshold, true);
+            Coordinate[] positronTopXUpperBound =
+                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(true, true, true)),
+                    0, clusterTrackMatchingFitThreshold, false);
+            Coordinate[] positronTopYLowerBound =
+                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(true, true, false)),
+                    0, clusterTrackMatchingFitThreshold, true);
+            Coordinate[] positronTopYUpperBound =
+                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(true, true, false)),
+                    0, clusterTrackMatchingFitThreshold, false);
+            
+            // Bottom Positrons
+            Coordinate[] positronBotXLowerBound =
+                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(false, true, true)),
+                    0, clusterTrackMatchingFitThreshold, true);
+            Coordinate[] positronBotXUpperBound =
+                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(false, true, true)),
+                    0, clusterTrackMatchingFitThreshold, false);
+            Coordinate[] positronBotYLowerBound =
+                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(false, true, false)),
+                    0, clusterTrackMatchingFitThreshold, true);
+            Coordinate[] positronBotYUpperBound =
+                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(false, true, false)),
+                    0, clusterTrackMatchingFitThreshold, false);
+            
+            // Top Electrons
+            Coordinate[] electronTopXLowerBound =
+                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(true, false, true)),
+                    0, clusterTrackMatchingFitThreshold, true);
+            Coordinate[] electronTopXUpperBound =
+                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(true, false, true)),
+                    0, clusterTrackMatchingFitThreshold, false);
+            Coordinate[] electronTopYLowerBound =
+                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(true, false, false)),
+                    0, clusterTrackMatchingFitThreshold, true);
+            Coordinate[] electronTopYUpperBound =
+                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(true, false, false)),
+                    0, clusterTrackMatchingFitThreshold, false);
+            
+            // Bottom Electrons
+            Coordinate[] electronBotXLowerBound =
+                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(false, false, true)),
+                    0, clusterTrackMatchingFitThreshold, true);
+            Coordinate[] electronBotXUpperBound =
+                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(false, false, true)),
+                    0, clusterTrackMatchingFitThreshold, false);
+            Coordinate[] electronBotYLowerBound =
+                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(false, false, true)),
+                    0, clusterTrackMatchingFitThreshold, true);
+            Coordinate[] electronBotYUpperBound =
+                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(false, false, true)),
+                    0, clusterTrackMatchingFitThreshold, false);
+            
+            // Write the cluster/track matching boundary files.
+            PlotToTextModule.writeCoordinateSet(positronTopXLowerBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_TPXL.dat"));
+            PlotToTextModule.writeCoordinateSet(positronTopXUpperBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_TPXU.dat"));
+            PlotToTextModule.writeCoordinateSet(positronTopYLowerBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_TPYL.dat"));
+            PlotToTextModule.writeCoordinateSet(positronTopYUpperBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_TPYU.dat"));
+            
+            PlotToTextModule.writeCoordinateSet(positronBotXLowerBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_BPXL.dat"));
+            PlotToTextModule.writeCoordinateSet(positronBotXUpperBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_BPXU.dat"));
+            PlotToTextModule.writeCoordinateSet(positronBotYLowerBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_BPYL.dat"));
+            PlotToTextModule.writeCoordinateSet(positronBotYUpperBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_BPYU.dat"));
+            
+            PlotToTextModule.writeCoordinateSet(electronTopXLowerBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_TNXL.dat"));
+            PlotToTextModule.writeCoordinateSet(electronTopXUpperBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_TNXU.dat"));
+            PlotToTextModule.writeCoordinateSet(electronTopYLowerBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_TNYL.dat"));
+            PlotToTextModule.writeCoordinateSet(electronTopYUpperBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_TNYU.dat"));
+            
+            PlotToTextModule.writeCoordinateSet(electronBotXLowerBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_BNXL.dat"));
+            PlotToTextModule.writeCoordinateSet(electronBotXUpperBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_BNXU.dat"));
+            PlotToTextModule.writeCoordinateSet(electronBotYLowerBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_BNYL.dat"));
+            PlotToTextModule.writeCoordinateSet(electronBotYUpperBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_BNYU.dat"));
             
             // Hodoscope layer-to-layer plots.
             for(int ix = 0; ix < 9; ix++) {

@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.hps.conditions.hodoscope.HodoscopeChannel;
 import org.hps.detector.hodoscope.HodoscopeDetectorElement;
+import org.hps.readout.triggerstudies.Coordinate;
 import org.hps.recon.tracking.TrackUtils;
 import org.hps.record.triggerbank.TriggerModule;
 import org.lcsim.event.CalorimeterHit;
@@ -16,6 +17,7 @@ import org.lcsim.event.Track;
 import org.lcsim.fit.helicaltrack.HelicalTrackFit;
 import org.lcsim.geometry.FieldMap;
 
+import hep.aida.IHistogram2D;
 import hep.physics.vec.BasicHep3Vector;
 
 public class TriggerTuningUtilityModule {
@@ -109,6 +111,95 @@ public class TriggerTuningUtilityModule {
         
         // Return the results.
         return energies;
+    }
+    
+    public static final Coordinate[] getEnergyThreshold(IHistogram2D plot, double xMin, double threshold, boolean fromTop) {
+        // Get the number of bins in each direction.
+        int xBins = plot.xAxis().bins();
+        int yBins = plot.yAxis().bins();
+        
+        // Get the x-axis values.
+        double[] xVals = new double[xBins];
+        for(int i = 0; i < xBins; i++) {
+            xVals[i] = plot.xAxis().binCenter(i);
+        }
+        
+        double[] yVals = new double[yBins];
+        for(int i = 0; i < yBins; i++) {
+            yVals[i] = plot.yAxis().binCenter(i);
+        }
+        
+        // Determine the total number of counts for all y-bins for a
+        // given x-bin.
+        double[] totalCount = new double[xBins];
+        for(int x = 0; x < xBins; x++) {
+            for(int y = 0; y < yBins; y++) {
+                totalCount[x] += plot.binHeight(x, y);
+            }
+        }
+        
+        // Determine which y-bin is below [threshold] percent of all
+        // entries for the current x-value. Ignore x-values below
+        // [xMin].
+        List<Coordinate> thresholdList = new ArrayList<Coordinate>();
+        
+        // If the threshold is cumulative from the top...
+        if(fromTop) {
+            xLoop:
+            for(int x = 0; x < xBins; x++) {
+                // Ignore x-values that are below the minimum specified
+                // x-value.
+                if(xVals[x] < xMin) { continue xLoop; }
+                
+                // Otherwise, start from the top y-bin and check whether
+                // the cumulative total entries from that bin to the
+                // current bin is equal to or greater than the threshold.
+                int yTotal = 0;
+                yLoop:
+                for(int y = yBins - 1; y >= 0; y--) {
+                    // Increment the cumulative y-entries.
+                    yTotal += plot.binHeight(x, y);
+                    
+                    // Calculate the cumulative percentage.
+                    double percentage = yTotal / totalCount[x];
+                    
+                    // If it exceeds the threshold, store it.
+                    if(percentage >= threshold) {
+                        thresholdList.add(new Coordinate(xVals[x], yVals[y]));
+                        break yLoop;
+                    }
+                }
+            }
+        } else {
+            xLoop:
+            for(int x = 0; x < xBins; x++) {
+                // Ignore x-values that are below the minimum specified
+                // x-value.
+                if(xVals[x] < xMin) { continue xLoop; }
+                
+                // Otherwise, start from the top y-bin and check whether
+                // the cumulative total entries from that bin to the
+                // current bin is equal to or greater than the threshold.
+                int yTotal = 0;
+                yLoop:
+                for(int y = 0; y < yBins; y++) {
+                    // Increment the cumulative y-entries.
+                    yTotal += plot.binHeight(x, y);
+                    
+                    // Calculate the cumulative percentage.
+                    double percentage = yTotal / totalCount[x];
+                    
+                    // If it exceeds the threshold, store it.
+                    if(percentage >= threshold) {
+                        thresholdList.add(new Coordinate(xVals[x], yVals[y]));
+                        break yLoop;
+                    }
+                }
+            }
+        }
+        
+        // Return the list of threshold coordinates.
+        return thresholdList.toArray(new Coordinate[thresholdList.size()]);
     }
     
     /**

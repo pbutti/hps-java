@@ -105,6 +105,20 @@ public class PlotToTextModule {
     }
     
     /**
+     * Converts an array of coordinates to a text file formatted for
+     * import into Wolfram Mathematica as a list of points and then
+     * writes it to the designated filepath.
+     * @param coors - The coordinates to convert.
+     * @param outputFile - The file to which the output should be
+     * written.
+     * @throws IOException Occurs if there is an issue with writing
+     * the file.
+     */
+    public static final void writeCoordinateSet(Coordinate[] coors, File outputFile) throws IOException {
+        writeFile(coordinateSetToMathematica(coors), outputFile);
+    }
+    
+    /**
      * Converts an AIDA histogram to a text file formatted for import
      * into Wolfram Mathematica as a list of points and then writes
      * it to the designated filepath.
@@ -115,8 +129,33 @@ public class PlotToTextModule {
      * the file.
      */
     public static final void writePlot(IHistogram plot, File outputFile) throws IOException {
+        writeFile(aidaToMathematica(plot), outputFile);
+    }
+    
+    /**
+     * Converts an array of coordinates to text for outputting to a
+     * file.
+     * @param coors - The coordinates.
+     * @return Returns the list of coordinates in a text form that is
+     * compatible with Mathematica.
+     */
+    private static final String coordinateSetToMathematica(Coordinate[] coors) {
+        StringBuffer outputBuffer = new StringBuffer();
+        for(Coordinate coor : coors) {
+            outputBuffer.append(String.format("%f,%f%n", coor.getX(), coor.getY()));
+        }
+        return outputBuffer.toString();
+    }
+    
+    /**
+     * Writes the output text to the specified file.
+     * @param outputText - The text to output.
+     * @param outputFile - The file to output it to.
+     * @throws IOException Occurs if there is an issue with writing
+     * the file.
+     */
+    private static final void writeFile(String outputText, File outputFile) throws IOException {
         FileWriter writer = new FileWriter(outputFile);
-        String outputText = aidaToMathematica(plot);
         writer.write(outputText);
         writer.close();
     }
