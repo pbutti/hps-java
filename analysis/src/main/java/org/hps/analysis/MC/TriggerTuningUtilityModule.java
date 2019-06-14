@@ -133,7 +133,13 @@ public class TriggerTuningUtilityModule {
         // given x-bin.
         double[] totalCount = new double[xBins];
         for(int x = 0; x < xBins; x++) {
+            yLoop:
             for(int y = 0; y < yBins; y++) {
+                // Ignore y-values that are below the minimum
+                // allowed y-value or above the maximum y-value.
+                if(yVals[y] < yMin || yVals[y] > yMax) { continue yLoop; }
+                
+                // Increment the total count for this x.
                 totalCount[x] += plot.binHeight(x, y);
             }
         }
@@ -159,7 +165,7 @@ public class TriggerTuningUtilityModule {
                 for(int y = yBins - 1; y >= 0; y--) {
                     // Ignore y-values that are below the minimum
                     // allowed y-value or above the maximum y-value.
-                    if(yVals[y] < yMin || yVals[y] > yMax) { continue xLoop; }
+                    if(yVals[y] < yMin || yVals[y] > yMax) { continue yLoop; }
                     
                     // Increment the cumulative y-entries.
                     yTotal += plot.binHeight(x, y);
@@ -187,6 +193,10 @@ public class TriggerTuningUtilityModule {
                 int yTotal = 0;
                 yLoop:
                 for(int y = 0; y < yBins; y++) {
+                    // Ignore y-values that are below the minimum
+                    // allowed y-value or above the maximum y-value.
+                    if(yVals[y] < yMin || yVals[y] > yMax) { continue yLoop; }
+                    
                     // Increment the cumulative y-entries.
                     yTotal += plot.binHeight(x, y);
                     
