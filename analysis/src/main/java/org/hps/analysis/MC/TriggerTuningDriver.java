@@ -106,7 +106,7 @@ public class TriggerTuningDriver extends Driver {
                     new File(outputDirectory + File.separator + "tuning_clusterTrackMatching_BNY.dat"));
             
             // Define the cluster/track matching fit threshold.
-            double clusterTrackMatchingFitThreshold = 0.97;
+            double clusterTrackMatchingFitThreshold = 0.99;
             
             // Get the upper and lower bounds of the distribution for
             // each data type.
