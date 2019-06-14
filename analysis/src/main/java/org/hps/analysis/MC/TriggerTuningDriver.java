@@ -106,10 +106,10 @@ public class TriggerTuningDriver extends Driver {
                     new File(outputDirectory + File.separator + "tuning_clusterTrackMatching_BNY.dat"));
             
             // Define the cluster/track matching fit threshold.
-            double topYMin = -10;
+            double topYMin = 0;
             double topYMax = Integer.MAX_VALUE;
             double botYMin = Integer.MIN_VALUE;
-            double botYMax = 10;
+            double botYMax = 0;
             double clusterTrackMatchingFitThreshold = 0.97;
             
             // Get the upper and lower bounds of the distribution for
