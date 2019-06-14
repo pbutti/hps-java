@@ -87,23 +87,15 @@ public class TriggerTuningDriver extends Driver {
             PlotToTextModule.writePlot(AIDA.defaultInstance().histogram1D(HODOSCOPE_SCINTILLATOR_ENERGY), new File(outputDirectory + File.separator + "tuning_hodoHitEnergy.dat"));
             
             // Cluster/track matching plots.
-            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(true, true, true)),
-                        new File(outputDirectory + File.separator + "tuning_clusterTrackMatching_TPX.dat"));
-            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(true, true, false)),
-                    new File(outputDirectory + File.separator + "tuning_clusterTrackMatching_TPY.dat"));
-            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(true, false, true)),
-                    new File(outputDirectory + File.separator + "tuning_clusterTrackMatching_TNX.dat"));
-            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(true, false, false)),
-                    new File(outputDirectory + File.separator + "tuning_clusterTrackMatching_TNY.dat"));
+            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(true, true)),
+                        new File(outputDirectory + File.separator + "tuning_clusterTrackMatching_TPR.dat"));
+            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(true, false)),
+                    new File(outputDirectory + File.separator + "tuning_clusterTrackMatching_TNR.dat"));
         
-            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(false, true, true)),
-                    new File(outputDirectory + File.separator + "tuning_clusterTrackMatching_BPX.dat"));
-            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(false, true, false)),
-                    new File(outputDirectory + File.separator + "tuning_clusterTrackMatching_BPY.dat"));
-            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(false, false, true)),
-                    new File(outputDirectory + File.separator + "tuning_clusterTrackMatching_BNX.dat"));
-            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(false, false, false)),
-                    new File(outputDirectory + File.separator + "tuning_clusterTrackMatching_BNY.dat"));
+            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(false, true)),
+                    new File(outputDirectory + File.separator + "tuning_clusterTrackMatching_BPR.dat"));
+            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(false, false)),
+                    new File(outputDirectory + File.separator + "tuning_clusterTrackMatching_BNR.dat"));
             
             // Define the cluster/track matching fit threshold.
             double clusterTrackMatchingFitThreshold = 0.99;
@@ -112,80 +104,48 @@ public class TriggerTuningDriver extends Driver {
             // each data type.
             // Top Positrons
             Coordinate[] positronTopXLowerBound =
-                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(true, true, true)),
+                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(true, true)),
                     0, 0, Integer.MAX_VALUE, clusterTrackMatchingFitThreshold, true);
             Coordinate[] positronTopXUpperBound =
-                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(true, true, true)),
+                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(true, true)),
                     0, 0, Integer.MAX_VALUE, clusterTrackMatchingFitThreshold, false);
-            Coordinate[] positronTopYLowerBound =
-                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(true, true, false)),
-                    0, -45, Integer.MAX_VALUE, clusterTrackMatchingFitThreshold, true);
-            Coordinate[] positronTopYUpperBound =
-                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(true, true, false)),
-                    0, -45, Integer.MAX_VALUE, clusterTrackMatchingFitThreshold, false);
             
             // Bottom Positrons
             Coordinate[] positronBotXLowerBound =
-                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(false, true, true)),
+                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(false, true)),
                     0, 0, Integer.MAX_VALUE, clusterTrackMatchingFitThreshold, true);
             Coordinate[] positronBotXUpperBound =
-                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(false, true, true)),
+                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(false, true)),
                     0, 0, Integer.MAX_VALUE, clusterTrackMatchingFitThreshold, false);
-            Coordinate[] positronBotYLowerBound =
-                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(false, true, false)),
-                    0, Integer.MIN_VALUE, 45, clusterTrackMatchingFitThreshold, true);
-            Coordinate[] positronBotYUpperBound =
-                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(false, true, false)),
-                    0, Integer.MIN_VALUE, 45, clusterTrackMatchingFitThreshold, false);
             
             // Top Electrons
             Coordinate[] electronTopXLowerBound =
-                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(true, false, true)),
-                    0, Integer.MIN_VALUE, 0, clusterTrackMatchingFitThreshold, true);
+                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(true, false)),
+                    0, Integer.MAX_VALUE, 0, clusterTrackMatchingFitThreshold, true);
             Coordinate[] electronTopXUpperBound =
-                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(true, false, true)),
-                    0, Integer.MIN_VALUE, 0, clusterTrackMatchingFitThreshold, false);
-            Coordinate[] electronTopYLowerBound =
-                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(true, false, false)),
-                    0, -45, Integer.MAX_VALUE, clusterTrackMatchingFitThreshold, true);
-            Coordinate[] electronTopYUpperBound =
-                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(true, false, false)),
-                    0, -45, Integer.MAX_VALUE, clusterTrackMatchingFitThreshold, false);
+                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(true, false)),
+                    0, Integer.MAX_VALUE, 0, clusterTrackMatchingFitThreshold, false);
             
             // Bottom Electrons
             Coordinate[] electronBotXLowerBound =
-                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(false, false, true)),
-                    0, Integer.MIN_VALUE, 0, clusterTrackMatchingFitThreshold, true);
+                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(false, false)),
+                    0, Integer.MAX_VALUE, 0, clusterTrackMatchingFitThreshold, true);
             Coordinate[] electronBotXUpperBound =
-                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(false, false, true)),
-                    0, Integer.MIN_VALUE, 0, clusterTrackMatchingFitThreshold, false);
-            Coordinate[] electronBotYLowerBound =
-                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(false, false, true)),
-                    0, Integer.MIN_VALUE, 45, clusterTrackMatchingFitThreshold, true);
-            Coordinate[] electronBotYUpperBound =
-                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(false, false, true)),
-                    0, Integer.MIN_VALUE, 45, clusterTrackMatchingFitThreshold, false);
+                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(false, false)),
+                    0, Integer.MAX_VALUE, 0, clusterTrackMatchingFitThreshold, false);
             
             // Write the cluster/track matching boundary files.
-            PlotToTextModule.writeCoordinateSet(positronTopXLowerBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_TPXL.dat"));
-            PlotToTextModule.writeCoordinateSet(positronTopXUpperBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_TPXU.dat"));
-            PlotToTextModule.writeCoordinateSet(positronTopYLowerBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_TPYL.dat"));
-            PlotToTextModule.writeCoordinateSet(positronTopYUpperBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_TPYU.dat"));
+            PlotToTextModule.writeCoordinateSet(positronTopXLowerBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_TPRL.dat"));
+            PlotToTextModule.writeCoordinateSet(positronTopXUpperBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_TPRU.dat"));
             
-            PlotToTextModule.writeCoordinateSet(positronBotXLowerBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_BPXL.dat"));
-            PlotToTextModule.writeCoordinateSet(positronBotXUpperBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_BPXU.dat"));
-            PlotToTextModule.writeCoordinateSet(positronBotYLowerBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_BPYL.dat"));
-            PlotToTextModule.writeCoordinateSet(positronBotYUpperBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_BPYU.dat"));
+            PlotToTextModule.writeCoordinateSet(positronBotXLowerBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_BPRL.dat"));
+            PlotToTextModule.writeCoordinateSet(positronBotXUpperBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_BPRU.dat"));
             
-            PlotToTextModule.writeCoordinateSet(electronTopXLowerBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_TNXL.dat"));
-            PlotToTextModule.writeCoordinateSet(electronTopXUpperBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_TNXU.dat"));
-            PlotToTextModule.writeCoordinateSet(electronTopYLowerBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_TNYL.dat"));
-            PlotToTextModule.writeCoordinateSet(electronTopYUpperBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_TNYU.dat"));
+            PlotToTextModule.writeCoordinateSet(electronTopXLowerBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_TNRL.dat"));
+            PlotToTextModule.writeCoordinateSet(electronTopXUpperBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_TNRU.dat"));
             
-            PlotToTextModule.writeCoordinateSet(electronBotXLowerBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_BNXL.dat"));
-            PlotToTextModule.writeCoordinateSet(electronBotXUpperBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_BNXU.dat"));
-            PlotToTextModule.writeCoordinateSet(electronBotYLowerBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_BNYL.dat"));
-            PlotToTextModule.writeCoordinateSet(electronBotYUpperBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_BNYU.dat"));
+            PlotToTextModule.writeCoordinateSet(electronBotXLowerBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_BNRL.dat"));
+            PlotToTextModule.writeCoordinateSet(electronBotXUpperBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_BNRU.dat"));
             
             // Hodoscope layer-to-layer plots.
             for(int ix = 0; ix < 9; ix++) {
@@ -286,10 +246,7 @@ public class TriggerTuningDriver extends Driver {
             boolean isTop = (i == 0);
             for(int j = 0; j < 2; j++) {
                 boolean isPositive = (j == 0);
-                for(int k = 0; k < 2; k++) {
-                    boolean isX = (k == 0);
-                    AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(isTop, isPositive, isX), 250, 0.000, 5.000, 60, -60, 60);
-                }
+                AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(isTop, isPositive), 250, 0.000, 5.000, 70, 0, 70);
             }
         }
         
@@ -458,8 +415,8 @@ public class TriggerTuningDriver extends Driver {
         }
     }
     
-    private static final String getClusterTrackMatchingPlotName(boolean isTop, boolean isPositive, boolean isX) {
-        return "Cluster-Track Matching/" + (isPositive ? "Positive/" : "Negative/") + (isTop ? "Top/" : "Bottom/") + "Momentum vs. #Delta " + (isX ? "x" : "y");
+    private static final String getClusterTrackMatchingPlotName(boolean isTop, boolean isPositive) {
+        return "Cluster-Track Matching/" + (isPositive ? "Positive/" : "Negative/") + (isTop ? "Top/" : "Bottom/") + "Momentum vs. #Delta r";
     }
     
     private static final String getLayerToLayerPlotName(int clusterIndex, boolean isTop) {
@@ -516,12 +473,12 @@ public class TriggerTuningDriver extends Driver {
                 double[] clusterR = gtpCluster.getPosition();
                 double deltaX = clusterR[0] - trackR[0];
                 double deltaY = clusterR[1] - trackR[1];
+                double deltaR = Math.sqrt(Math.pow(deltaX, 2) + Math.pow(deltaY, 2));
                 
                 boolean isTop = trackR[1] > 0;
                 boolean isPositive = TriggerTuningUtilityModule.isPositive(gblTrack);
                 
-                AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(isTop, isPositive, true)).fill(trackP, deltaX);
-                AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(isTop, isPositive, false)).fill(trackP, deltaY);
+                AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(isTop, isPositive)).fill(trackP, deltaR);
             }
         }
     }
