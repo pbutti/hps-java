@@ -113,7 +113,7 @@ public class TriggerTuningUtilityModule {
         return energies;
     }
     
-    public static final Coordinate[] getEnergyThreshold(IHistogram2D plot, double xMin, double threshold, boolean fromTop) {
+    public static final Coordinate[] getEnergyThreshold(IHistogram2D plot, double xMin, double yMin, double yMax, double threshold, boolean fromTop) {
         // Get the number of bins in each direction.
         int xBins = plot.xAxis().bins();
         int yBins = plot.yAxis().bins();
@@ -157,6 +157,10 @@ public class TriggerTuningUtilityModule {
                 int yTotal = 0;
                 yLoop:
                 for(int y = yBins - 1; y >= 0; y--) {
+                    // Ignore y-values that are below the minimum
+                    // allowed y-value or above the maximum y-value.
+                    if(yVals[y] < yMin || yVals[y] > yMax) { continue xLoop; }
+                    
                     // Increment the cumulative y-entries.
                     yTotal += plot.binHeight(x, y);
                     
