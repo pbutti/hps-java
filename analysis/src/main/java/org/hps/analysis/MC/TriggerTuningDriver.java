@@ -70,8 +70,6 @@ public class TriggerTuningDriver extends Driver {
     private static final String COPT_TOTAL_ENERGY = "COP Trigger Cuts/Cluster Total Energy Distribution";
     private static final String COPT_ENERGY_POSITION = "COP Trigger Cuts/Cluster Total Energy vs. Cluster Position Distribution";
     
-    
-    
     private static final String HODOSCOPE_TRUTH_ENERGY = "Hodoscope/Truth Hit Energy Distribution";
     private static final String HODOSCOPE_TRUTH_COMP_ENERGY = "Hodoscope/Truth Hit Energy Distribution (Compiled)";
     
@@ -196,7 +194,7 @@ public class TriggerTuningDriver extends Driver {
         
         // Perform the cluster/track matching analysis. This does not
         // require that an event be analyzable to be useful.
-        //performTrackAnalysis(event);
+        performTrackAnalysis(event);
         
         // Get cluster/track matched pairs.
         List<Pair<Cluster, Track>> pairList = TriggerTuningUtilityModule.getClusterTrackMatchedPairs(
