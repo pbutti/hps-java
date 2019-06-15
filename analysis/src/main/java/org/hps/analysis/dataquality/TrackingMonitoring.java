@@ -200,7 +200,7 @@ public class TrackingMonitoring extends DataQualityMonitor {
         trkomega = aida.histogram1D(plotDir + trackCollectionName + "/" + triggerType + "/" + "omega", 100, -omegaCut, omegaCut);
         trklam = aida.histogram1D(plotDir + trackCollectionName + "/" + triggerType + "/" + "tan(lambda)", 100, -lambdaCut, lambdaCut);
         trkz0 = aida.histogram1D(plotDir + trackCollectionName + "/" + triggerType + "/" + "z0", 100, -z0Cut, z0Cut);
-        nHits = aida.histogram1D(plotDir + trackCollectionName + "/" + triggerType + "/" + "Hits per Track", 4, 3, 7);
+        nHits = aida.histogram1D(plotDir + trackCollectionName + "/" + triggerType + "/" + "Hits per Track", 5, 3, 8);
         trackMeanTime = aida.histogram1D(plotDir + trackCollectionName + "/" + triggerType + "/" + "Mean time of hits on track", 100, -timeCut, timeCut);
         trackRMSTime = aida.histogram1D(plotDir + trackCollectionName + "/" + triggerType + "/" + "RMS time of hits on track", 100, 0., 15.);
         trackChi2RMSTime = aida.histogram2D(plotDir + trackCollectionName + "/" + triggerType + "/" + "Track chi2 vs. RMS time of hits", 100, 0., 15., 25, 0, 25.0);

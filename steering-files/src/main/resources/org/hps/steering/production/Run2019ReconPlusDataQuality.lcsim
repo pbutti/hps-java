@@ -24,35 +24,43 @@
         <!-- SVT reconstruction drivers -->
         <driver name="RawTrackerHitSensorSetup"/>
         <driver name="RawTrackerHitFitterDriver" />
-        <driver name="TrackerHitDriver"/>
+        <!--<driver name="TrackerHitDriver"/>-->
+        <driver name="TrackerHitDriverL2L6Hack"/>
         <driver name="HelicalTrackHitDriver"/>
+        <driver name="TrackReconSeed567Conf3Extd4"/>
+        <!-- 
+            Will run track finding algorithm using layers 235 as a seed, 
+            layer 6 to confirm and layer 1,4,7 to extend. The collection
+            name of the tracks found with this strategy will be "MatchedTracks".
+        -->
+        <driver name="TrackReconSeed235Conf6Extd147"/>
         <!-- 
             Will run track finding algorithm using layers 345 as a seed, 
             layer 2 to confirm and layers 1 and 6 to extend. The collection
             name of the tracks found with this strategy will be "MatchedTracks".
         -->
-        <driver name="TrackReconSeed345Conf2Extd16"/>       
+        <!--<driver name="TrackReconSeed345Conf2Extd16"/>-->       
         <!-- 
             Will run track finding algorithm using layers 456 as a seed, 
             layer 3 to confirm and layers 2 and 1 to extend.  The collection
             name of the tracks found with this strategy will be 
             "Tracks_s456_c3_e21"
         -->
-        <driver name="TrackReconSeed456Conf3Extd21"/>
+        <!--<driver name="TrackReconSeed456Conf3Extd21"/>-->
         <!-- 
             Will run track finding algorithm using layers 123 as a seed, 
             layer 4 to confirm and layers 5 and 6 to extend.  The collection
             name of the tracks found with this strategy will be 
             "Tracks_s123_c4_e56"
         -->
-        <driver name="TrackReconSeed123Conf4Extd56"/>
+        <!--<driver name="TrackReconSeed123Conf4Extd56"/>-->
         <!-- 
             Will run track finding algorithm using layers 123 as a seed, 
             layer 5 to confirm and layers 4 and 6 to extend.  The collection
             name of the tracks found with this strategy will be 
             "Tracks_s123_c5_e46"
         --> 
-        <driver name="TrackReconSeed123Conf5Extd46"/>
+        <!--<driver name="TrackReconSeed123Conf5Extd46"/>-->
         <!-- 
            TrackDataDriver needs to be run before ReconParticleDriver so the
            ReconstructedParticle types are properly set.
@@ -161,6 +169,9 @@
         <driver name="TrackerHitDriver" type="org.hps.recon.tracking.DataTrackerHitDriver">
             <neighborDeltaT>8.0</neighborDeltaT>
         </driver>
+        <driver name="TrackerHitDriverL2L6Hack" type="org.hps.recon.tracking.DataTrackerHitDriverL2ThroughL6Hack">
+            <neighborDeltaT>8.0</neighborDeltaT>
+        </driver>
         <driver name="HelicalTrackHitDriver" type="org.hps.recon.tracking.HelicalTrackHitDriver">
             <debug>false</debug>
             <clusterTimeCut>12.0</clusterTimeCut>
@@ -191,7 +202,28 @@
             <strategyResource>HPS_s123_c5_e46.xml</strategyResource>
             <debug>false</debug>
             <rmsTimeCut>8.0</rmsTimeCut>
-        </driver>             
+        </driver>           
+        
+        <driver name="TrackReconSeed567Conf3Extd4" type="org.hps.recon.tracking.TrackerReconDriver">
+            <trackCollectionName>Tracks_s567_c3_e4</trackCollectionName>
+            <strategyResource>HPS_s567_c3_e4_2019.xml</strategyResource>
+            <debug>false</debug>
+            <rmsTimeCut>8.0</rmsTimeCut>
+        </driver>
+     
+        <driver name="TrackReconSeed235Conf6Extd147" type="org.hps.recon.tracking.TrackerReconDriver">
+            <trackCollectionName>Tracks_s235_c6_e147</trackCollectionName>
+            <strategyResource>HPS_s235_c6_e147.xml</strategyResource>
+            <debug>false</debug>
+            <rmsTimeCut>8.0</rmsTimeCut>
+        </driver>
+        
+        <driver name="TrackReconSeed356Conf7Extd124" type="org.hps.recon.tracking.TrackerReconDriver">
+            <trackCollectionName>Tracks_s356_c7_e124</trackCollectionName>
+            <strategyResource>HPS_s356_c7_e124.xml</strategyResource>
+            <debug>false</debug>
+            <rmsTimeCut>8.0</rmsTimeCut>
+        </driver>  
         <driver name="MergeTrackCollections" type="org.hps.recon.tracking.MergeTrackCollections" />
         <driver name="TrackDataDriver" type="org.hps.recon.tracking.TrackDataDriver" />
         <driver name="ReconParticleDriver" type="org.hps.recon.particle.HpsReconParticleDriver" > 
