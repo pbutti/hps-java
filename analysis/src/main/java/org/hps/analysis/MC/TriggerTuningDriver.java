@@ -3,16 +3,18 @@ package org.hps.analysis.MC;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.hps.conditions.database.DatabaseConditionsManager;
 import org.hps.conditions.hodoscope.HodoscopeChannel;
 import org.hps.conditions.hodoscope.HodoscopeChannel.HodoscopeChannelCollection;
 import org.hps.detector.hodoscope.HodoscopeDetectorElement;
-import org.hps.readout.triggerstudies.Coordinate;
 import org.hps.readout.triggerstudies.PlotToTextModule;
 import org.hps.record.triggerbank.TriggerModule;
+import org.hps.util.Pair;
 import org.lcsim.event.CalorimeterHit;
 import org.lcsim.event.Cluster;
 import org.lcsim.event.EventHeader;
@@ -46,7 +48,29 @@ public class TriggerTuningDriver extends Driver {
     private Map<Long, HodoscopeChannel> hodoscopeChannelMap = new HashMap<Long, HodoscopeChannel>();
     
     private static final String CHI_SQUARED = "Cluster\\Track-Matching/Chi Squared Distribution";
+    
     private static final String HODOSCOPE_SCINTILLATOR_ENERGY = "Hodoscope/Scintillator Energy Distribution";
+    
+    private static final String SINGLES_POSITION = "Singles Trigger Cuts/Cluster Position Distribution";
+    private static final String SINGLES_SEED_ENERGY = "Singles Trigger Cuts/Cluster Seed Energy Distribution";
+    private static final String SINGLES_MULTIPLICITY = "Singles Trigger Cuts/Cluster Multiplicity Distribution";
+    private static final String SINGLES_TOTAL_ENERGY = "Singles Trigger Cuts/Cluster Total Energy Distribution";
+    
+    private static final String PAIR_POSITION = "Pair Trigger Cuts/Pair Cluster Position Distribution";
+    private static final String PAIR_MULTIPLICITY = "Pair Trigger Cuts/Pair Cluster Multiplicity Distribution";
+    private static final String PAIR_TOTAL_ENERGY = "Pair Trigger Cuts/Pair Cluster Total Energy Distribution";
+    private static final String PAIR_ENERGY_SUM = "Pair Trigger Cuts/Pair Energy Sum Distribution";
+    private static final String PAIR_ENERGY_DIFF = "Pair Trigger Cuts/Pair Energy Difference Distribution";
+    private static final String PAIR_ENERGY_SLOPE = "Pair Trigger Cuts/Pair Energy Slope Distribution";
+    private static final String PAIR_COPLANARITY = "Pair Trigger Cuts/Pair Coplanarity Distribution";
+    
+    private static final String COPT_POSITION = "COP Trigger Cuts/Cluster Position Distribution";
+    private static final String COPT_SEED_ENERGY = "COP Trigger Cuts/Cluster Seed Energy Distribution";
+    private static final String COPT_MULTIPLICITY = "COP Trigger Cuts/Cluster Multiplicity Distribution";
+    private static final String COPT_TOTAL_ENERGY = "COP Trigger Cuts/Cluster Total Energy Distribution";
+    private static final String COPT_ENERGY_POSITION = "COP Trigger Cuts/Cluster Total Energy vs. Cluster Position Distribution";
+    
+    
     
     private static final String HODOSCOPE_TRUTH_ENERGY = "Hodoscope/Truth Hit Energy Distribution";
     private static final String HODOSCOPE_TRUTH_COMP_ENERGY = "Hodoscope/Truth Hit Energy Distribution (Compiled)";
@@ -97,55 +121,31 @@ public class TriggerTuningDriver extends Driver {
             PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(false, false)),
                     new File(outputDirectory + File.separator + "tuning_clusterTrackMatching_BNR.dat"));
             
-            // Define the cluster/track matching fit threshold.
-            double clusterTrackMatchingFitThreshold = 0.99;
+            // Singles trigger plots.
+            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(SINGLES_POSITION),
+                    new File(outputDirectory + File.separator + "tuning_singles_position.dat"));
+            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram1D(SINGLES_MULTIPLICITY),
+                    new File(outputDirectory + File.separator + "tuning_singles_multiplicity.dat"));
+            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram1D(SINGLES_SEED_ENERGY),
+                    new File(outputDirectory + File.separator + "tuning_singles_seedEnergy.dat"));
+            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram1D(SINGLES_TOTAL_ENERGY),
+                    new File(outputDirectory + File.separator + "tuning_singles_totalEnergy.dat"));
             
-            // Get the upper and lower bounds of the distribution for
-            // each data type.
-            // Top Positrons
-            Coordinate[] positronTopXLowerBound =
-                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(true, true)),
-                    0, 0, Integer.MAX_VALUE, clusterTrackMatchingFitThreshold, true);
-            Coordinate[] positronTopXUpperBound =
-                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(true, true)),
-                    0, 0, Integer.MAX_VALUE, clusterTrackMatchingFitThreshold, false);
-            
-            // Bottom Positrons
-            Coordinate[] positronBotXLowerBound =
-                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(false, true)),
-                    0, 0, Integer.MAX_VALUE, clusterTrackMatchingFitThreshold, true);
-            Coordinate[] positronBotXUpperBound =
-                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(false, true)),
-                    0, 0, Integer.MAX_VALUE, clusterTrackMatchingFitThreshold, false);
-            
-            // Top Electrons
-            Coordinate[] electronTopXLowerBound =
-                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(true, false)),
-                    0, Integer.MAX_VALUE, 0, clusterTrackMatchingFitThreshold, true);
-            Coordinate[] electronTopXUpperBound =
-                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(true, false)),
-                    0, Integer.MAX_VALUE, 0, clusterTrackMatchingFitThreshold, false);
-            
-            // Bottom Electrons
-            Coordinate[] electronBotXLowerBound =
-                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(false, false)),
-                    0, Integer.MAX_VALUE, 0, clusterTrackMatchingFitThreshold, true);
-            Coordinate[] electronBotXUpperBound =
-                    TriggerTuningUtilityModule.getEnergyThreshold(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(false, false)),
-                    0, Integer.MAX_VALUE, 0, clusterTrackMatchingFitThreshold, false);
-            
-            // Write the cluster/track matching boundary files.
-            PlotToTextModule.writeCoordinateSet(positronTopXLowerBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_TPRL.dat"));
-            PlotToTextModule.writeCoordinateSet(positronTopXUpperBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_TPRU.dat"));
-            
-            PlotToTextModule.writeCoordinateSet(positronBotXLowerBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_BPRL.dat"));
-            PlotToTextModule.writeCoordinateSet(positronBotXUpperBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_BPRU.dat"));
-            
-            PlotToTextModule.writeCoordinateSet(electronTopXLowerBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_TNRL.dat"));
-            PlotToTextModule.writeCoordinateSet(electronTopXUpperBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_TNRU.dat"));
-            
-            PlotToTextModule.writeCoordinateSet(electronBotXLowerBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_BNRL.dat"));
-            PlotToTextModule.writeCoordinateSet(electronBotXUpperBound, new File(outputDirectory + File.separator + "fit_clusterTrackMatching_BNRU.dat"));
+            // Pair trigger plots.
+            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(PAIR_POSITION),
+                    new File(outputDirectory + File.separator + "tuning_pair_position.dat"));
+            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram1D(PAIR_MULTIPLICITY),
+                    new File(outputDirectory + File.separator + "tuning_pair_multiplicity.dat"));
+            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram1D(PAIR_TOTAL_ENERGY),
+                    new File(outputDirectory + File.separator + "tuning_pair_totalEnergy.dat"));
+            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram1D(PAIR_ENERGY_SUM),
+                    new File(outputDirectory + File.separator + "tuning_pair_energySum.dat"));
+            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram1D(PAIR_ENERGY_DIFF),
+                    new File(outputDirectory + File.separator + "tuning_pair_energyDifference.dat"));
+            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(PAIR_ENERGY_SLOPE),
+                    new File(outputDirectory + File.separator + "tuning_pair_energySlope.dat"));
+            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram1D(PAIR_COPLANARITY),
+                    new File(outputDirectory + File.separator + "tuning_pair_coplanarity.dat"));
             
             // Hodoscope layer-to-layer plots.
             for(int ix = 0; ix < 9; ix++) {
@@ -163,6 +163,18 @@ public class TriggerTuningDriver extends Driver {
                 PlotToTextModule.writePlot(AIDA.defaultInstance().histogram1D(getLayerToCalorimeterPlotName(ix, false, 1)),
                         new File(outputDirectory + File.separator + "tuning_hodoLayerToCalorimeter_L2_B" + (ix + 1) + ".dat"));
             }
+            
+            // COP-trigger plots.
+            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(COPT_POSITION),
+                    new File(outputDirectory + File.separator + "tuning_copt_position.dat"));
+            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(COPT_ENERGY_POSITION),
+                    new File(outputDirectory + File.separator + "tuning_copt_energyVsPosition.dat"));
+            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram1D(COPT_MULTIPLICITY),
+                    new File(outputDirectory + File.separator + "tuning_copt_multiplicity.dat"));
+            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram1D(COPT_SEED_ENERGY),
+                    new File(outputDirectory + File.separator + "tuning_copt_seedEnergy.dat"));
+            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram1D(COPT_TOTAL_ENERGY),
+                    new File(outputDirectory + File.separator + "tuning_copt_totalEnergy.dat"));
             
             // Write the hodoscope truth hit debug plots.
             PlotToTextModule.writePlot(AIDA.defaultInstance().histogram1D(HODOSCOPE_TRUTH_ENERGY), new File(outputDirectory + File.separator + "debug_hodoTruthEnergy.dat"));
@@ -184,7 +196,13 @@ public class TriggerTuningDriver extends Driver {
         
         // Perform the cluster/track matching analysis. This does not
         // require that an event be analyzable to be useful.
-        performTrackAnalysis(event);
+        //performTrackAnalysis(event);
+        
+        // Get cluster/track matched pairs.
+        List<Pair<Cluster, Track>> pairList = TriggerTuningUtilityModule.getClusterTrackMatchedPairs(
+                TriggerTuningUtilityModule.getCollection(event, gtpClusterCollectionName, Cluster.class),
+                TriggerTuningUtilityModule.getCollection(event, gblTrackCollectionName, Track.class),
+                fieldMap);
         
         // Check if this is a good event. If it isn't do nothing.
         if(!TriggerTuningUtilityModule.isGoodEvent(event, gblTrackCollectionName, chiSquaredUpperBound)) {
@@ -203,34 +221,30 @@ public class TriggerTuningDriver extends Driver {
         
         // Perform singles trigger tuning.
         if(meetsSinglesCriteria) {
-            // Increment the event count.
             singlesEvents++;
+            performSinglesTriggerAnalysis(pairList);
         }
         
         // Perform pair trigger tuning.
         if(meetsPairCriteria) {
-            // Increment the event count.
             pairEvents++;
+            performPairTriggerAnalysis(pairList);
         }
         
         // Perform triplet trigger tuning.
         if(meetsTripletCriteria) {
-            // Increment the event count.
             tripletEvents++;
         }
         
         // Perform COPT trigger tuning.
         if(meetsCOPTCriteria) {
-            // Increment the event count.
             coptEvents++;
+            performCOPTriggerAnalysis(pairList);
         }
         
         // Perform hodoscope trigger tuning.
         if(meetsHodoscopeCriteria) {
-            // Increment the event count.
             hodoscopeEvents++;
-            
-            // Perform hodoscope analysis.
             performHodoscopeAnalysis(event);
         }
     }
@@ -260,6 +274,28 @@ public class TriggerTuningDriver extends Driver {
             AIDA.defaultInstance().histogram1D(getLayerToCalorimeterPlotName(clusterIndex, true, 1), 23, 0.5, 23.5);
             AIDA.defaultInstance().histogram1D(getLayerToCalorimeterPlotName(clusterIndex, false, 1), 23, 0.5, 23.5);
         }
+        
+        // Singles trigger plots.
+        AIDA.defaultInstance().histogram1D(SINGLES_MULTIPLICITY, 9, 0.5, 9.5);
+        AIDA.defaultInstance().histogram1D(SINGLES_SEED_ENERGY, 500, 0.000, 5.000);
+        AIDA.defaultInstance().histogram1D(SINGLES_TOTAL_ENERGY, 500, 0.000, 5.000);
+        AIDA.defaultInstance().histogram2D(SINGLES_POSITION, 47, -23.5, 23.5, 11, -5.5, 5.5);
+        
+        // Pair trigger plots.
+        AIDA.defaultInstance().histogram1D(PAIR_MULTIPLICITY, 9, 0.5, 9.5);
+        AIDA.defaultInstance().histogram1D(PAIR_TOTAL_ENERGY, 500, 0.000, 5.000);
+        AIDA.defaultInstance().histogram2D(PAIR_POSITION, 47, -23.5, 23.5, 11, -5.5, 5.5);
+        AIDA.defaultInstance().histogram1D(PAIR_ENERGY_SUM, 500, 0.000, 5.000);
+        AIDA.defaultInstance().histogram1D(PAIR_ENERGY_DIFF, 500, 0.000, 5.000);
+        AIDA.defaultInstance().histogram2D(PAIR_ENERGY_SLOPE, 200, -400, 400, 250, 0.000, 5.000);
+        AIDA.defaultInstance().histogram1D(PAIR_COPLANARITY, 90, 0.000, 180);
+        
+        // COP-trigger plots.
+        AIDA.defaultInstance().histogram1D(COPT_MULTIPLICITY, 9, 0.5, 9.5);
+        AIDA.defaultInstance().histogram1D(COPT_SEED_ENERGY, 500, 0.000, 5.000);
+        AIDA.defaultInstance().histogram1D(COPT_TOTAL_ENERGY, 500, 0.000, 5.000);
+        AIDA.defaultInstance().histogram2D(COPT_POSITION, 47, -23.5, 23.5, 11, -5.5, 5.5);
+        AIDA.defaultInstance().histogram2D(COPT_ENERGY_POSITION, 23, 0.5, 23.5, 250, 0.000, 5.0);
         
         // Hodoscope Hit Truth Comparison Debug Plots
         AIDA.defaultInstance().histogram1D(HODOSCOPE_TRUTH_ENERGY, 500, 0.000, 5.000);
@@ -479,6 +515,104 @@ public class TriggerTuningDriver extends Driver {
                 boolean isPositive = TriggerTuningUtilityModule.isPositive(gblTrack);
                 
                 AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(isTop, isPositive)).fill(trackP, deltaR);
+            }
+        }
+    }
+    
+    private void performSinglesTriggerAnalysis(List<Pair<Cluster, Track>> pairList) {
+        // Populate the singles cut distribution for all clusters.
+        for(Pair<Cluster, Track> pair : pairList) {
+            AIDA.defaultInstance().histogram1D(SINGLES_MULTIPLICITY).fill(TriggerModule.getClusterHitCount(pair.getFirstElement()));
+            AIDA.defaultInstance().histogram1D(SINGLES_SEED_ENERGY).fill(TriggerModule.getValueClusterSeedEnergy(pair.getFirstElement()));
+            AIDA.defaultInstance().histogram1D(SINGLES_TOTAL_ENERGY).fill(TriggerModule.getValueClusterTotalEnergy(pair.getFirstElement()));
+            AIDA.defaultInstance().histogram2D(SINGLES_POSITION).fill(TriggerModule.getClusterXIndex(pair.getFirstElement()),
+                    TriggerModule.getClusterYIndex(pair.getFirstElement()));
+        }
+    }
+    
+    private void performPairTriggerAnalysis(List<Pair<Cluster, Track>> pairList) {
+        // Only plot clusters once for singles cuts.
+        Set<Cluster> plottedClusterSet = new HashSet<Cluster>();
+        
+        // Consider all possible pairs of clusters, and plot for
+        // those that meet the pair conditions.
+        for(int i = 0; i < pairList.size(); i++) {
+            // Get the pair.
+            Pair<Cluster, Track> pair1 = pairList.get(i);
+            
+            // Determine the charge of the track and the position of
+            // the cluster.
+            boolean isTop = TriggerModule.getClusterYIndex(pair1.getFirstElement()) > 0;
+            boolean isPositive = TriggerTuningUtilityModule.isPositive(pair1.getSecondElement());
+            
+            // Loop over all remaining pairs.
+            for(int j = i + 1; j < pairList.size(); j++) {
+                // Get the pair.
+                Pair<Cluster, Track> pair2 = pairList.get(j);
+                
+                // Only consider pairs of positive/negative tracks
+                // and top/bottom clusters.
+                if((TriggerTuningUtilityModule.isPositive(pair2.getSecondElement()) && isPositive)
+                        || (TriggerTuningUtilityModule.isNegative(pair2.getSecondElement()) && !isPositive)) {
+                    continue;
+                }
+                if((TriggerModule.getClusterYIndex(pair2.getFirstElement()) > 0 && isTop)
+                        || (TriggerModule.getClusterYIndex(pair2.getFirstElement()) < 0 && !isTop)) {
+                    continue;
+                }
+                
+                // Get the cluster pair.
+                Cluster[] pair = new Cluster[] { pair1.getFirstElement(), pair2.getFirstElement() };
+                
+                // Fill the pair trigger singles plots.
+                for(Cluster cluster : pair) {
+                    if(!plottedClusterSet.contains(cluster)) {
+                        plottedClusterSet.add(cluster);
+                        AIDA.defaultInstance().histogram1D(PAIR_MULTIPLICITY).fill(TriggerModule.getClusterHitCount(cluster));
+                        AIDA.defaultInstance().histogram1D(PAIR_TOTAL_ENERGY).fill(TriggerModule.getValueClusterTotalEnergy(cluster));
+                        AIDA.defaultInstance().histogram2D(PAIR_POSITION).fill(TriggerModule.getClusterXIndex(cluster), TriggerModule.getClusterYIndex(cluster));
+                    }
+                }
+                
+                // Fill the pair trigger pair plots.
+                AIDA.defaultInstance().histogram1D(PAIR_ENERGY_SUM).fill(TriggerModule.getValueEnergySum(pair));
+                AIDA.defaultInstance().histogram1D(PAIR_ENERGY_DIFF).fill(TriggerModule.getValueEnergyDifference(pair));
+                AIDA.defaultInstance().histogram1D(PAIR_COPLANARITY).fill(TriggerModule.getValueCoplanarity(pair));
+                
+                // Get the lowest energy cluster.
+                Cluster lowestEnergyCluster = pair[0];
+                if(TriggerModule.getValueClusterTotalEnergy(pair[1]) < TriggerModule.getValueClusterTotalEnergy(pair[0])) {
+                    lowestEnergyCluster = pair[1];
+                }
+                
+                // Get deltaR for the lowest energy cluster.
+                double r = Math.sqrt(Math.pow(TriggerModule.getClusterX(lowestEnergyCluster), 2) + Math.pow(TriggerModule.getClusterY(lowestEnergyCluster), 2));
+                
+                // Fill the energy slope plot.
+                AIDA.defaultInstance().histogram2D(PAIR_ENERGY_SLOPE).fill(r, TriggerModule.getValueClusterTotalEnergy(lowestEnergyCluster));
+            }
+        }
+        
+        for(Pair<Cluster, Track> pair : pairList) {
+            AIDA.defaultInstance().histogram1D(SINGLES_MULTIPLICITY).fill(TriggerModule.getClusterHitCount(pair.getFirstElement()));
+            AIDA.defaultInstance().histogram1D(SINGLES_SEED_ENERGY).fill(TriggerModule.getValueClusterSeedEnergy(pair.getFirstElement()));
+            AIDA.defaultInstance().histogram1D(SINGLES_TOTAL_ENERGY).fill(TriggerModule.getValueClusterTotalEnergy(pair.getFirstElement()));
+            AIDA.defaultInstance().histogram2D(SINGLES_POSITION).fill(TriggerModule.getClusterXIndex(pair.getFirstElement()),
+                    TriggerModule.getClusterYIndex(pair.getFirstElement()));
+        }
+    }
+    
+    private void performCOPTriggerAnalysis(List<Pair<Cluster, Track>> pairList) {
+        // Populate the cut distributions for all positron clusters.
+        for(Pair<Cluster, Track> pair : pairList) {
+            if(TriggerTuningUtilityModule.isPositive(pair.getSecondElement())) {
+                AIDA.defaultInstance().histogram1D(COPT_MULTIPLICITY).fill(TriggerModule.getClusterHitCount(pair.getFirstElement()));
+                AIDA.defaultInstance().histogram1D(COPT_SEED_ENERGY).fill(TriggerModule.getValueClusterSeedEnergy(pair.getFirstElement()));
+                AIDA.defaultInstance().histogram1D(COPT_TOTAL_ENERGY).fill(TriggerModule.getValueClusterTotalEnergy(pair.getFirstElement()));
+                AIDA.defaultInstance().histogram2D(COPT_POSITION).fill(TriggerModule.getClusterXIndex(pair.getFirstElement()),
+                        TriggerModule.getClusterYIndex(pair.getFirstElement()));
+                AIDA.defaultInstance().histogram2D(COPT_ENERGY_POSITION).fill(TriggerModule.getClusterXIndex(pair.getFirstElement()),
+                        TriggerModule.getValueClusterTotalEnergy(pair.getFirstElement()));
             }
         }
     }

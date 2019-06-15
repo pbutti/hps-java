@@ -1,14 +1,17 @@
 package org.hps.analysis.MC;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.hps.conditions.hodoscope.HodoscopeChannel;
 import org.hps.detector.hodoscope.HodoscopeDetectorElement;
 import org.hps.readout.triggerstudies.Coordinate;
 import org.hps.recon.tracking.TrackUtils;
 import org.hps.record.triggerbank.TriggerModule;
+import org.hps.util.Pair;
 import org.lcsim.event.CalorimeterHit;
 import org.lcsim.event.Cluster;
 import org.lcsim.event.EventHeader;
@@ -21,6 +24,50 @@ import hep.aida.IHistogram2D;
 import hep.physics.vec.BasicHep3Vector;
 
 public class TriggerTuningUtilityModule {
+    
+    public static final List<Pair<Cluster, Track>> getClusterTrackMatchedPairs(List<Cluster> clusters, List<Track> tracks, FieldMap fieldmap) {
+        // Clusters may only be matched to one track. Track which
+        // clusters have already been matched.
+        Set<Cluster> matchedClusters = new HashSet<Cluster>();
+        
+        // Store matched pairs.
+        List<Pair<Cluster, Track>> pairList = new ArrayList<Pair<Cluster, Track>>();
+        
+        // Iterate over the tracks.
+        trackLoop:
+        for(Track track : tracks) {
+            // Matching criteria depends on the charge of the track
+            // and whether it is a top or bottom track.
+            boolean isPositive = isPositive(track);
+            boolean isTop = isTopTrack(track);
+            
+            // Get the track momentum and check that it is within the
+            // allowed momentum range for its charge. Tracks outside
+            // this range are very unlikely to be A' tracks.
+            double trackP = getMomentumMagnitude(track, fieldmap);
+            if(isPositive && (trackP < 0.700 || trackP > 3.500)) { continue trackLoop; }
+            else if(!isPositive && (trackP < 0.700 || trackP > 2.600)) { continue trackLoop; }
+            
+            // Get the track position at the calorimeter face.
+            double[] trackR = getTrackPositionAtCalorimeterFace(track);
+            
+            // Check each cluster to see if it matches the track. It
+            // is assumed, given pure signal data, that there will
+            // only be one plausible match, so the first is accepted.
+            clusterLoop:
+            for(Cluster cluster : clusters) {
+                if(matches(cluster, isPositive, isTop, trackP, trackR)) {
+                    matchedClusters.add(cluster);
+                    pairList.add(new Pair<Cluster, Track>(cluster, track));
+                    break clusterLoop;
+                }
+            }
+        }
+        
+        // Return the matched pairs.
+        return pairList;
+    }
+    
     /**
      * Gets a the collection containing objects of the specified type
      * from the event.
@@ -593,5 +640,117 @@ public class TriggerTuningUtilityModule {
         // If there exists a top and bottom cluster, this is a pair
         // event. Otherwise, it is not.
         return (sawTopCluster && sawBotCluster);
+    }
+    
+    /**
+     * Checks if a given deltaR is within the allowed matching bounds
+     * defined by two polynomials with coefficients as defined in
+     * <code>lowCoeff</code> and <code>uppCoeff</code> (lower and
+     * upper bounds respectively) for a track with momentum
+     * <code>momentum</code>.
+     * @param lowCoeff - The coefficients for the lower bound fit
+     * function.
+     * @param uppCoeff - The coefficients for the upper bound fit
+     * function.
+     * @param momentum - The track momentum. Defines the point in the
+     * fit function at which the bounds are to be checked.
+     * @param deltaR - The difference between the cluster and track
+     * positions.
+     * @return Returns <code>true</code> if deltaR is a match and
+     * <code>false</code> otherwise.
+     * @see org.hps.analysis.MC.TriggerTuningUtilityModule#polynomial(double[], double)
+     */
+    private static final boolean inRange(double[] lowCoeff, double[] uppCoeff, double momentum, double deltaR) {
+        // Get the fit value.
+        double lowFitVal = polynomial(lowCoeff, momentum);
+        double uppFitVal = polynomial(uppCoeff, momentum);
+        
+        // The cluster matches if deltaR is between these two
+        // values.
+        return (deltaR >= lowFitVal && deltaR <=  uppFitVal);
+    }
+    
+    /**
+     * Checks if a cluster matches with a track with the specified
+     * parameters.
+     * @param cluster - The cluster.
+     * @param isPositive - Whether or not the track is positive.
+     * @param isTop - Whether or not the track is a top track.
+     * @param momentum - The track momentum.
+     * @param trackR - The track position at the calorimeter face.
+     * @return Returns <code>true</code> if the track matches with
+     * the cluster and <code>false</code> otherwise.
+     */
+    private static final boolean matches(Cluster cluster, boolean isPositive, boolean isTop, double momentum, double[] trackR) {
+        // Get the cluster position.
+        double[] clusterR = cluster.getPosition();
+        
+        // Calculate the difference in position.
+        double deltaX = clusterR[0] - trackR[0];
+        double deltaY = clusterR[1] - trackR[1];
+        double deltaR = Math.sqrt(Math.pow(deltaX, 2) + Math.pow(deltaY, 2));
+        
+        // Which matching functions are applied is determined by the
+        // charge and position of the track.
+        if(isPositive) {
+            if(isTop) {
+                // Define the coefficients.
+                final double[] lowCoeff = { 53.911, -36.814, 12.327, -2.021,  0.134 };
+                final double[] uppCoeff = { 75.741, -32.564,  4.153,  0.771, -0.156 };
+                
+                // The cluster matches if deltaR is between the
+                // values defined by each fit.
+                return inRange(lowCoeff, uppCoeff, momentum, deltaR);
+            } else {
+                // Define the coefficients.
+                final double[] lowCoeff = { 64.187, -58.046, 26.810, -5.976,  0.508 };
+                final double[] uppCoeff = { 70.465, -25.409,  1.508,  1.130, -0.171 };
+                
+                // The cluster matches if deltaR is between the
+                // values defined by each fit.
+                return inRange(lowCoeff, uppCoeff, momentum, deltaR);
+            }
+        } else {
+            if(isTop) {
+                // Define the coefficients.
+                final double[] lowCoeff = { 64.904, -77.744, 44.243, -11.767, 1.155 };
+                final double[] uppCoeff = { 68.914, -37.962, 10.056,  -0.969, 0.016 };
+                
+                // The cluster matches if deltaR is between the
+                // values defined by each fit.
+                return inRange(lowCoeff, uppCoeff, momentum, deltaR);
+            } else {
+                // Define the coefficients.
+                final double[] lowCoeff = { 48.841, -42.072, 18.388, -4.285,  0.408 };
+                final double[] uppCoeff = { 75.207, -45.076, 10.682, -0.052, -0.164 };
+                
+                // The cluster matches if deltaR is between the
+                // values defined by each fit.
+                return inRange(lowCoeff, uppCoeff, momentum, deltaR);
+            }
+        }
+    }
+    
+    /**
+     * Calculates the value of <code>x</code> for a polynomial with
+     * coefficients defined by <code>coeff</code>. The coefficients
+     * must be in order of increasing power of <code>x</code>.
+     * <br/><br/>
+     * For example, consider <code>coeff = { 1, 2, 3 }</code>. The
+     * polynomial will take the form:
+     * <br/>
+     * <code>1 + 2x + 3x<sup>2</sup></code>
+     * @param coeff - The coefficients, in increasing order of powers
+     * of <code>x</code>.
+     * @param x - The value at which the polynomial is to be
+     * evaluated.
+     * @return Returns the value of the polynomial at <code>x</code>.
+     */
+    private static final double polynomial(double[] coeff, double x) {
+        double total = 0.0;
+        for(int i = 0; i < coeff.length; i++) {
+            total += coeff[i] * Math.pow(x, i);
+        }
+        return total;
     }
 }
