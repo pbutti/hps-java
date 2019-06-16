@@ -56,6 +56,8 @@ public class TriggerTuningDriver extends Driver {
     private Map<Long, HodoscopeChannel> hodoscopeChannelMap = new HashMap<Long, HodoscopeChannel>();
     
     private static final String CHI_SQUARED = "Cluster\\Track-Matching/Chi Squared Distribution";
+    private static final String DEBUG_TRACK_POSITION = "Debug/All Track Position Distribution";
+    private static final String DEBUG_CLUSTER_POSITION = "Debug/All Cluster Position Distribution";
     
     private static final String HODOSCOPE_SCINTILLATOR_ENERGY = "Hodoscope/Scintillator Energy Distribution";
     
@@ -77,6 +79,7 @@ public class TriggerTuningDriver extends Driver {
     private static final String COPT_MULTIPLICITY = "COP Trigger Cuts/Cluster Multiplicity Distribution";
     private static final String COPT_TOTAL_ENERGY = "COP Trigger Cuts/Cluster Total Energy Distribution";
     private static final String COPT_ENERGY_POSITION = "COP Trigger Cuts/Cluster Total Energy vs. Cluster Position Distribution";
+    private static final String DEBUG_MOMENTUM_POSITION = "Debug/Track Momentum vs. Cluster Position Distribution";
     
     private static final String HODOSCOPE_TRUTH_ENERGY = "Hodoscope/Truth Hit Energy Distribution";
     private static final String HODOSCOPE_TRUTH_COMP_ENERGY = "Hodoscope/Truth Hit Energy Distribution (Compiled)";
@@ -200,6 +203,10 @@ public class TriggerTuningDriver extends Driver {
         // is populated before the "good event" cut.
         fillChiSquaredDistro(event, gblTrackCollectionName);
         
+        // Populate the debugging cluster position plot.
+        fillClusterPositionDistro(event, gtpClusterCollectionName);
+        fillTrackPositionDistro(event, gblTrackCollectionName);
+        
         // Perform the cluster/track matching analysis. This does not
         // require that an event be analyzable to be useful.
         performTrackAnalysis(event);
@@ -261,6 +268,9 @@ public class TriggerTuningDriver extends Driver {
         // Preliminary plots.
         AIDA.defaultInstance().histogram1D(CHI_SQUARED, 50, 0.0, 50.0);
         AIDA.defaultInstance().histogram1D(HODOSCOPE_SCINTILLATOR_ENERGY, 500, 0.000, 5.000);
+        AIDA.defaultInstance().histogram2D(DEBUG_CLUSTER_POSITION, 47, -23.5, 23.5, 11, -5.5, 5.5);
+        AIDA.defaultInstance().histogram2D(DEBUG_MOMENTUM_POSITION, 23, 0.5, 23.5, 250, 0.000, 5.0);
+        AIDA.defaultInstance().histogram2D(DEBUG_TRACK_POSITION, 400, -400, 400, 200, -200, 200);
         
         // Cluster/Track matching plots.
         for(int i = 0; i < 2; i++) {
@@ -405,6 +415,15 @@ public class TriggerTuningDriver extends Driver {
         }
     }
     
+    private static final void fillClusterPositionDistro(EventHeader event, String gtpClusterCollectionName) {
+        List<Cluster> gtpClusters = TriggerTuningUtilityModule.getCollection(event, gtpClusterCollectionName, Cluster.class);
+        for(Cluster cluster : gtpClusters) {
+            int ix = TriggerModule.getClusterXIndex(cluster);
+            int iy = TriggerModule.getClusterYIndex(cluster);
+            AIDA.defaultInstance().histogram2D(DEBUG_CLUSTER_POSITION).fill(ix, iy);
+        }
+    }
+    
     private static final void fillHodoscopeHitEnergyDistro(double[][][] hodoHits) {
         for(int ix = 0; ix < 5; ix++) {
             for(int iy = 0; iy < 2; iy++) {
@@ -516,6 +535,14 @@ public class TriggerTuningDriver extends Driver {
                     }
                 }
             }
+        }
+    }
+    
+    private static final void fillTrackPositionDistro(EventHeader event, String gblTrackCollectionName) {
+        List<Track> gblTracks = TriggerTuningUtilityModule.getCollection(event, gblTrackCollectionName, Track.class);
+        for(Track track : gblTracks) {
+            double[] r = TriggerTuningUtilityModule.getTrackPositionAtCalorimeterFace(track);
+            AIDA.defaultInstance().histogram2D(DEBUG_TRACK_POSITION).fill(r[0], r[1]);
         }
     }
     
@@ -681,6 +708,9 @@ public class TriggerTuningDriver extends Driver {
                         TriggerModule.getClusterYIndex(pair.getFirstElement()));
                 AIDA.defaultInstance().histogram2D(COPT_ENERGY_POSITION).fill(TriggerModule.getClusterXIndex(pair.getFirstElement()),
                         TriggerModule.getValueClusterTotalEnergy(pair.getFirstElement()));
+                
+                AIDA.defaultInstance().histogram2D(DEBUG_MOMENTUM_POSITION).fill(TriggerModule.getClusterXIndex(pair.getFirstElement()),
+                        TriggerTuningUtilityModule.getMomentumMagnitude(pair.getSecondElement(), fieldMap));
             }
         }
     }
