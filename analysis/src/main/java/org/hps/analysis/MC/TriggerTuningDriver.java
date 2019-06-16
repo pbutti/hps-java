@@ -294,7 +294,7 @@ public class TriggerTuningDriver extends Driver {
         AIDA.defaultInstance().histogram2D(PAIR_POSITION, 47, -23.5, 23.5, 11, -5.5, 5.5);
         AIDA.defaultInstance().histogram1D(PAIR_ENERGY_SUM, 500, 0.000, 5.000);
         AIDA.defaultInstance().histogram1D(PAIR_ENERGY_DIFF, 500, 0.000, 5.000);
-        AIDA.defaultInstance().histogram2D(PAIR_ENERGY_SLOPE, 250, 0.000, 5.000, 200, -400, 400);
+        AIDA.defaultInstance().histogram2D(PAIR_ENERGY_SLOPE, 200, -400, 400, 250, 0.000, 5.000);
         AIDA.defaultInstance().histogram1D(PAIR_COPLANARITY, 90, 0.000, 180);
         
         // COP-trigger plots.
@@ -657,7 +657,7 @@ public class TriggerTuningDriver extends Driver {
                 double r = Math.sqrt(Math.pow(TriggerModule.getClusterX(lowestEnergyCluster), 2) + Math.pow(TriggerModule.getClusterY(lowestEnergyCluster), 2));
                 
                 // Fill the energy slope plot.
-                AIDA.defaultInstance().histogram2D(PAIR_ENERGY_SLOPE).fill(TriggerModule.getValueClusterTotalEnergy(lowestEnergyCluster), r);
+                AIDA.defaultInstance().histogram2D(PAIR_ENERGY_SLOPE).fill(r, TriggerModule.getValueClusterTotalEnergy(lowestEnergyCluster));
             }
         }
         
