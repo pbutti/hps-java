@@ -2,6 +2,7 @@ package org.hps.analysis.MC;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -41,6 +42,13 @@ public class TriggerTuningDriver extends Driver {
     private String gblTrackCollectionName = "GBLTracks";
     private String gtpClusterCollectionName = "EcalClustersGTP";
     private String hodoscopeHitCollectionName = "HodoscopeCorrectedHits";
+    
+    private double[] boundsPositronP = new double[2];
+    private double[] boundsElectronP = new double[2];
+    private double[][] boundsTopPositron = new double[2][0];
+    private double[][] boundsBotPositron = new double[2][0];
+    private double[][] boundsTopElectron = new double[2][0];
+    private double[][] boundsBotElectron = new double[2][0];
     
     private String outputDirectory = ".";
     private FieldMap fieldMap = null;
@@ -200,7 +208,8 @@ public class TriggerTuningDriver extends Driver {
         List<Pair<Cluster, Track>> pairList = TriggerTuningUtilityModule.getClusterTrackMatchedPairs(
                 TriggerTuningUtilityModule.getCollection(event, gtpClusterCollectionName, Cluster.class),
                 TriggerTuningUtilityModule.getCollection(event, gblTrackCollectionName, Track.class),
-                fieldMap);
+                fieldMap, boundsTopPositron, boundsBotPositron, boundsTopElectron, boundsBotElectron,
+                boundsPositronP, boundsElectronP);
         
         // Check if this is a good event. If it isn't do nothing.
         if(!TriggerTuningUtilityModule.isGoodEvent(event, gblTrackCollectionName, chiSquaredUpperBound)) {
@@ -285,7 +294,7 @@ public class TriggerTuningDriver extends Driver {
         AIDA.defaultInstance().histogram2D(PAIR_POSITION, 47, -23.5, 23.5, 11, -5.5, 5.5);
         AIDA.defaultInstance().histogram1D(PAIR_ENERGY_SUM, 500, 0.000, 5.000);
         AIDA.defaultInstance().histogram1D(PAIR_ENERGY_DIFF, 500, 0.000, 5.000);
-        AIDA.defaultInstance().histogram2D(PAIR_ENERGY_SLOPE, 200, -400, 400, 250, 0.000, 5.000);
+        AIDA.defaultInstance().histogram2D(PAIR_ENERGY_SLOPE, 250, 0.000, 5.000, 200, -400, 400);
         AIDA.defaultInstance().histogram1D(PAIR_COPLANARITY, 90, 0.000, 180);
         
         // COP-trigger plots.
@@ -322,6 +331,67 @@ public class TriggerTuningDriver extends Driver {
     
     public void setHodoscopeHitEnergyLowerBound(double bound) {
         hodoscopeHitEnergyLowerBound = bound / 1000.0;
+    }
+    
+    public void setMatchingBoundsPositronMomentum(String coeffs) {
+        boundsPositronP = parseDoubleArray(coeffs);
+    }
+    
+    public void setMatchingBoundsElectronMomentum(String coeffs) {
+        boundsElectronP = parseDoubleArray(coeffs);
+    }
+    
+    public void setMatchingBoundsTopPositronLowerBound(String coeffs) {
+        boundsTopPositron[0] = parseDoubleArray(coeffs);
+    }
+    
+    public void setMatchingBoundsTopPositronUpperBound(String coeffs) {
+        boundsTopPositron[1] = parseDoubleArray(coeffs);
+    }
+    
+    public void setMatchingBoundsBottomPositronLowerBound(String coeffs) {
+        boundsBotPositron[0] = parseDoubleArray(coeffs);
+    }
+    
+    public void setMatchingBoundsBottomPositronUpperBound(String coeffs) {
+        boundsBotPositron[1] = parseDoubleArray(coeffs);
+    }
+    
+    public void setMatchingBoundsTopElectronLowerBound(String coeffs) {
+        boundsTopElectron[0] = parseDoubleArray(coeffs);
+    }
+    
+    public void setMatchingBoundsTopElectronUpperBound(String coeffs) {
+        boundsTopElectron[1] = parseDoubleArray(coeffs);
+    }
+    
+    public void setMatchingBoundsBottomElectronLowerBound(String coeffs) {
+        boundsBotElectron[0] = parseDoubleArray(coeffs);
+    }
+    
+    public void setMatchingBoundsBottomElectronUpperBound(String coeffs) {
+        boundsBotElectron[1] = parseDoubleArray(coeffs);
+    }
+    
+    private static final double[] parseDoubleArray(String text) {
+        StringBuffer readBuffer = new StringBuffer();
+        List<Double> valList = new ArrayList<Double>();
+        for(int i = 0; i < text.length(); i++) {
+            if(text.charAt(i) == ',') {
+                valList.add(Double.parseDouble(readBuffer.toString()));
+                readBuffer.delete(0, readBuffer.length());
+            } else {
+                if(!Character.isWhitespace(text.charAt(i))) { readBuffer.append(text.charAt(i)); }
+            }
+        }
+        valList.add(Double.parseDouble(readBuffer.toString()));
+        
+        double[] array = new double[valList.size()];
+        for(int i = 0; i < valList.size(); i++) {
+            array[i] = valList.get(i).doubleValue();
+        }
+        
+        return array;
     }
     
     public void setOutputDirectory(String dir) {
@@ -587,7 +657,7 @@ public class TriggerTuningDriver extends Driver {
                 double r = Math.sqrt(Math.pow(TriggerModule.getClusterX(lowestEnergyCluster), 2) + Math.pow(TriggerModule.getClusterY(lowestEnergyCluster), 2));
                 
                 // Fill the energy slope plot.
-                AIDA.defaultInstance().histogram2D(PAIR_ENERGY_SLOPE).fill(r, TriggerModule.getValueClusterTotalEnergy(lowestEnergyCluster));
+                AIDA.defaultInstance().histogram2D(PAIR_ENERGY_SLOPE).fill(TriggerModule.getValueClusterTotalEnergy(lowestEnergyCluster), r);
             }
         }
         

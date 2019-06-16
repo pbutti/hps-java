@@ -25,7 +25,8 @@ import hep.physics.vec.BasicHep3Vector;
 
 public class TriggerTuningUtilityModule {
     
-    public static final List<Pair<Cluster, Track>> getClusterTrackMatchedPairs(List<Cluster> clusters, List<Track> tracks, FieldMap fieldmap) {
+    public static final List<Pair<Cluster, Track>> getClusterTrackMatchedPairs(List<Cluster> clusters, List<Track> tracks, FieldMap fieldmap,
+            double[][] boundsTopPos, double[][] boundsBotPos, double[][] boundsTopEle, double[][] boundsBotEle, double[] boundsPositronP, double[] boundsElectronP) {
         // Clusters may only be matched to one track. Track which
         // clusters have already been matched.
         Set<Cluster> matchedClusters = new HashSet<Cluster>();
@@ -45,18 +46,26 @@ public class TriggerTuningUtilityModule {
             // allowed momentum range for its charge. Tracks outside
             // this range are very unlikely to be A' tracks.
             double trackP = getMomentumMagnitude(track, fieldmap);
-            if(isPositive && (trackP < 0.700 || trackP > 3.500)) { continue trackLoop; }
-            else if(!isPositive && (trackP < 0.700 || trackP > 2.600)) { continue trackLoop; }
+            if(isPositive && (trackP < boundsPositronP[0] || trackP > boundsPositronP[1])) { continue trackLoop; }
+            else if(!isPositive && (trackP < boundsElectronP[0] || trackP > boundsElectronP[1])) { continue trackLoop; }
             
             // Get the track position at the calorimeter face.
             double[] trackR = getTrackPositionAtCalorimeterFace(track);
+            
+            // Get the correct set of matching parameters for this
+            // particular track.
+            double[][] bounds = null;
+            if(isPositive && isTop)        { bounds = boundsTopPos; }
+            else if(isPositive && !isTop)  { bounds = boundsBotPos; }
+            else if(!isPositive && isTop)  { bounds = boundsTopEle; }
+            else if(!isPositive && !isTop) { bounds = boundsBotEle; }
             
             // Check each cluster to see if it matches the track. It
             // is assumed, given pure signal data, that there will
             // only be one plausible match, so the first is accepted.
             clusterLoop:
             for(Cluster cluster : clusters) {
-                if(matches(cluster, isPositive, isTop, trackP, trackR)) {
+                if(matches(cluster, trackP, trackR, bounds[0], bounds[1])) {
                     matchedClusters.add(cluster);
                     pairList.add(new Pair<Cluster, Track>(cluster, track));
                     break clusterLoop;
@@ -681,7 +690,7 @@ public class TriggerTuningUtilityModule {
      * @return Returns <code>true</code> if the track matches with
      * the cluster and <code>false</code> otherwise.
      */
-    private static final boolean matches(Cluster cluster, boolean isPositive, boolean isTop, double momentum, double[] trackR) {
+    private static final boolean matches(Cluster cluster, double momentum, double[] trackR, double[] lowCoeff, double[] uppCoeff) {
         // Get the cluster position.
         double[] clusterR = cluster.getPosition();
         
@@ -690,6 +699,11 @@ public class TriggerTuningUtilityModule {
         double deltaY = clusterR[1] - trackR[1];
         double deltaR = Math.sqrt(Math.pow(deltaX, 2) + Math.pow(deltaY, 2));
         
+        // The cluster matches if deltaR is between the
+        // values defined by each fit.
+        return inRange(lowCoeff, uppCoeff, momentum, deltaR);
+        
+        /*
         // Which matching functions are applied is determined by the
         // charge and position of the track.
         if(isPositive) {
@@ -729,6 +743,7 @@ public class TriggerTuningUtilityModule {
                 return inRange(lowCoeff, uppCoeff, momentum, deltaR);
             }
         }
+        */
     }
     
     /**
