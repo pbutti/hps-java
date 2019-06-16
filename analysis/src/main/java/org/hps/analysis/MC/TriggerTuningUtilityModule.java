@@ -17,6 +17,7 @@ import org.lcsim.event.Cluster;
 import org.lcsim.event.EventHeader;
 import org.lcsim.event.SimTrackerHit;
 import org.lcsim.event.Track;
+import org.lcsim.event.TrackState;
 import org.lcsim.fit.helicaltrack.HelicalTrackFit;
 import org.lcsim.geometry.FieldMap;
 
@@ -391,6 +392,15 @@ public class TriggerTuningUtilityModule {
         HelicalTrackFit helicalTrackFit = TrackUtils.getHTF(track);
         double bFieldY = fieldMap.getField(new BasicHep3Vector(0, 0, 500)).y();
         return Math.abs(helicalTrackFit.p(bFieldY));
+    }
+    
+    /**
+     * Gets the track phi at the vertex.
+     * @param track - The track.
+     * @return Returns the track phi angle at the vertex.
+     */
+    public static final double getTrackPhi(Track track) {
+        return TrackUtils.getTrackStateAtLocation(track, TrackState.AtVertex).getPhi();
     }
     
     /**
