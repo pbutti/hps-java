@@ -203,7 +203,9 @@ public final class DatabaseConditionsManager extends ConditionsManagerImplementa
      *
      * @param runNumber the run number
      * @return <code>true</code> if run number is from the Test Run
+     * @deprecated  All test run only code should be removed from hps-java. It is causing more harm than good to keep it.
      */
+    @Deprecated
     public static boolean isTestRun(final int runNumber) {
         return runNumber > 0 && runNumber <= TEST_RUN_MAX_RUN;
     }
@@ -659,6 +661,7 @@ public final class DatabaseConditionsManager extends ConditionsManagerImplementa
      * Return <code>true</code> if Test Run configuration is active
      *
      * @return <code>true</code> if Test Run configuration is active
+     * @deprecated All code relating to the TestRun should be removed from hps-java.
      */
     public boolean isTestRun() {
         return this.isTestRun;
@@ -745,20 +748,23 @@ public final class DatabaseConditionsManager extends ConditionsManagerImplementa
             this.removeConditionsConverter(this.hodoscopeConverter);
         }
 
-        // Is configured for TestRun?
+        // Is configured for TestRun? --- ToDo: Remove the TestRun code.
         if (this.isTestRun()) {
             // Load Test Run specific converters.
             this.svtConverter = new TestRunSvtConditionsConverter();
             this.ecalConverter = new TestRunEcalConditionsConverter();
+            this.registerConditionsConverter(this.svtConverter);
+            this.registerConditionsConverter(this.ecalConverter);
+
         } else {
             // Load the default converters.
             this.svtConverter = new SvtConditionsConverter();
             this.ecalConverter = new EcalConditionsConverter();
             this.hodoscopeConverter = new HodoscopeConditionsConverter();
+            this.registerConditionsConverter(this.svtConverter);
+            this.registerConditionsConverter(this.ecalConverter);
+            this.registerConditionsConverter(this.hodoscopeConverter);
         }
-        this.registerConditionsConverter(this.svtConverter);
-        this.registerConditionsConverter(this.ecalConverter);
-        this.registerConditionsConverter(this.hodoscopeConverter);
     }
 
     /**
