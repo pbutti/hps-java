@@ -400,7 +400,7 @@ public class TriggerTuningUtilityModule {
      * @return Returns the track phi angle at the vertex.
      */
     public static final double getTrackPhi(Track track) {
-        return TrackUtils.getTrackStateAtLocation(track, TrackState.AtVertex).getPhi();
+        return TrackUtils.getTrackStateAtLocation(track, TrackState.AtIP).getPhi();
     }
     
     /**
