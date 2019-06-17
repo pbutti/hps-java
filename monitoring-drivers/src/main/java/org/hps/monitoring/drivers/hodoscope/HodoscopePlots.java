@@ -6,7 +6,6 @@ import org.hps.conditions.database.DatabaseConditionsManager;
 import org.hps.conditions.hodoscope.HodoscopeConditions;
 
 import hep.aida.IAnalysisFactory;
-import hep.aida.IBaseHistogram;
 import hep.aida.IHistogram1D;
 import hep.aida.IHistogramFactory;
 import hep.aida.IPlotter;

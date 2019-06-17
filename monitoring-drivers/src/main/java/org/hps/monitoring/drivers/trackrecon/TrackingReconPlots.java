@@ -15,7 +15,6 @@ import java.util.logging.Logger;
 
 import static org.hps.monitoring.drivers.trackrecon.PlotAndFitUtilities.plot;
 
-import org.hps.recon.tracking.HpsHelicalTrackFit;
 import org.hps.recon.tracking.TrackUtils;
 import org.lcsim.event.Cluster;
 import org.lcsim.event.EventHeader;
@@ -24,11 +23,8 @@ import org.lcsim.event.RawTrackerHit;
 import org.lcsim.event.Track;
 import org.lcsim.event.TrackState;
 import org.lcsim.event.TrackerHit;
-import org.lcsim.fit.helicaltrack.HelicalTrackFit;
 import org.lcsim.geometry.Detector;
 import org.lcsim.geometry.IDDecoder;
-import org.lcsim.recon.tracking.seedtracker.SeedCandidate;
-import org.lcsim.recon.tracking.seedtracker.SeedTrack;
 import org.lcsim.util.Driver;
 import org.lcsim.util.aida.AIDA;
 
@@ -95,7 +91,7 @@ public class TrackingReconPlots extends Driver {
 
         plotter.createRegions(2, 3);
         // plotterFrame.addPlotter(plotter);
-        nhits = aida.histogram1D("Hits per Track", 3, 5, 8);
+        nhits = aida.histogram1D("Hits per Track", 4, 4, 8);
         charge = aida.histogram1D("Track Charge", 3, -1, 2);
         trkPx = aida.histogram1D("Track Momentum (Px)", 50, -0.1, 0.2);
         trkPy = aida.histogram1D("Track Momentum (Py)", 50, -0.2, 0.2);
