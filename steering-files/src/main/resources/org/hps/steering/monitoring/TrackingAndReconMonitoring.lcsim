@@ -1,17 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <lcsim xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="http://www.lcsim.org/schemas/lcsim/1.0/lcsim.xsd">
     <!-- 
-      Steering file for tracking and v0 reconstruction monitoring, using an outside-in tracking strategy for more flexibility in opening angle
+      Steering file for tracking and v0 reconstruction monitoring 
       @author Matt Graham <mgraham@slac.stanford.edu>
     -->
     <execute>     
         <!--  the 3 drivers below are for reading out 6-sample ADC data -->
-        <!--      <driver name="RawTrackerHitSensorSetup" />    -->
+        <!--      <driver name="RawTrackerHitSensorSetup" />  --> 
         <driver name="RawTrackerHitFitterDriver" /> 
         <driver name="TrackerHitDriver" />  
         <driver name="HelicalTrackHitDriver" />
-        <!--  regular tracking and recon -->
-        <driver name="FullTrackerReconDriver"/> 
+        <driver name="TrackerReconDriver"/> 
         <driver name="TrackDataDriver"/>   
         <driver name="EcalRawConverter" /> 
         <driver name="EcalClusterer" />
@@ -47,10 +46,10 @@
             <maxDt>16.0</maxDt>
             <saveAxialHits>false</saveAxialHits>
         </driver>
-        <driver name="FullTrackerReconDriver" type="org.hps.recon.tracking.TrackerReconDriver">
+        <driver name="TrackerReconDriver" type="org.hps.recon.tracking.TrackerReconDriver">
             <debug>false</debug>
             <trackCollectionName>MatchedTracks</trackCollectionName>
-            <strategyResource>/org/hps/recon/tracking/strategies/HPS-Full-OutsideIn.xml</strategyResource>
+            <strategyResource>/org/hps/recon/tracking/strategies/HPS-Full.xml</strategyResource>
             <rmsTimeCut>8.0</rmsTimeCut>
         </driver>
         <driver name="TrackDataDriver" type="org.hps.recon.tracking.TrackDataDriver">
