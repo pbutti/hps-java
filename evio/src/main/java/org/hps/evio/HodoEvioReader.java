@@ -166,7 +166,7 @@ public class HodoEvioReader extends EvioReader {
 
     private List<BaseRawTrackerHit> makeWindowHits(CompositeData cdata, int crate) {
         List<BaseRawTrackerHit> hits = new ArrayList<BaseRawTrackerHit>();
-
+        
         while (cdata.index() + 1 < cdata.getItems().size()) {
             int index = cdata.index();
             short slot = cdata.getByte();
