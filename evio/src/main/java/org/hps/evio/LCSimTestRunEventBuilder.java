@@ -107,11 +107,14 @@ public class LCSimTestRunEventBuilder implements LCSimEventBuilder, ConditionsLi
 
         
 //        // Make RawHodoscopeHit collection, combining top and bottom section of Hodo into one list.
-        try {       
-            LOGGER.fine("Making Hodo hits");
-            hodoReader.makeHits(evioEvent, lcsimEvent);
-        } catch (Exception e) {
-            Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Error making Hodo hits", e);
+        if (hodoReader != null) {
+            try {
+                LOGGER.fine("Making Hodo hits");
+                hodoReader.makeHits(evioEvent, lcsimEvent);
+            } catch (Exception e) {
+                LOGGER.log(Level.SEVERE, "Error making Hodo hits", e);
+                //Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Error making Hodo hits", e);
+            }
         }
                 
         // Make SVT RawTrackerHits
@@ -212,12 +215,12 @@ public class LCSimTestRunEventBuilder implements LCSimEventBuilder, ConditionsLi
                 hodoReader = new HodoEvioReader(0x1, 0x2);   // Rafo: Have to understand what are 0x1 and 0x2 = Topbank and Bottombank (MWH).
                 hodoReader.setTopBankTag(0x25);
                 hodoReader.setBotBankTag(0x27); 
-//                hodoReader.setTopBankTag(0x41);  // Temporaty for the EEL test setup
-//                hodoReader.setBotBankTag(0x41);  // Temporaty for the EEL test setup
+//                hodoReader.setTopBankTag(0x41);  // Temporary for the EEL test setup
+//                hodoReader.setBotBankTag(0x41);  // Temporary for the EEL test setup
             }
             hodoReader.initialize();
-
+        } else {
+            LOGGER.warning("No hodo_channels condition in this run so Hodoscope EVIO reader was not enabled.");
         }
-
     }
 }
