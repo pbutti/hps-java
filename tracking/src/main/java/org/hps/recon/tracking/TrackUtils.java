@@ -580,9 +580,9 @@ public class TrackUtils {
     }
 
     public static BaseTrackState getTrackExtrapAtEcalRK(TrackState ts, FieldMap fM, double stepSize) {
-    	double ecalPosition = 1444;
-    	//double ecalPosition = BeamlineConstants.ECAL_FACE;
-    	
+        double ecalPosition = 1444;
+        //double ecalPosition = BeamlineConstants.ECAL_FACE;
+        
         Hep3Vector startPos = extrapolateHelixToXPlane(ts, BeamlineConstants.DIPOLE_EDGE_ENG_RUN);
         Hep3Vector startPosTrans = CoordinateTransformations.transformVectorToDetector(startPos);
         double distanceZ = ecalPosition - BeamlineConstants.DIPOLE_EDGE_ENG_RUN;
