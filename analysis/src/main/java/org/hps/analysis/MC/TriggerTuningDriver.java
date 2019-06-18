@@ -289,10 +289,10 @@ public class TriggerTuningDriver extends Driver {
         // Preliminary plots.
         AIDA.defaultInstance().histogram1D(CHI_SQUARED, 50, 0.0, 50.0);
         AIDA.defaultInstance().histogram1D(HODOSCOPE_SCINTILLATOR_ENERGY, 500, 0.000, 5.000);
-        AIDA.defaultInstance().histogram2D(DEBUG_CLUSTER_POSITION, 47, -23.5, 23.5, 11, -5.5, 5.5);
-        AIDA.defaultInstance().histogram2D(DEBUG_PHI_POSITION, 23, 0.5, 23.5, 360, -360, 360);
+        AIDA.defaultInstance().histogram2D(DEBUG_CLUSTER_POSITION, 350, -350, 350, 100, -100, 100);
+        AIDA.defaultInstance().histogram2D(DEBUG_PHI_POSITION, 23, 0.5, 23.5, 100, -100, 100);
         AIDA.defaultInstance().histogram2D(DEBUG_MOMENTUM_POSITION, 23, 0.5, 23.5, 250, 0.000, 5.0);
-        AIDA.defaultInstance().histogram2D(DEBUG_TRACK_POSITION, 400, -400, 400, 200, -200, 200);
+        AIDA.defaultInstance().histogram2D(DEBUG_TRACK_POSITION, 350, -350, 350, 100, -100, 100);
         
         // Cluster/Track matching plots.
         for(int i = 0; i < 2; i++) {
@@ -443,9 +443,7 @@ public class TriggerTuningDriver extends Driver {
     private static final void fillClusterPositionDistro(EventHeader event, String gtpClusterCollectionName) {
         List<Cluster> gtpClusters = TriggerTuningUtilityModule.getCollection(event, gtpClusterCollectionName, Cluster.class);
         for(Cluster cluster : gtpClusters) {
-            int ix = TriggerModule.getClusterXIndex(cluster);
-            int iy = TriggerModule.getClusterYIndex(cluster);
-            AIDA.defaultInstance().histogram2D(DEBUG_CLUSTER_POSITION).fill(ix, iy);
+            AIDA.defaultInstance().histogram2D(DEBUG_CLUSTER_POSITION).fill(cluster.getPosition()[0], cluster.getPosition()[1]);
         }
     }
     
@@ -755,7 +753,7 @@ public class TriggerTuningDriver extends Driver {
                 AIDA.defaultInstance().histogram2D(DEBUG_MOMENTUM_POSITION).fill(TriggerModule.getClusterXIndex(pair.getFirstElement()),
                         TriggerTuningUtilityModule.getMomentumMagnitude(pair.getSecondElement(), fieldMap));
                 AIDA.defaultInstance().histogram2D(DEBUG_PHI_POSITION).fill(TriggerModule.getClusterXIndex(pair.getFirstElement()),
-                        TriggerTuningUtilityModule.getTrackPhi(pair.getSecondElement()));
+                        1000 * TriggerTuningUtilityModule.getTrackPhi(pair.getSecondElement()));
             }
         }
     }
