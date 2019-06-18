@@ -74,7 +74,6 @@ public class ClusterTrackMatchingDriver extends Driver {
             double trackR[] = trackRVector.v();
             
             double trackP = TriggerTuningUtilityModule.getMomentumMagnitude(gblTrack, fieldMap);
-            System.out.printf("Track r = <%7.2f, %7.2f, %7.2f>%n", trackR[0], trackR[1], trackR[2]);
             
             // Plot the difference in x and y between the track and
             // all possible clusters.
