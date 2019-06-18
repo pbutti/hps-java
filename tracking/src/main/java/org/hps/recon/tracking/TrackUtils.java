@@ -580,9 +580,12 @@ public class TrackUtils {
     }
 
     public static BaseTrackState getTrackExtrapAtEcalRK(TrackState ts, FieldMap fM, double stepSize) {
+    	double ecalPosition = 1444;
+    	//double ecalPosition = BeamlineConstants.ECAL_FACE;
+    	
         Hep3Vector startPos = extrapolateHelixToXPlane(ts, BeamlineConstants.DIPOLE_EDGE_ENG_RUN);
         Hep3Vector startPosTrans = CoordinateTransformations.transformVectorToDetector(startPos);
-        double distanceZ = BeamlineConstants.ECAL_FACE - BeamlineConstants.DIPOLE_EDGE_ENG_RUN;
+        double distanceZ = ecalPosition - BeamlineConstants.DIPOLE_EDGE_ENG_RUN;
         double charge = -1.0 * Math.signum(getR(ts));
 
         org.hps.util.Pair<Hep3Vector, Hep3Vector> RKresults = extrapolateTrackUsingFieldMapRK(ts, startPosTrans, distanceZ, stepSize, fM);
@@ -593,7 +596,7 @@ public class TrackUtils {
         Hep3Vector finalPos = posTrans;
         if (RKresults.getFirstElement().z() != BeamlineConstants.ECAL_FACE) {
             Hep3Vector mom = RKresults.getSecondElement();
-            double dz = BeamlineConstants.ECAL_FACE - RKresults.getFirstElement().z();
+            double dz = ecalPosition - RKresults.getFirstElement().z();
             double dy = dz * mom.y() / mom.z();
             double dx = dz * mom.x() / mom.z();
             Hep3Vector dPos = new BasicHep3Vector(dx, dy, dz);
