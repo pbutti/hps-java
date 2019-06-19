@@ -1,6 +1,7 @@
 package org.lcsim.detector.tracker.silicon;
 
 import hep.physics.vec.Hep3Vector; 
+import hep.physics.vec.BasicHep3Vector;
 
 import org.lcsim.detector.IDetectorElement;
 import org.lcsim.detector.ITransform3D;
@@ -13,12 +14,22 @@ public class ThinSiStrips extends SiStrips {
 
 
     private int channelOffset = 256; 
+    
+    private double minU = Double.MAX_VALUE; 
+    
+    private double maxU = Double.MIN_VALUE;
+    
 
     /**
      * Constructor
      */
     public ThinSiStrips(ChargeCarrier carrier, double pitch, IDetectorElement detector, ITransform3D parentToLocal) { 
-        super(carrier, pitch, detector, parentToLocal);  
+        super(carrier, pitch, detector, parentToLocal);
+        
+        for (Point3D vertex : getGeometry().getVertices()) { 
+            minU = Math.min(minU, vertex.x());
+            maxU = Math.max(maxU, vertex.x());
+        } 
     }
 
     /**
@@ -53,18 +64,10 @@ public class ThinSiStrips extends SiStrips {
     @Override
     protected void setStripNumbering() {
         
-        double xmin = Double.MAX_VALUE;
-        double xmax = Double.MIN_VALUE;
-        for (Point3D vertex : getGeometry().getVertices()) {
-            System.out.println("[ ThinSiStrips ][ setStripNumber ]: Vertex: " + vertex.toString()); 
-            xmin = Math.min(xmin,vertex.x());
-            xmax = Math.max(xmax,vertex.x());
-        }
+        System.out.println("[ ThinSiStrips ][ setStripNumbering ]: u min: " + minU);
+        System.out.println("[ ThinSiStrips ][ setStripNumbering ]: u max: " + maxU);
 
-        System.out.println("[ ThinSiStrips ][ setStripNumbering ]: x min: " + xmin);
-        System.out.println("[ ThinSiStrips ][ setStripNumbering ]: x max: " + xmax);
-
-        int nStrips = 2*((int) Math.ceil( (xmax - xmin)/getPitch(0) ));
+        int nStrips = 2*((int) Math.ceil( (maxU - minU)/getPitch(0) ));
     
         System.out.println("[ ThinSiStrips ][ setStripNumbering ]: Number of strips: " + nStrips); 
 
@@ -74,17 +77,10 @@ public class ThinSiStrips extends SiStrips {
     @Override
     protected void setStripOffset() { 
         
-        double xmin = Double.MAX_VALUE;
-        double xmax = Double.MIN_VALUE;
-        for (Point3D vertex : getGeometry().getVertices()) {
-            xmin = Math.min(xmin,vertex.x());
-            xmax = Math.max(xmax,vertex.x());
-        }
-
-        System.out.println("[ ThinSiStrips ][ setStripOffset ]: x min: " + xmin);
-        System.out.println("[ ThinSiStrips ][ setStripOffset ]: x max: " + xmax);
+        System.out.println("[ ThinSiStrips ][ setStripOffset ]: u min: " + minU);
+        System.out.println("[ ThinSiStrips ][ setStripOffset ]: u max: " + maxU);
         
-        double stripsCenter = (xmin+xmax)/2;
+        double stripsCenter = (minU+maxU)/2;
         System.out.println("[ ThinSiStrips ][ setStripOffset ]: strips center: " + stripsCenter); 
         System.out.println("[ ThinSiStrips ][ setStripOffset ]: ((nStrips/2) - 1)*pitch)/2: " + ( ( (_nstrips/2) - 1)*_pitch)/2);  
 
@@ -95,10 +91,21 @@ public class ThinSiStrips extends SiStrips {
 
     @Override
     public Hep3Vector getCellPosition(int stripNumber) {
-       
+      
+        double v = -(minU + maxU)/4;
+        if (stripNumber >= getNCells()/2) v *= -1;  
+
         System.out.println("[ ThinSiStrips ][ getCellPosition ]: Before strip #: " + stripNumber);  
-        //if ( stripNumber >= getNCells()/2 ) stripNumber = (getNCells() - stripNumber - 1);
+        if ( stripNumber >= getNCells()/2 ) stripNumber = (getNCells() - stripNumber - 1);
+        double u = stripNumber*_pitch - _strip_offset; 
         System.out.println("[ ThinSiStrips ][ getCellPosition ]: After strip #: " + stripNumber);  
-        return super.getCellPosition(stripNumber);  
+        
+        System.out.println("[ ThinSiStrips ][ getCellPosition ]: u: " + u);
+        System.out.println("[ ThinSiStrips ][ getCellPosition ]: v: " + v);
+
+        return new BasicHep3Vector(u, v, 0.0);  
+
     }
+
+
 }
