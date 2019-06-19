@@ -192,7 +192,7 @@ public class HodoscopePlots extends Driver {
         plotters.put("ECal plots", plotterFactory.create("ECal plots") );
         plotters.get("ECal plots").createRegions(2, 2);
         
-        clust_polots.put("Ecal Energy VS X", histogramFactory.createHistogram2D("Cluster W vs X", 200, -300., 390., 200, 0.1,5.) ) ;
+        clust_polots.put("Ecal Energy VS X", histogramFactory.createHistogram2D("Cluster E vs X", 200, -300., 390.,  200, 0.1,5.) ) ;
         plotters.get("ECal plots").region(0).plot(clust_polots.get("Ecal Energy VS X") );
         
         plotters.put("Tile Occupancy", plotterFactory.create("Tile Occupancy"));
