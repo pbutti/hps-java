@@ -120,6 +120,7 @@
     <module>monitoring-util</module>
     <module>monitoring-drivers</module>
     <module>monitoring-app</module>
+    <module>online-recon</module>
     <module>plugin</module>
     <module>recon</module>
     <module>record-util</module>
@@ -252,6 +253,11 @@
       <dependency>
         <groupId>org.hps</groupId>
         <artifactId>hps-monitoring-app</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.hps</groupId>
+        <artifactId>hps-online-recon</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
