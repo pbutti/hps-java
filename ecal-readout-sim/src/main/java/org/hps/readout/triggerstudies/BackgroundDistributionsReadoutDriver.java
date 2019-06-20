@@ -111,6 +111,9 @@ public class BackgroundDistributionsReadoutDriver extends ReadoutDriver {
         performSinglesTriggerAnalysis();
         performPairTriggerAnalysis();
         performCOPTriggerAnalysis();
+        
+        // Increment the local time.
+        localTime += 4.0;
     }
     
     public void setInstance(int instance) {
