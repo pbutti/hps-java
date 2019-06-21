@@ -363,7 +363,7 @@ public class PairTriggerReadoutDriver extends TriggerDriver {
             // ==== Pair Coplanarity Cut ===================================
             // =============================================================
             // If the cluster fails the cut, skip to the next pair.
-            if(!triggerModule.pairCoplanarityCut(clusterPair, ixy0, ixy1)) {
+            if(!triggerModule.pairCoplanarityCut(ixy0, ixy1)) {
                 continue pairLoop;
             }
             

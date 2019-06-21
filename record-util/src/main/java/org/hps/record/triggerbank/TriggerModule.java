@@ -887,7 +887,7 @@ public final class TriggerModule {
      * and y indices of the second cluster.
      * @return Returns the cut value.
      */
-    public static double getValueCoplanarity(Cluster[] clusterPair, Point p0, Point p1) {
+    public static double getValueCoplanarity(Point p0, Point p1) {
         // Get the variables used by the calculation.
         double x[] = { getClusterX(p0), getClusterX(p1) };
         double y[] = { getClusterY(p0), getClusterY(p1) };
@@ -1148,8 +1148,8 @@ public final class TriggerModule {
      * @return Returns <code>true</code> if the cluster pair passes
      * the cut and <code>false</code> if it does not.
      */
-    public boolean pairCoplanarityCut(Cluster[] clusterPair, Point p0, Point p1) {
-        return pairCoplanarityCut(getValueCoplanarity(clusterPair, p0, p1));
+    public boolean pairCoplanarityCut(Point p0, Point p1) {
+        return pairCoplanarityCut(getValueCoplanarity(p0, p1));
     }
     
     /**
