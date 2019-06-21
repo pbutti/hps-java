@@ -1,5 +1,6 @@
 package org.hps.readout.triggerstudies;
 
+import java.awt.Point;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
@@ -12,6 +13,7 @@ import org.hps.readout.ReadoutDriver;
 import org.hps.record.triggerbank.TriggerModule;
 import org.lcsim.event.Cluster;
 import org.lcsim.event.EventHeader;
+import org.lcsim.geometry.IDDecoder;
 import org.lcsim.util.aida.AIDA;
 
 public class BackgroundDistributionsReadoutDriver extends ReadoutDriver {
@@ -165,12 +167,14 @@ public class BackgroundDistributionsReadoutDriver extends ReadoutDriver {
         Collection<Cluster> clusters = clusterBuffer.getFirst();
         
         // Populate the singles cut distribution for all clusters.
+        IDDecoder decoder = ReadoutDataManager.getIDDecoder("EcalHits");
         for(Cluster cluster : clusters) {
+            decoder.setID(cluster.getCalorimeterHits().get(0).getCellID());
             AIDA.defaultInstance().histogram1D(SINGLES_MULTIPLICITY).fill(TriggerModule.getClusterHitCount(cluster));
             AIDA.defaultInstance().histogram1D(SINGLES_SEED_ENERGY).fill(TriggerModule.getValueClusterSeedEnergy(cluster));
             AIDA.defaultInstance().histogram1D(SINGLES_TOTAL_ENERGY).fill(TriggerModule.getValueClusterTotalEnergy(cluster));
-            AIDA.defaultInstance().histogram2D(SINGLES_POSITION).fill(TriggerModule.getClusterXIndex(cluster),
-                    TriggerModule.getClusterYIndex(cluster));
+            AIDA.defaultInstance().histogram2D(SINGLES_POSITION).fill(decoder.getValue("ix"), decoder.getValue("iy"));
+            System.out.printf("<%3d, %2d>%n", decoder.getValue("ix"), decoder.getValue("iy"));
         }
     }
     
@@ -182,9 +186,12 @@ public class BackgroundDistributionsReadoutDriver extends ReadoutDriver {
         // Form all possible pairs consisting of one cluster from the
         // most recent entry of the cluster buffer and one cluster
         // from any of the remaining buffers.
+        IDDecoder decoder = ReadoutDataManager.getIDDecoder("EcalHits");
         for(Cluster pairingCluster : pairingClusters) {
             // Track whether the cluster is a top or bottom cluster.
-            boolean pairingIsTop = (TriggerModule.getClusterYIndex(pairingCluster) > 0);
+            decoder.setID(pairingCluster.getCalorimeterHits().get(0).getCellID());
+            Point pairingClusterIR = new Point(decoder.getValue("ix"), decoder.getValue("iy"));
+            boolean pairingIsTop = (pairingClusterIR.y > 0);
             
             // Iterate over each entry in the cluster buffer. It is
             // allowed that clusters pair with others in the most
@@ -197,7 +204,9 @@ public class BackgroundDistributionsReadoutDriver extends ReadoutDriver {
                     
                     // Only consider pairs where one cluster is a top
                     // cluster and one cluster is a bottom cluster.
-                    boolean bufferIsTop = (TriggerModule.getClusterYIndex(bufferCluster) > 0);
+                    decoder.setID(bufferCluster.getCalorimeterHits().get(0).getCellID());
+                    Point bufferClusterIR = new Point(decoder.getValue("ix"), decoder.getValue("iy"));
+                    boolean bufferIsTop = (bufferClusterIR.y > 0);
                     if((pairingIsTop && bufferIsTop) || (!pairingIsTop && !bufferIsTop)) { continue; }
                     
                     // Populate the singles plots with each cluster,
@@ -207,29 +216,31 @@ public class BackgroundDistributionsReadoutDriver extends ReadoutDriver {
                         pairPlottedClusters.add(pairingCluster);
                         AIDA.defaultInstance().histogram1D(PAIR_MULTIPLICITY).fill(TriggerModule.getClusterHitCount(pairingCluster));
                         AIDA.defaultInstance().histogram1D(PAIR_TOTAL_ENERGY).fill(TriggerModule.getValueClusterTotalEnergy(pairingCluster));
-                        AIDA.defaultInstance().histogram2D(PAIR_POSITION).fill(TriggerModule.getClusterXIndex(pairingCluster), TriggerModule.getClusterYIndex(pairingCluster));
+                        AIDA.defaultInstance().histogram2D(PAIR_POSITION).fill(pairingClusterIR.x, pairingClusterIR.y);
                     }
                     if(!pairPlottedClusters.contains(bufferCluster)) {
                         pairPlottedClusters.add(bufferCluster);
                         AIDA.defaultInstance().histogram1D(PAIR_MULTIPLICITY).fill(TriggerModule.getClusterHitCount(bufferCluster));
                         AIDA.defaultInstance().histogram1D(PAIR_TOTAL_ENERGY).fill(TriggerModule.getValueClusterTotalEnergy(bufferCluster));
-                        AIDA.defaultInstance().histogram2D(PAIR_POSITION).fill(TriggerModule.getClusterXIndex(bufferCluster), TriggerModule.getClusterYIndex(bufferCluster));
+                        AIDA.defaultInstance().histogram2D(PAIR_POSITION).fill(bufferClusterIR.x, bufferClusterIR.y);
                     }
                     
                     // Populate the pair cuts plots.
                     Cluster[] pair = new Cluster[] { pairingCluster, bufferCluster };
                     AIDA.defaultInstance().histogram1D(PAIR_ENERGY_SUM).fill(TriggerModule.getValueEnergySum(pair));
                     AIDA.defaultInstance().histogram1D(PAIR_ENERGY_DIFF).fill(TriggerModule.getValueEnergyDifference(pair));
-                    AIDA.defaultInstance().histogram1D(PAIR_COPLANARITY).fill(TriggerModule.getValueCoplanarity(pair));
+                    AIDA.defaultInstance().histogram1D(PAIR_COPLANARITY).fill(TriggerModule.getValueCoplanarity(pairingClusterIR, bufferClusterIR));
                     
                     // Get the lowest energy cluster.
                     Cluster lowestEnergyCluster = pair[0];
+                    Point lowestIR = pairingClusterIR;
                     if(TriggerModule.getValueClusterTotalEnergy(pair[1]) < TriggerModule.getValueClusterTotalEnergy(pair[0])) {
                         lowestEnergyCluster = pair[1];
+                        lowestIR = bufferClusterIR;
                     }
                     
                     // Get deltaR for the lowest energy cluster.
-                    double r = Math.sqrt(Math.pow(TriggerModule.getClusterX(lowestEnergyCluster), 2) + Math.pow(TriggerModule.getClusterY(lowestEnergyCluster), 2));
+                    double r = Math.sqrt(Math.pow(TriggerModule.getClusterX(lowestIR), 2) + Math.pow(TriggerModule.getClusterY(lowestIR), 2));
                     
                     // Fill the energy slope plot.
                     AIDA.defaultInstance().histogram2D(PAIR_ENERGY_SLOPE).fill(r, TriggerModule.getValueClusterTotalEnergy(lowestEnergyCluster));
@@ -244,15 +255,16 @@ public class BackgroundDistributionsReadoutDriver extends ReadoutDriver {
         Collection<Cluster> clusters = clusterBuffer.getFirst();
         
         // Populate the cut distributions for all positron clusters.
+        IDDecoder decoder = ReadoutDataManager.getIDDecoder("EcalHits");
         for(Cluster cluster : clusters) {
-            if(TriggerModule.getClusterXIndex(cluster) > 4) {
+            decoder.setID(cluster.getCalorimeterHits().get(0).getCellID());
+            Point ir = new Point(decoder.getValue("ix"), decoder.getValue("iy"));
+            if(ir.x > 4) {
                 AIDA.defaultInstance().histogram1D(COPT_MULTIPLICITY).fill(TriggerModule.getClusterHitCount(cluster));
                 AIDA.defaultInstance().histogram1D(COPT_SEED_ENERGY).fill(TriggerModule.getValueClusterSeedEnergy(cluster));
                 AIDA.defaultInstance().histogram1D(COPT_TOTAL_ENERGY).fill(TriggerModule.getValueClusterTotalEnergy(cluster));
-                AIDA.defaultInstance().histogram2D(COPT_POSITION).fill(TriggerModule.getClusterXIndex(cluster),
-                        TriggerModule.getClusterYIndex(cluster));
-                AIDA.defaultInstance().histogram2D(COPT_ENERGY_POSITION).fill(TriggerModule.getClusterXIndex(cluster),
-                        TriggerModule.getValueClusterTotalEnergy(cluster));
+                AIDA.defaultInstance().histogram2D(COPT_POSITION).fill(ir.x, ir.y);
+                AIDA.defaultInstance().histogram2D(COPT_ENERGY_POSITION).fill(ir.x, TriggerModule.getValueClusterTotalEnergy(cluster));
             }
         }
     }
