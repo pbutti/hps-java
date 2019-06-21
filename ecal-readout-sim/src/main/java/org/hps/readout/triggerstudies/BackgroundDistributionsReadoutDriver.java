@@ -174,7 +174,6 @@ public class BackgroundDistributionsReadoutDriver extends ReadoutDriver {
             AIDA.defaultInstance().histogram1D(SINGLES_SEED_ENERGY).fill(TriggerModule.getValueClusterSeedEnergy(cluster));
             AIDA.defaultInstance().histogram1D(SINGLES_TOTAL_ENERGY).fill(TriggerModule.getValueClusterTotalEnergy(cluster));
             AIDA.defaultInstance().histogram2D(SINGLES_POSITION).fill(decoder.getValue("ix"), decoder.getValue("iy"));
-            System.out.printf("<%3d, %2d>%n", decoder.getValue("ix"), decoder.getValue("iy"));
         }
     }
     
