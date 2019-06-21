@@ -189,7 +189,7 @@
         </driver>
         
 		<driver name="PlotsDriver" type="org.hps.readout.triggerstudies.BackgroundDistributionsReadoutDriver">
-			<instance>1</instance>
+			<instance>${instance}</instance>
 			<outputDirectory>${datOutputPath}</outputDirectory>
 		</driver>
 		
