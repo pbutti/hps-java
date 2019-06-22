@@ -350,6 +350,42 @@ public class TriggerTuningUtilityModule {
     }
     
     /**
+     * Gets the invariant mass of the originating particle of a
+     * positron/electron two particle decay.
+     * @param positron - The positron track.
+     * @param electron - The electron track.
+     * @param fieldMap - The magnetic fieldmap in which the particles
+     * are moving.
+     * @return Returns the invariant mass.
+     */
+    public static final double getInvarientMass(Track positron, Track electron, FieldMap fieldMap) {
+        // Define the mass of the particles.
+        final double m = 0.51099895000 / 1000;
+        
+        // Get the momenta of the particles.
+        double[][] p = new double[][] { getMomentum(positron, fieldMap), getMomentum(electron, fieldMap) };
+        double[] magP = new double[] { getMomentumMagnitude(positron, fieldMap), getMomentumMagnitude(electron, fieldMap) };
+        
+        // Get the Lorentz factor for each particle.
+        double[] gamma = new double[] { getLorentzFactor(magP[0], m), getLorentzFactor(magP[1], m) };
+        
+        // Calculate the originating particle invariant mass.
+        return Math.sqrt(Math.pow(gamma[0] * m + gamma[1] * m, 2) - Math.pow(getMagnitude(getVectorSum(p[0], p[1])), 2));
+    }
+    
+    /**
+     * Calculates the Lorentz factor for a particle with mass m and
+     * with momentum p.
+     * @param p - The particle momentum.
+     * @param m - The particle rest mass.
+     * @return Returns the Lortentz factor.
+     */
+    public static final double getLorentzFactor(double p, double m) {
+        // Calculate the lorentz factor.
+        return Math.sqrt(1 + Math.pow(p / m, 2));
+    }
+    
+    /**
      * Gets the magnitude of a vector.
      * @param v - The vector.
      * @return Returns the magnitude of the vector.
@@ -370,8 +406,10 @@ public class TriggerTuningUtilityModule {
      */
     @Deprecated
     public static final double[] getMomentum(Track track, FieldMap fieldMap) {
-        double phi = track.getTrackStates().get(0).getPhi();
-        double tanLambda = track.getTrackStates().get(0).getTanLambda();
+        double phi = TrackUtils.getTrackStateAtLocation(track, TrackState.AtIP).getPhi();
+        double tanLambda = TrackUtils.getTrackStateAtLocation(track, TrackState.AtIP).getTanLambda();
+        //double phi = track.getTrackStates().get(0).getPhi();
+        //double tanLambda = track.getTrackStates().get(0).getTanLambda();
         
         double magP = getMomentumMagnitude(track, fieldMap);
         
@@ -415,6 +453,30 @@ public class TriggerTuningUtilityModule {
     public static final double[] getTrackPositionAtCalorimeterFace(Track track) {
         double[] tempP = TrackUtils.getTrackStateAtECal(track).getReferencePoint();
         return new double[] { tempP[1], tempP[2], tempP[0] };
+    }
+    
+    /**
+     * Gets the component sum of two vectors.
+     * @param v0 - A vector.
+     * @param v1 - Another vector.
+     * @return Returns the vector sum of the vectors.
+     * @throws IllegalArgumentException Occurs if the vectors are of
+     * different lengths.
+     */
+    public static final double[] getVectorSum(double[] v0, double[] v1) throws IllegalArgumentException {
+        // Vectors of different lengths may not be summed.
+        if(v0.length != v1.length) {
+            throw new IllegalArgumentException("Vectors can only be added if they are the same length.");
+        }
+        
+        // Sum the vectors component by component.
+        double[] vSum = new double[v0.length];
+        for(int i = 0; i < v0.length; i++) {
+            vSum[i] = v0[i] + v1[i];
+        }
+        
+        // Return the resultant sum.
+        return vSum;
     }
     
     /**
@@ -662,6 +724,29 @@ public class TriggerTuningUtilityModule {
     }
     
     /**
+     * Calculates the value of <code>x</code> for a polynomial with
+     * coefficients defined by <code>coeff</code>. The coefficients
+     * must be in order of increasing power of <code>x</code>.
+     * <br/><br/>
+     * For example, consider <code>coeff = { 1, 2, 3 }</code>. The
+     * polynomial will take the form:
+     * <br/>
+     * <code>1 + 2x + 3x<sup>2</sup></code>
+     * @param coeff - The coefficients, in increasing order of powers
+     * of <code>x</code>.
+     * @param x - The value at which the polynomial is to be
+     * evaluated.
+     * @return Returns the value of the polynomial at <code>x</code>.
+     */
+    public static final double polynomial(double[] coeff, double x) {
+        double total = 0.0;
+        for(int i = 0; i < coeff.length; i++) {
+            total += coeff[i] * Math.pow(x, i);
+        }
+        return total;
+    }
+    
+    /**
      * Checks if a given deltaR is within the allowed matching bounds
      * defined by two polynomials with coefficients as defined in
      * <code>lowCoeff</code> and <code>uppCoeff</code> (lower and
@@ -712,70 +797,5 @@ public class TriggerTuningUtilityModule {
         // The cluster matches if deltaR is between the
         // values defined by each fit.
         return inRange(lowCoeff, uppCoeff, momentum, deltaR);
-        
-        /*
-        // Which matching functions are applied is determined by the
-        // charge and position of the track.
-        if(isPositive) {
-            if(isTop) {
-                // Define the coefficients.
-                final double[] lowCoeff = { 53.911, -36.814, 12.327, -2.021,  0.134 };
-                final double[] uppCoeff = { 75.741, -32.564,  4.153,  0.771, -0.156 };
-                
-                // The cluster matches if deltaR is between the
-                // values defined by each fit.
-                return inRange(lowCoeff, uppCoeff, momentum, deltaR);
-            } else {
-                // Define the coefficients.
-                final double[] lowCoeff = { 64.187, -58.046, 26.810, -5.976,  0.508 };
-                final double[] uppCoeff = { 70.465, -25.409,  1.508,  1.130, -0.171 };
-                
-                // The cluster matches if deltaR is between the
-                // values defined by each fit.
-                return inRange(lowCoeff, uppCoeff, momentum, deltaR);
-            }
-        } else {
-            if(isTop) {
-                // Define the coefficients.
-                final double[] lowCoeff = { 64.904, -77.744, 44.243, -11.767, 1.155 };
-                final double[] uppCoeff = { 68.914, -37.962, 10.056,  -0.969, 0.016 };
-                
-                // The cluster matches if deltaR is between the
-                // values defined by each fit.
-                return inRange(lowCoeff, uppCoeff, momentum, deltaR);
-            } else {
-                // Define the coefficients.
-                final double[] lowCoeff = { 48.841, -42.072, 18.388, -4.285,  0.408 };
-                final double[] uppCoeff = { 75.207, -45.076, 10.682, -0.052, -0.164 };
-                
-                // The cluster matches if deltaR is between the
-                // values defined by each fit.
-                return inRange(lowCoeff, uppCoeff, momentum, deltaR);
-            }
-        }
-        */
-    }
-    
-    /**
-     * Calculates the value of <code>x</code> for a polynomial with
-     * coefficients defined by <code>coeff</code>. The coefficients
-     * must be in order of increasing power of <code>x</code>.
-     * <br/><br/>
-     * For example, consider <code>coeff = { 1, 2, 3 }</code>. The
-     * polynomial will take the form:
-     * <br/>
-     * <code>1 + 2x + 3x<sup>2</sup></code>
-     * @param coeff - The coefficients, in increasing order of powers
-     * of <code>x</code>.
-     * @param x - The value at which the polynomial is to be
-     * evaluated.
-     * @return Returns the value of the polynomial at <code>x</code>.
-     */
-    private static final double polynomial(double[] coeff, double x) {
-        double total = 0.0;
-        for(int i = 0; i < coeff.length; i++) {
-            total += coeff[i] * Math.pow(x, i);
-        }
-        return total;
     }
 }

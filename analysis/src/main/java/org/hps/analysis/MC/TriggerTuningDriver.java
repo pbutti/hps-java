@@ -82,6 +82,11 @@ public class TriggerTuningDriver extends Driver {
     private static final String DEBUG_MOMENTUM_POSITION = "Debug/Track Momentum vs. Cluster Position Distribution";
     private static final String DEBUG_PHI_POSITION = "Debug/Track Phi vs. Cluster Position Distribution";
     
+    private static final String INV_MASS_NO_CUTS = "Invariant Mass/Invariant Mass Distribution (No Cuts)";
+    private static final String INV_MASS_95 = "Invariant Mass/Invariant Mass Distribution (95% COPT Threshold)";
+    private static final String INV_MASS_97 = "Invariant Mass/Invariant Mass Distribution (97% COPT Threshold)";
+    private static final String INV_MASS_ME = "Invariant Mass/Invariant Mass Distribution (99% COPT Threshold)";
+    
     private static final String HODOSCOPE_TRUTH_ENERGY = "Hodoscope/Truth Hit Energy Distribution";
     private static final String HODOSCOPE_TRUTH_COMP_ENERGY = "Hodoscope/Truth Hit Energy Distribution (Compiled)";
     
@@ -206,6 +211,16 @@ public class TriggerTuningDriver extends Driver {
             PlotToTextModule.writePlot(AIDA.defaultInstance().histogram1D(COPT_TOTAL_ENERGY),
                     new File(outputDirectory + File.separator + "tuning_copt_totalEnergy.dat"));
             
+            // Invariant mass plots.
+            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram1D(INV_MASS_NO_CUTS),
+                    new File(outputDirectory + File.separator + "tuning_invaritanMass_noCuts.dat"));
+            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram1D(INV_MASS_95),
+                    new File(outputDirectory + File.separator + "tuning_invaritanMass_95.dat"));
+            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram1D(INV_MASS_97),
+                    new File(outputDirectory + File.separator + "tuning_invaritanMass_97.dat"));
+            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram1D(INV_MASS_ME),
+                    new File(outputDirectory + File.separator + "tuning_invaritanMass_99.dat"));
+            
             // Write the hodoscope truth hit debug plots.
             PlotToTextModule.writePlot(AIDA.defaultInstance().histogram1D(HODOSCOPE_TRUTH_ENERGY), new File(outputDirectory + File.separator + "debug_hodoTruthEnergy.dat"));
             PlotToTextModule.writePlot(AIDA.defaultInstance().histogram1D(HODOSCOPE_TRUTH_COMP_ENERGY), new File(outputDirectory + File.separator + "debug_hodoTruthEnergy_Compiled.dat"));
@@ -282,6 +297,8 @@ public class TriggerTuningDriver extends Driver {
             hodoscopeEvents++;
             performHodoscopeAnalysis(event);
         }
+        
+        performInvariantMassAnalysis(pairList);
     }
     
     @Override
@@ -342,6 +359,12 @@ public class TriggerTuningDriver extends Driver {
         // Hodoscope Hit Truth Comparison Debug Plots
         AIDA.defaultInstance().histogram1D(HODOSCOPE_TRUTH_ENERGY, 500, 0.000, 5.000);
         AIDA.defaultInstance().histogram1D(HODOSCOPE_TRUTH_COMP_ENERGY, 500, 0.000, 5.000);
+        
+        // Invariant mass plots.
+        AIDA.defaultInstance().histogram1D(INV_MASS_NO_CUTS, 750, 0.0000, 0.3000);
+        AIDA.defaultInstance().histogram1D(INV_MASS_95, 750, 0.0000, 0.3000);
+        AIDA.defaultInstance().histogram1D(INV_MASS_97, 750, 0.0000, 0.3000);
+        AIDA.defaultInstance().histogram1D(INV_MASS_ME, 750, 0.0000, 0.3000);
     }
     
     public void setHodoscopeXLowerBound(double bound) {
@@ -754,6 +777,76 @@ public class TriggerTuningDriver extends Driver {
                         TriggerTuningUtilityModule.getMomentumMagnitude(pair.getSecondElement(), fieldMap));
                 AIDA.defaultInstance().histogram2D(DEBUG_PHI_POSITION).fill(TriggerModule.getClusterXIndex(pair.getFirstElement()),
                         1000 * TriggerTuningUtilityModule.getTrackPhi(pair.getSecondElement()));
+            }
+        }
+    }
+    
+    private void performInvariantMassAnalysis(List<Pair<Cluster, Track>> pairList) {
+        // Iterate over the tracks.
+        for(int i = 0; i < pairList.size(); i++) {
+            // Get the track parameters.
+            Track[] tracks = new Track[] { pairList.get(i).getSecondElement(), null };
+            boolean[] isTop = new boolean[] { TriggerTuningUtilityModule.isTopTrack(tracks[0]), false };
+            boolean[] isPositive = new boolean[] { TriggerTuningUtilityModule.isPositive(tracks[0]), false };
+            
+            // Iterate over the tracks again. Start one track after
+            // the current first track to avoid double counting.
+            for(int j = i + 1; j < pairList.size(); j++) {
+                // Get the second track parameters.
+                tracks[1] = pairList.get(j).getSecondElement();
+                isTop[1] = TriggerTuningUtilityModule.isTopTrack(tracks[1]);
+                isPositive[1] = TriggerTuningUtilityModule.isPositive(tracks[1]);
+                
+                // Check whether there are both a top and a bottom
+                // track and also  a positive and negative track.
+                boolean hasTopBottom = (isTop[0] && !isTop[1]) || (!isTop[0] && isTop[1]);
+                boolean hasPositiveNegative = (isPositive[0] && !isPositive[1]) || (!isPositive[0] && isPositive[1]);
+                
+                // Ignore cases where this is not a top/bottom and
+                // positive/negative track pair.
+                if(hasTopBottom && hasPositiveNegative) {
+                    // Get the invariant mass.
+                    double invariantMass = TriggerTuningUtilityModule.getInvarientMass(tracks[0], tracks[1], fieldMap);
+                    
+                    // Populate the all plots map.
+                    AIDA.defaultInstance().histogram1D(INV_MASS_NO_CUTS).fill(invariantMass);
+                    
+                    // Define the COPT energy vs. position cut
+                    // coefficients.
+                    final double[] firCoeff95 = { 2.186811145510821,  -0.18388028895768568, 0.006550567595459063,  -0.00007997936016511498 };
+                    final double[] firCoeff97 = { 1.9004592363261057, -0.1715872606352472,  0.005825593395252756,  -0.00005360623781676235 };
+                    final double[] firCoeff99 = { 1.2412860734037259, -0.15417121549474627, 0.0074262012497307685, -0.00011773085302497325 };
+                    
+                    // Get the clusters.
+                    Cluster[] cluster = { pairList.get(i).getFirstElement(), pairList.get(j).getFirstElement() };
+                    int[] ix = { TriggerModule.getClusterXIndex(cluster[0]), TriggerModule.getClusterXIndex(cluster[1]) };
+                    
+                    // Get the positron cluster. This will be the one
+                    // with ix >= 2.
+                    int positiveIndex = -1;
+                    if(ix[0] >= 2 && ix[0] > ix[1]) { positiveIndex = 0; }
+                    else if(ix[1] >= 2 && ix[1] > ix[0]) { positiveIndex = 1; }
+                    
+                    // If there is a positive cluster, plot it as appropriate.
+                    if(positiveIndex != -1) {
+                        // Perform the COPT cuts and plot the track pair
+                        // if it passes.
+                        double threshold95 = TriggerTuningUtilityModule.polynomial(firCoeff95, ix[positiveIndex]);
+                        double threshold97 = TriggerTuningUtilityModule.polynomial(firCoeff97, ix[positiveIndex]);
+                        double threshold99 = TriggerTuningUtilityModule.polynomial(firCoeff99, ix[positiveIndex]);
+                        
+                        // Fill the relevant plots.
+                        if(cluster[positiveIndex].getEnergy() >= threshold95) {
+                            AIDA.defaultInstance().histogram1D(INV_MASS_95).fill(invariantMass);
+                        }
+                        if(cluster[positiveIndex].getEnergy() >= threshold97) {
+                            AIDA.defaultInstance().histogram1D(INV_MASS_97).fill(invariantMass);
+                        }
+                        if(cluster[positiveIndex].getEnergy() >= threshold99) {
+                            AIDA.defaultInstance().histogram1D(INV_MASS_ME).fill(invariantMass);
+                        }
+                    }
+                }
             }
         }
     }
