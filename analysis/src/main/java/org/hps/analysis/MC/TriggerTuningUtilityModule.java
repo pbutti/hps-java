@@ -26,7 +26,7 @@ import hep.physics.vec.BasicHep3Vector;
 
 public class TriggerTuningUtilityModule {
     
-    public static final List<Pair<Cluster, Track>> getClusterTrackMatchedPairs(List<Cluster> clusters, List<Track> tracks, FieldMap fieldmap,
+    public static final List<Pair<Cluster, Track>> getClusterTrackMatchedPairs(List<Cluster> clusters, List<Track> tracks, FieldMap fieldMap,
             double[][] boundsTopPos, double[][] boundsBotPos, double[][] boundsTopEle, double[][] boundsBotEle, double[] boundsPositronP, double[] boundsElectronP) {
         // Clusters may only be matched to one track. Track which
         // clusters have already been matched.
@@ -46,12 +46,12 @@ public class TriggerTuningUtilityModule {
             // Get the track momentum and check that it is within the
             // allowed momentum range for its charge. Tracks outside
             // this range are very unlikely to be A' tracks.
-            double trackP = getMomentumMagnitude(track, fieldmap);
+            double trackP = getMomentumMagnitude(track, fieldMap);
             if(isPositive && (trackP < boundsPositronP[0] || trackP > boundsPositronP[1])) { continue trackLoop; }
             else if(!isPositive && (trackP < boundsElectronP[0] || trackP > boundsElectronP[1])) { continue trackLoop; }
             
             // Get the track position at the calorimeter face.
-            double[] trackR = getTrackPositionAtCalorimeterFace(track);
+            double[] trackR = getTrackPositionAtCalorimeterFace(track, fieldMap);
             
             // Get the correct set of matching parameters for this
             // particular track.
@@ -450,8 +450,9 @@ public class TriggerTuningUtilityModule {
      * @return Returns the extrapolated track position at the face of
      * the calorimeter as a size 3 <code>double</code> array.
      */
-    public static final double[] getTrackPositionAtCalorimeterFace(Track track) {
-        double[] tempP = TrackUtils.getTrackStateAtECal(track).getReferencePoint();
+    public static final double[] getTrackPositionAtCalorimeterFace(Track track, FieldMap fieldMap) {
+        double[] tempP = TrackUtils.getTrackExtrapAtEcalRK(track, fieldMap).getReferencePoint();
+        //double[] tempP = TrackUtils.getTrackStateAtECal(track).getReferencePoint();
         return new double[] { tempP[1], tempP[2], tempP[0] };
     }
     

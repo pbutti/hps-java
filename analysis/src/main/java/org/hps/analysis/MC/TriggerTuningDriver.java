@@ -591,10 +591,10 @@ public class TriggerTuningDriver extends Driver {
         }
     }
     
-    private static final void fillTrackPositionDistro(EventHeader event, String gblTrackCollectionName) {
+    private final void fillTrackPositionDistro(EventHeader event, String gblTrackCollectionName) {
         List<Track> gblTracks = TriggerTuningUtilityModule.getCollection(event, gblTrackCollectionName, Track.class);
         for(Track track : gblTracks) {
-            double[] r = TriggerTuningUtilityModule.getTrackPositionAtCalorimeterFace(track);
+            double[] r = TriggerTuningUtilityModule.getTrackPositionAtCalorimeterFace(track, fieldMap);
             AIDA.defaultInstance().histogram2D(DEBUG_TRACK_POSITION).fill(r[0], r[1]);
         }
     }
@@ -653,7 +653,7 @@ public class TriggerTuningDriver extends Driver {
         for(Track gblTrack : gblTracks) {
             // TODO: These methods really need to be updated to the correct version.
             // Get the track position at the calorimeter face.
-            double[] trackR = TriggerTuningUtilityModule.getTrackPositionAtCalorimeterFace(gblTrack);
+            double[] trackR = TriggerTuningUtilityModule.getTrackPositionAtCalorimeterFace(gblTrack, fieldMap);
             double trackP = TriggerTuningUtilityModule.getMomentumMagnitude(gblTrack, fieldMap);
             
             // Plot the difference in x and y between the track and
