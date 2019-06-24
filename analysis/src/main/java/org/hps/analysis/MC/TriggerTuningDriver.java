@@ -19,6 +19,7 @@ import org.hps.util.Pair;
 import org.lcsim.event.CalorimeterHit;
 import org.lcsim.event.Cluster;
 import org.lcsim.event.EventHeader;
+import org.lcsim.event.MCParticle;
 import org.lcsim.event.SimTrackerHit;
 import org.lcsim.event.Track;
 import org.lcsim.geometry.Detector;
@@ -82,6 +83,7 @@ public class TriggerTuningDriver extends Driver {
     private static final String DEBUG_MOMENTUM_POSITION = "Debug/Track Momentum vs. Cluster Position Distribution";
     private static final String DEBUG_PHI_POSITION = "Debug/Track Phi vs. Cluster Position Distribution";
     
+    private static final String INV_MASS_TRUTH = "Invariant Mass/Invariant Mass Distribution (Truth)";
     private static final String INV_MASS_REALLY_NO_CUTS = "Invariant Mass/Invariant Mass Distribution (Really No Cuts)";
     private static final String INV_MASS_NO_CUTS = "Invariant Mass/Invariant Mass Distribution (No Cuts)";
     private static final String INV_MASS_95 = "Invariant Mass/Invariant Mass Distribution (95% COPT Threshold)";
@@ -213,6 +215,8 @@ public class TriggerTuningDriver extends Driver {
                     new File(outputDirectory + File.separator + "tuning_copt_totalEnergy.dat"));
             
             // Invariant mass plots.
+            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram1D(INV_MASS_TRUTH),
+                    new File(outputDirectory + File.separator + "tuning_invaritanMass_truth.dat"));
             PlotToTextModule.writePlot(AIDA.defaultInstance().histogram1D(INV_MASS_REALLY_NO_CUTS),
                     new File(outputDirectory + File.separator + "tuning_invaritanMass_reallyNoCuts.dat"));
             PlotToTextModule.writePlot(AIDA.defaultInstance().histogram1D(INV_MASS_NO_CUTS),
@@ -251,6 +255,7 @@ public class TriggerTuningDriver extends Driver {
         performTrackAnalysis(event);
         
         // Perform the absolutely no cuts invariant mass analysis.
+        performInvariantMassAnalysisTruth(TriggerTuningUtilityModule.getCollection(event, "MCParticle", MCParticle.class));
         performInvariantMassAnalysisNoClusters(TriggerTuningUtilityModule.getCollection(event, gblTrackCollectionName, Track.class));
         
         // Get cluster/track matched pairs.
@@ -367,6 +372,7 @@ public class TriggerTuningDriver extends Driver {
         AIDA.defaultInstance().histogram1D(HODOSCOPE_TRUTH_COMP_ENERGY, 500, 0.000, 5.000);
         
         // Invariant mass plots.
+        AIDA.defaultInstance().histogram1D(INV_MASS_TRUTH, 2500, 0.0000, 1.000);
         AIDA.defaultInstance().histogram1D(INV_MASS_REALLY_NO_CUTS, 750, 0.0000, 0.3000);
         AIDA.defaultInstance().histogram1D(INV_MASS_NO_CUTS, 750, 0.0000, 0.3000);
         AIDA.defaultInstance().histogram1D(INV_MASS_95, 750, 0.0000, 0.3000);
@@ -887,6 +893,40 @@ public class TriggerTuningDriver extends Driver {
                     
                     // Populate the all plots map.
                     AIDA.defaultInstance().histogram1D(INV_MASS_REALLY_NO_CUTS).fill(invariantMass);
+                }
+            }
+        }
+    }
+    
+    private void performInvariantMassAnalysisTruth(List<MCParticle> particleList) {
+        // Iterate over the particles.
+        for(int i = 0; i < particleList.size(); i++) {
+            // Get the track parameters.
+            MCParticle[] particle = { particleList.get(i), null };
+            //boolean[] isTop = { TriggerTuningUtilityModule.isTopTrack(particle[0]), false };
+            boolean[] isPositive = { particle[0].getPDGID() == 11, false };
+            
+            // Iterate over the tracks again. Start one track after
+            // the current first track to avoid double counting.
+            for(int j = i + 1; j < particleList.size(); j++) {
+                // Get the second track parameters.
+                particle[1] = particleList.get(j);
+                //isTop[1] = TriggerTuningUtilityModule.isTopTrack(particle[1]);
+                isPositive[1] = (particle[1].getPDGID() == 11);
+                
+                // Check whether there are both a top and a bottom
+                // track and also  a positive and negative track.
+                //boolean hasTopBottom = (isTop[0] && !isTop[1]) || (!isTop[0] && isTop[1]);
+                boolean hasPositiveNegative = (isPositive[0] && !isPositive[1]) || (!isPositive[0] && isPositive[1]);
+                
+                // Ignore cases where this is not a top/bottom and
+                // positive/negative track pair.
+                if(hasPositiveNegative) { //hasTopBottom && hasPositiveNegative) {
+                    // Get the invariant mass.
+                    double invariantMass = TriggerTuningUtilityModule.getInvarientMass(particle[0], particle[1]);
+                    
+                    // Populate the all plots map.
+                    AIDA.defaultInstance().histogram1D(INV_MASS_TRUTH).fill(invariantMass);
                 }
             }
         }

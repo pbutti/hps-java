@@ -15,6 +15,7 @@ import org.hps.util.Pair;
 import org.lcsim.event.CalorimeterHit;
 import org.lcsim.event.Cluster;
 import org.lcsim.event.EventHeader;
+import org.lcsim.event.MCParticle;
 import org.lcsim.event.SimTrackerHit;
 import org.lcsim.event.Track;
 import org.lcsim.event.TrackState;
@@ -23,6 +24,7 @@ import org.lcsim.geometry.FieldMap;
 
 import hep.aida.IHistogram2D;
 import hep.physics.vec.BasicHep3Vector;
+import hep.physics.vec.Hep3Vector;
 
 public class TriggerTuningUtilityModule {
     
@@ -371,6 +373,27 @@ public class TriggerTuningUtilityModule {
         
         // Calculate the originating particle invariant mass.
         return Math.sqrt(Math.pow(gamma[0] * m + gamma[1] * m, 2) - Math.pow(getMagnitude(getVectorSum(p[0], p[1])), 2));
+    }
+    
+    /**
+     * Gets the invariant mass of the originating particle of a
+     * positron/electron two particle decay.
+     * @param positron - The positron particle.
+     * @param electron - The electron particle.
+     * @return Returns the invariant mass.
+     */
+    public static final double getInvarientMass(MCParticle positron, MCParticle electron) {
+        // Define the mass of the particles.
+        final double m = 0.51099895000 / 1000;
+        
+        // Get the momenta of the particles.
+        Hep3Vector[] p = { positron.getMomentum(), electron.getMomentum() };
+        
+        // Get the Lorentz factor for each particle.
+        double[] gamma = new double[] { getLorentzFactor(p[0].magnitude(), m), getLorentzFactor(p[1].magnitude(), m) };
+        
+        // Calculate the originating particle invariant mass.
+        return Math.sqrt(Math.pow(gamma[0] * m + gamma[1] * m, 2) - Math.pow(getMagnitude(getVectorSum(p[0].v(), p[1].v())), 2));
     }
     
     /**
