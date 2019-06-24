@@ -451,8 +451,8 @@ public class TriggerTuningUtilityModule {
      * the calorimeter as a size 3 <code>double</code> array.
      */
     public static final double[] getTrackPositionAtCalorimeterFace(Track track, FieldMap fieldMap) {
-        double[] tempP = TrackUtils.getTrackExtrapAtEcalRK(track, fieldMap).getReferencePoint();
-        //double[] tempP = TrackUtils.getTrackStateAtECal(track).getReferencePoint();
+        //double[] tempP = TrackUtils.getTrackExtrapAtEcalRK(track, fieldMap).getReferencePoint();
+        double[] tempP = TrackUtils.getTrackStateAtECal(track).getReferencePoint();
         return new double[] { tempP[1], tempP[2], tempP[0] };
     }
     
