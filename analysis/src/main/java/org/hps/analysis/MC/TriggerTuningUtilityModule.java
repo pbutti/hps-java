@@ -9,6 +9,7 @@ import java.util.Set;
 import org.hps.conditions.hodoscope.HodoscopeChannel;
 import org.hps.detector.hodoscope.HodoscopeDetectorElement;
 import org.hps.readout.triggerstudies.Coordinate;
+import org.hps.recon.tracking.CoordinateTransformations;
 import org.hps.recon.tracking.TrackUtils;
 import org.hps.record.triggerbank.TriggerModule;
 import org.hps.util.Pair;
@@ -432,8 +433,6 @@ public class TriggerTuningUtilityModule {
     public static final double[] getMomentum(Track track, FieldMap fieldMap) {
         double phi = TrackUtils.getTrackStateAtLocation(track, TrackState.AtIP).getPhi();
         double tanLambda = TrackUtils.getTrackStateAtLocation(track, TrackState.AtIP).getTanLambda();
-        //double phi = track.getTrackStates().get(0).getPhi();
-        //double tanLambda = track.getTrackStates().get(0).getTanLambda();
         
         double magP = getMomentumMagnitude(track, fieldMap);
         
@@ -441,7 +440,7 @@ public class TriggerTuningUtilityModule {
         double py = magP * Math.sin(phi);
         double pz = magP * tanLambda;
         
-        return new double[] { px, py, pz };
+        return CoordinateTransformations.transformVectorToDetector(new BasicHep3Vector(px, py, pz)).v();
     }
     
     /**
