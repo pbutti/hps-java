@@ -377,7 +377,7 @@ public class TriggerTuningDriver extends Driver {
         AIDA.defaultInstance().histogram1D(HODOSCOPE_TRUTH_COMP_ENERGY, 500, 0.000, 5.000);
         
         // Invariant mass plots.
-        AIDA.defaultInstance().histogram1D(INV_MASS_TRUTH, 2500, 0.0000, 1.000);
+        AIDA.defaultInstance().histogram1D(INV_MASS_TRUTH, 750, 0.0000, 0.3000);
         AIDA.defaultInstance().histogram1D(INV_MASS_REALLY_NO_CUTS, 750, 0.0000, 0.3000);
         AIDA.defaultInstance().histogram1D(INV_MASS_NO_CUTS, 750, 0.0000, 0.3000);
         AIDA.defaultInstance().histogram1D(INV_MASS_95, 750, 0.0000, 0.3000);
@@ -869,38 +869,50 @@ public class TriggerTuningDriver extends Driver {
         }
     }
     
-    private void performInvariantMassAnalysisNoClusters(List<Track> trackList) {
-        // Iterate over the tracks.
-        for(int i = 0; i < trackList.size(); i++) {
-            // Get the track parameters.
-            Track[] tracks = new Track[] { trackList.get(i), null };
-            boolean[] isTop = new boolean[] { TriggerTuningUtilityModule.isTopTrack(tracks[0]), false };
-            boolean[] isPositive = new boolean[] { TriggerTuningUtilityModule.isPositive(tracks[0]), false };
-            
-            // Iterate over the tracks again. Start one track after
-            // the current first track to avoid double counting.
-            for(int j = i + 1; j < trackList.size(); j++) {
-                // Get the second track parameters.
-                tracks[1] = trackList.get(j);
-                isTop[1] = TriggerTuningUtilityModule.isTopTrack(tracks[1]);
-                isPositive[1] = TriggerTuningUtilityModule.isPositive(tracks[1]);
-                
-                // Check whether there are both a top and a bottom
-                // track and also  a positive and negative track.
-                boolean hasTopBottom = (isTop[0] && !isTop[1]) || (!isTop[0] && isTop[1]);
-                boolean hasPositiveNegative = (isPositive[0] && !isPositive[1]) || (!isPositive[0] && isPositive[1]);
-                
-                // Ignore cases where this is not a top/bottom and
-                // positive/negative track pair.
-                if(hasTopBottom && hasPositiveNegative) {
-                    // Get the invariant mass.
-                    double invariantMass = TriggerTuningUtilityModule.getInvarientMass(tracks[0], tracks[1], fieldMap);
-                    
-                    // Populate the all plots map.
-                    AIDA.defaultInstance().histogram1D(INV_MASS_REALLY_NO_CUTS).fill(invariantMass);
-                }
-            }
+    private double getInvariantMass(List<Hep3Vector> momenta) {
+        // Calculate gamma * m of each origin particle and sum them.
+        //System.out.println("\tEnergy Sum:");
+        double energySum = 0.0;
+        final double m = 0.000511;
+        for(Hep3Vector momentum : momenta) {
+            energySum += Math.sqrt(Math.pow(m, 2) + momentum.magnitudeSquared());
+            //System.out.println("\t\t\t" + Math.sqrt(Math.pow(m, 2) + momentum.magnitudeSquared()));
         }
+        //System.out.println("\t\tTotal: " + energySum);
+        //System.out.println("\t\tSquared: " + Math.pow(energySum, 2));
+        
+        // Get the vector sum of the particle momenta.
+        Hep3Vector momentumSum = new BasicHep3Vector(0, 0, 0);
+        for(Hep3Vector momentum : momenta) {
+            momentumSum = VectorArithmetic.add(momentumSum, momentum);
+        }
+        
+        //System.out.println("\tMomentum Sum:");
+        //System.out.printf("\t\tTotal: [ %10.6f, %10.6f, %10.6f ]%n", momentumSum.x(), momentumSum.y(), momentumSum.z());
+        //System.out.println("\t\tSquared: " + momentumSum.magnitudeSquared());
+        
+        // Calculate and plot the invariant mass.
+        return Math.sqrt(Math.pow(energySum, 2) - momentumSum.magnitudeSquared());
+    }
+    
+    private void performInvariantMassAnalysisNoClusters(List<Track> tracks) {
+        // If there are fewer than two tracks, then no analysis may
+        // be performed.
+        if(tracks.size() < 2) { return; }
+        
+        // Get the track momenta.
+        List<Hep3Vector> momenta = new ArrayList<Hep3Vector>();
+        for(Track track : tracks) {
+            int pid = (TriggerTuningUtilityModule.isPositive(track) ? -11 : 11);
+            Hep3Vector p = new BasicHep3Vector(TriggerTuningUtilityModule.getMomentum(track, fieldMap));
+            momenta.add(p);
+            //System.out.printf("\tPID = %3d;   p = [ %10.6f, %10.6f, %10.6f ]%n", pid, p.x(), p.y(), p.z());
+        }
+        
+        double mass = getInvariantMass(momenta);
+        AIDA.defaultInstance().histogram1D(INV_MASS_REALLY_NO_CUTS).fill(mass);
+        
+        //System.out.println("\tTrack Invariant Mass: " + mass);
     }
     
     private boolean isOriginParticle(MCParticle particle) {
@@ -910,112 +922,28 @@ public class TriggerTuningDriver extends Driver {
     }
     
     private void performInvariantMassAnalysisTruth(List<MCParticle> particles) {
-        // Get all of the origin particles.
-        List<MCParticle> originParticles = new ArrayList<MCParticle>();
+        // Print the A' and its children.
         for(MCParticle particle : particles) {
-            if(isOriginParticle(particle)) { originParticles.add(particle); }
-        }
-        
-        for(MCParticle particle : originParticles) {
-            System.out.printf("\tPID = %3d;   p = <%f, %f, %f>%n", particle.getPDGID(), particle.getMomentum().x(), particle.getMomentum().y(), particle.getMomentum().z());
-        }
-        
-        /*
-        // Remove the recoil electron. It should have the smallest
-        // z-momentum.
-        MCParticle lowestMomentumParticle = null;
-        for(MCParticle particle : originParticles) {
-            if(lowestMomentumParticle == null) { lowestMomentumParticle = particle; }
-            else {
-                if(lowestMomentumParticle.getMomentum().z() > particle.getMomentum().z()) {
-                    lowestMomentumParticle = particle;
+            if(particle.getPDGID() == 622) {
+                //System.out.printf("\tPID = %3d;   p = [ %10.6f, %10.6f, %10.6f ]%n", particle.getPDGID(), particle.getMomentum().x(), particle.getMomentum().y(), particle.getMomentum().z());
+                for(MCParticle child : particle.getDaughters()) {
+                    //System.out.printf("\t\tPID = %3d;   p = [ %10.6f, %10.6f, %10.6f ]%n", child.getPDGID(), child.getMomentum().x(), child.getMomentum().y(), child.getMomentum().z());
                 }
             }
         }
-        originParticles.remove(lowestMomentumParticle);
-        */
         
-        // Calculate gamma * m of each origin particle and sum them.
-        System.out.println("\tEnergy Sum:");
-        double energySum = 0.0;
-        final double m = 0.000511;
-        for(MCParticle particle : originParticles) {
-            energySum += Math.sqrt(Math.pow(m, 2) + particle.getMomentum().magnitudeSquared());
-            System.out.println("\t\t\t" + Math.sqrt(Math.pow(m, 2) + particle.getMomentum().magnitudeSquared()));
-        }
-        System.out.println("\t\tTotal: " + energySum);
-        System.out.println("\t\tSquared: " + Math.pow(energySum, 2));
-        
-        // Get the vector sum of the particle momenta.
-        Hep3Vector momentumSum = new BasicHep3Vector(0, 0, 0);
-        for(MCParticle particle : originParticles) {
-            momentumSum = VectorArithmetic.add(momentumSum, particle.getMomentum());
+        // Get all of the origin particles.
+        List<Hep3Vector> momenta = new ArrayList<Hep3Vector>();
+        for(MCParticle particle : particles) {
+            if(isOriginParticle(particle)) {
+                momenta.add(particle.getMomentum());
+                //System.out.printf("\tPID = %3d;   p = [ %10.6f, %10.6f, %10.6f ]%n", particle.getPDGID(), particle.getMomentum().x(), particle.getMomentum().y(), particle.getMomentum().z());
+            }
         }
         
-        System.out.println("\tMomentum Sum:");
-        System.out.println("\t\tTotal: " + momentumSum);
-        System.out.println("\t\tSquared: " + momentumSum.magnitudeSquared());
-        
-        // Calculate and plot the invariant mass.
-        double mass = Math.sqrt(Math.pow(energySum, 2) - momentumSum.magnitudeSquared());
+        double mass = getInvariantMass(momenta);
         AIDA.defaultInstance().histogram1D(INV_MASS_TRUTH).fill(mass);
         
-        System.out.println("\tInvariant Mass: " + mass);
+        //System.out.println("\tTruth Invariant Mass: " + mass);
     }
-    
-    /*
-    private void performInvariantMassAnalysisTruth(List<MCParticle> particleList) {
-        // Track the local ID of each particle.
-        Map<MCParticle, Integer> idMap = new HashMap<MCParticle, Integer>();
-        for(int id = 0; id < particleList.size(); id++) {
-            idMap.put(particleList.get(id), id);
-        }
-        
-        // Iterate over the particles.
-        for(int i = 0; i < particleList.size(); i++) {
-            MCParticle[] particle = { particleList.get(i), null };
-            
-            if(particle[0].getPDGID() == 622 || isOriginParticle(particle[0])) {
-                System.out.printf("\tID = %d;   PDGID = %d;  Q = %f;   p = <%f, %f, %f>;   t = %f;   r = <%f, %f, %f>;   m = %f%n", idMap.get(particle[0]), particle[0].getPDGID(),
-                        particle[0].getCharge(), particle[0].getMomentum().x(), particle[0].getMomentum().y(), particle[0].getMomentum().z(), particle[0].getProductionTime(),
-                        particle[0].getOriginX(), particle[0].getOriginY(), particle[0].getOriginZ(), particle[0].getMass());
-            }
-            
-            // Ignore particles other than initial particles.
-            if(!isOriginParticle(particleList.get(i))) { continue; }
-            
-            // Get the particle parameters.
-            //MCParticle[] particle = { particleList.get(i), null };
-            //boolean[] isTop = { TriggerTuningUtilityModule.isTopTrack(particle[0]), false };
-            boolean[] isPositive = { particle[0].getPDGID() == 11, false };
-            
-            // Iterate over the tracks again. Start one track after
-            // the current first track to avoid double counting.
-            for(int j = i + 1; j < particleList.size(); j++) {
-                // Ignore particles other than initial particles.
-                if(isOriginParticle(particleList.get(j))) { continue; }
-                
-                // Get the second track parameters.
-                particle[1] = particleList.get(j);
-                //isTop[1] = TriggerTuningUtilityModule.isTopTrack(particle[1]);
-                isPositive[1] = (particle[1].getPDGID() == 11);
-                
-                // Check whether there are both a top and a bottom
-                // track and also  a positive and negative track.
-                //boolean hasTopBottom = (isTop[0] && !isTop[1]) || (!isTop[0] && isTop[1]);
-                boolean hasPositiveNegative = (isPositive[0] && !isPositive[1]) || (!isPositive[0] && isPositive[1]);
-                
-                // Ignore cases where this is not a top/bottom and
-                // positive/negative track pair.
-                if(hasPositiveNegative) { //hasTopBottom && hasPositiveNegative) {
-                    // Get the invariant mass.
-                    double invariantMass = TriggerTuningUtilityModule.getInvarientMass(particle[0], particle[1]);
-                    
-                    // Populate the all plots map.
-                    AIDA.defaultInstance().histogram1D(INV_MASS_TRUTH).fill(invariantMass);
-                }
-            }
-        }
-    }
-    */
 }
