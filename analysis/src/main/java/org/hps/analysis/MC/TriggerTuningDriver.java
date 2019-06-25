@@ -26,6 +26,10 @@ import org.lcsim.geometry.Detector;
 import org.lcsim.geometry.FieldMap;
 import org.lcsim.util.Driver;
 import org.lcsim.util.aida.AIDA;
+import org.lcsim.util.swim.VectorArithmetic;
+
+import hep.physics.vec.BasicHep3Vector;
+import hep.physics.vec.Hep3Vector;
 
 public class TriggerTuningDriver extends Driver {
     private int totalEvents = 0;
@@ -255,6 +259,7 @@ public class TriggerTuningDriver extends Driver {
         performTrackAnalysis(event);
         
         // Perform the absolutely no cuts invariant mass analysis.
+        System.out.println("Event " + event.getEventNumber());
         performInvariantMassAnalysisTruth(TriggerTuningUtilityModule.getCollection(event, "MCParticle", MCParticle.class));
         performInvariantMassAnalysisNoClusters(TriggerTuningUtilityModule.getCollection(event, gblTrackCollectionName, Track.class));
         
@@ -898,17 +903,98 @@ public class TriggerTuningDriver extends Driver {
         }
     }
     
+    private boolean isOriginParticle(MCParticle particle) {
+        boolean isPosEle = (particle.getPDGID() == 11) || (particle.getPDGID() == -11);
+        boolean hasAPrimeParent = (!particle.getParents().isEmpty() && particle.getParents().get(0).getPDGID() == 622);
+        return isPosEle && hasAPrimeParent;
+    }
+    
+    private void performInvariantMassAnalysisTruth(List<MCParticle> particles) {
+        // Get all of the origin particles.
+        List<MCParticle> originParticles = new ArrayList<MCParticle>();
+        for(MCParticle particle : particles) {
+            if(isOriginParticle(particle)) { originParticles.add(particle); }
+        }
+        
+        for(MCParticle particle : originParticles) {
+            System.out.printf("\tPID = %3d;   p = <%f, %f, %f>%n", particle.getPDGID(), particle.getMomentum().x(), particle.getMomentum().y(), particle.getMomentum().z());
+        }
+        
+        /*
+        // Remove the recoil electron. It should have the smallest
+        // z-momentum.
+        MCParticle lowestMomentumParticle = null;
+        for(MCParticle particle : originParticles) {
+            if(lowestMomentumParticle == null) { lowestMomentumParticle = particle; }
+            else {
+                if(lowestMomentumParticle.getMomentum().z() > particle.getMomentum().z()) {
+                    lowestMomentumParticle = particle;
+                }
+            }
+        }
+        originParticles.remove(lowestMomentumParticle);
+        */
+        
+        // Calculate gamma * m of each origin particle and sum them.
+        System.out.println("\tEnergy Sum:");
+        double energySum = 0.0;
+        final double m = 0.000511;
+        for(MCParticle particle : originParticles) {
+            energySum += Math.sqrt(Math.pow(m, 2) + particle.getMomentum().magnitudeSquared());
+            System.out.println("\t\t\t" + Math.sqrt(Math.pow(m, 2) + particle.getMomentum().magnitudeSquared()));
+        }
+        System.out.println("\t\tTotal: " + energySum);
+        System.out.println("\t\tSquared: " + Math.pow(energySum, 2));
+        
+        // Get the vector sum of the particle momenta.
+        Hep3Vector momentumSum = new BasicHep3Vector(0, 0, 0);
+        for(MCParticle particle : originParticles) {
+            momentumSum = VectorArithmetic.add(momentumSum, particle.getMomentum());
+        }
+        
+        System.out.println("\tMomentum Sum:");
+        System.out.println("\t\tTotal: " + momentumSum);
+        System.out.println("\t\tSquared: " + momentumSum.magnitudeSquared());
+        
+        // Calculate and plot the invariant mass.
+        double mass = Math.sqrt(Math.pow(energySum, 2) - momentumSum.magnitudeSquared());
+        AIDA.defaultInstance().histogram1D(INV_MASS_TRUTH).fill(mass);
+        
+        System.out.println("\tInvariant Mass: " + mass);
+    }
+    
+    /*
     private void performInvariantMassAnalysisTruth(List<MCParticle> particleList) {
+        // Track the local ID of each particle.
+        Map<MCParticle, Integer> idMap = new HashMap<MCParticle, Integer>();
+        for(int id = 0; id < particleList.size(); id++) {
+            idMap.put(particleList.get(id), id);
+        }
+        
         // Iterate over the particles.
         for(int i = 0; i < particleList.size(); i++) {
-            // Get the track parameters.
             MCParticle[] particle = { particleList.get(i), null };
+            
+            if(particle[0].getPDGID() == 622 || isOriginParticle(particle[0])) {
+                System.out.printf("\tID = %d;   PDGID = %d;  Q = %f;   p = <%f, %f, %f>;   t = %f;   r = <%f, %f, %f>;   m = %f%n", idMap.get(particle[0]), particle[0].getPDGID(),
+                        particle[0].getCharge(), particle[0].getMomentum().x(), particle[0].getMomentum().y(), particle[0].getMomentum().z(), particle[0].getProductionTime(),
+                        particle[0].getOriginX(), particle[0].getOriginY(), particle[0].getOriginZ(), particle[0].getMass());
+            }
+            
+            // Ignore particles other than initial particles.
+            if(!isOriginParticle(particleList.get(i))) { continue; }
+            
+            // Get the particle parameters.
+            //MCParticle[] particle = { particleList.get(i), null };
             //boolean[] isTop = { TriggerTuningUtilityModule.isTopTrack(particle[0]), false };
             boolean[] isPositive = { particle[0].getPDGID() == 11, false };
             
             // Iterate over the tracks again. Start one track after
             // the current first track to avoid double counting.
             for(int j = i + 1; j < particleList.size(); j++) {
+                // Ignore particles other than initial particles.
+                if(isOriginParticle(particleList.get(j))) { continue; }
+                
                 // Get the second track parameters.
                 particle[1] = particleList.get(j);
                 //isTop[1] = TriggerTuningUtilityModule.isTopTrack(particle[1]);
@@ -931,4 +1017,5 @@ public class TriggerTuningDriver extends Driver {
             }
         }
     }
+    */
 }

@@ -21,6 +21,7 @@ import org.lcsim.event.Track;
 import org.lcsim.event.TrackState;
 import org.lcsim.fit.helicaltrack.HelicalTrackFit;
 import org.lcsim.geometry.FieldMap;
+import org.lcsim.util.swim.VectorArithmetic;
 
 import hep.aida.IHistogram2D;
 import hep.physics.vec.BasicHep3Vector;
@@ -393,7 +394,7 @@ public class TriggerTuningUtilityModule {
         double[] gamma = new double[] { getLorentzFactor(p[0].magnitude(), m), getLorentzFactor(p[1].magnitude(), m) };
         
         // Calculate the originating particle invariant mass.
-        return Math.sqrt(Math.pow(gamma[0] * m + gamma[1] * m, 2) - Math.pow(getMagnitude(getVectorSum(p[0].v(), p[1].v())), 2));
+        return Math.sqrt(Math.pow(gamma[0] * m + gamma[1] * m, 2) - VectorArithmetic.add(p[0], p[1]).magnitudeSquared());
     }
     
     /**
@@ -401,7 +402,7 @@ public class TriggerTuningUtilityModule {
      * with momentum p.
      * @param p - The particle momentum.
      * @param m - The particle rest mass.
-     * @return Returns the Lortentz factor.
+     * @return Returns the Lorentz factor.
      */
     public static final double getLorentzFactor(double p, double m) {
         // Calculate the lorentz factor.
