@@ -290,7 +290,7 @@ public class TriggerTuningDriver extends Driver {
         // Perform the absolutely no cuts invariant mass analysis.
         performInvariantMassAnalysisTruth(TriggerTuningUtilityModule.getCollection(event, "MCParticle", MCParticle.class));
         performInvariantMassAnalysisNoClusters(TriggerTuningUtilityModule.getCollection(event, gblTrackCollectionName, Track.class));
-        performInvariantMassAnalysisMatched(pairList);
+        //performInvariantMassAnalysisMatched(pairList);
         
         // Check if this is a good event. If it isn't do nothing.
         if(!TriggerTuningUtilityModule.isGoodEvent(event, gblTrackCollectionName, chiSquaredUpperBound)) {
@@ -336,7 +336,7 @@ public class TriggerTuningDriver extends Driver {
             performHodoscopeAnalysis(event);
         }
         
-        //performInvariantMassAnalysis(pairList);
+        performInvariantMassAnalysis(pairList);
     }
     
     @Override
