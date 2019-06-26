@@ -281,7 +281,6 @@ public class TriggerTuningDriver extends Driver {
         performTrackAnalysis(event);
         
         // Perform the absolutely no cuts invariant mass analysis.
-        System.out.println("Event " + event.getEventNumber());
         performInvariantMassAnalysisTruth(TriggerTuningUtilityModule.getCollection(event, "MCParticle", MCParticle.class));
         performInvariantMassAnalysisNoClusters(TriggerTuningUtilityModule.getCollection(event, gblTrackCollectionName, Track.class));
         
@@ -911,25 +910,17 @@ public class TriggerTuningDriver extends Driver {
     
     private double getInvariantMass(List<Hep3Vector> momenta) {
         // Calculate gamma * m of each origin particle and sum them.
-        //System.out.println("\tEnergy Sum:");
         double energySum = 0.0;
         final double m = 0.000511;
         for(Hep3Vector momentum : momenta) {
             energySum += Math.sqrt(Math.pow(m, 2) + momentum.magnitudeSquared());
-            //System.out.println("\t\t\t" + Math.sqrt(Math.pow(m, 2) + momentum.magnitudeSquared()));
         }
-        //System.out.println("\t\tTotal: " + energySum);
-        //System.out.println("\t\tSquared: " + Math.pow(energySum, 2));
         
         // Get the vector sum of the particle momenta.
         Hep3Vector momentumSum = new BasicHep3Vector(0, 0, 0);
         for(Hep3Vector momentum : momenta) {
             momentumSum = VectorArithmetic.add(momentumSum, momentum);
         }
-        
-        //System.out.println("\tMomentum Sum:");
-        //System.out.printf("\t\tTotal: [ %10.6f, %10.6f, %10.6f ]%n", momentumSum.x(), momentumSum.y(), momentumSum.z());
-        //System.out.println("\t\tSquared: " + momentumSum.magnitudeSquared());
         
         // Calculate and plot the invariant mass.
         return Math.sqrt(Math.pow(energySum, 2) - momentumSum.magnitudeSquared());
