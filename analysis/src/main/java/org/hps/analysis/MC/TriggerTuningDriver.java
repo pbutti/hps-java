@@ -142,26 +142,48 @@ public class TriggerTuningDriver extends Driver {
                     new File(outputDirectory + File.separator + "debug_cluster_position.dat"));
             
             // Cluster/track matching plots.
-            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(true, true, false)),
+            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingRPlotName(true, true, false)),
                         new File(outputDirectory + File.separator + "tuning_clusterTrackMatching_TPR.dat"));
-            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(true, false, false)),
+            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingRPlotName(true, false, false)),
                     new File(outputDirectory + File.separator + "tuning_clusterTrackMatching_TNR.dat"));
         
-            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(false, true, false)),
+            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingRPlotName(false, true, false)),
                     new File(outputDirectory + File.separator + "tuning_clusterTrackMatching_BPR.dat"));
-            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(false, false, false)),
+            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingRPlotName(false, false, false)),
                     new File(outputDirectory + File.separator + "tuning_clusterTrackMatching_BNR.dat"));
             
             // Cluster/track matching debug recon plots.
-            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(true, true, true)),
+            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingRPlotName(true, true, true)),
                         new File(outputDirectory + File.separator + "debug_reconClusterTrackMatching_TPR.dat"));
-            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(true, false, true)),
+            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingRPlotName(true, false, true)),
                     new File(outputDirectory + File.separator + "debug_reconClusterTrackMatching_TNR.dat"));
         
-            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(false, true, true)),
+            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingRPlotName(false, true, true)),
                     new File(outputDirectory + File.separator + "debug_reconClusterTrackMatching_BPR.dat"));
-            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(false, false, true)),
+            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingRPlotName(false, false, true)),
                     new File(outputDirectory + File.separator + "debug_reconClusterTrackMatching_BNR.dat"));
+            
+            
+            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingXPlotName(true, true, true)),
+                        new File(outputDirectory + File.separator + "debug_reconClusterTrackMatching_TPX.dat"));
+            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingXPlotName(true, false, true)),
+                    new File(outputDirectory + File.separator + "debug_reconClusterTrackMatching_TNX.dat"));
+        
+            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingXPlotName(false, true, true)),
+                    new File(outputDirectory + File.separator + "debug_reconClusterTrackMatching_BPX.dat"));
+            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingXPlotName(false, false, true)),
+                    new File(outputDirectory + File.separator + "debug_reconClusterTrackMatching_BNX.dat"));
+            
+            
+            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingYPlotName(true, true, true)),
+                        new File(outputDirectory + File.separator + "debug_reconClusterTrackMatching_TPY.dat"));
+            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingYPlotName(true, false, true)),
+                    new File(outputDirectory + File.separator + "debug_reconClusterTrackMatching_TNY.dat"));
+        
+            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingYPlotName(false, true, true)),
+                    new File(outputDirectory + File.separator + "debug_reconClusterTrackMatching_BPY.dat"));
+            PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(getClusterTrackMatchingYPlotName(false, false, true)),
+                    new File(outputDirectory + File.separator + "debug_reconClusterTrackMatching_BNY.dat"));
             
             // Singles trigger plots.
             PlotToTextModule.writePlot(AIDA.defaultInstance().histogram2D(SINGLES_POSITION),
@@ -334,7 +356,9 @@ public class TriggerTuningDriver extends Driver {
                 boolean isPositive = (j == 0);
                 for(int k = 0; k < 2; k++) {
                     boolean isRecon = (k == 1);
-                    AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(isTop, isPositive, isRecon), 250, 0.000, 5.000, 70, 0, 70);
+                    AIDA.defaultInstance().histogram2D(getClusterTrackMatchingXPlotName(isTop, isPositive, isRecon), 250, 0.000, 5.000, 70, 0, 70);
+                    AIDA.defaultInstance().histogram2D(getClusterTrackMatchingYPlotName(isTop, isPositive, isRecon), 250, 0.000, 5.000, 70, 0, 70);
+                    AIDA.defaultInstance().histogram2D(getClusterTrackMatchingRPlotName(isTop, isPositive, isRecon), 250, 0.000, 5.000, 70, 0, 70);
                 }
             }
         }
@@ -610,12 +634,24 @@ public class TriggerTuningDriver extends Driver {
         }
     }
     
-    private static final String getClusterTrackMatchingPlotName(boolean isTop, boolean isPositive, boolean isRecon) {
+    private static final String getClusterTrackMatchingBasePlotName(boolean isTop, boolean isPositive, boolean isRecon) {
         if(isRecon) {
-            return "Debug/Cluster-Track Matching/" + (isPositive ? "Positive/" : "Negative/") + (isTop ? "Top/" : "Bottom/") + "Momentum vs. #Delta r";
+            return "Debug/Cluster-Track Matching/" + (isPositive ? "Positive/" : "Negative/") + (isTop ? "Top/" : "Bottom/") + "Momentum vs. #Delta ";
         } else {
-            return "Cluster-Track Matching/" + (isPositive ? "Positive/" : "Negative/") + (isTop ? "Top/" : "Bottom/") + "Momentum vs. #Delta r";
+            return "Cluster-Track Matching/" + (isPositive ? "Positive/" : "Negative/") + (isTop ? "Top/" : "Bottom/") + "Momentum vs. #Delta ";
         }
+    }
+    
+    private static final String getClusterTrackMatchingXPlotName(boolean isTop, boolean isPositive, boolean isRecon) {
+        return getClusterTrackMatchingBasePlotName(isTop, isPositive, isRecon) + "x";
+    }
+    
+    private static final String getClusterTrackMatchingYPlotName(boolean isTop, boolean isPositive, boolean isRecon) {
+        return getClusterTrackMatchingBasePlotName(isTop, isPositive, isRecon) + "y";
+    }
+    
+    private static final String getClusterTrackMatchingRPlotName(boolean isTop, boolean isPositive, boolean isRecon) {
+        return getClusterTrackMatchingBasePlotName(isTop, isPositive, isRecon) + "r";
     }
     
     private static final String getLayerToLayerPlotName(int clusterIndex, boolean isTop) {
@@ -678,7 +714,9 @@ public class TriggerTuningDriver extends Driver {
                 boolean isTop = trackR[1] > 0;
                 boolean isPositive = TriggerTuningUtilityModule.isPositive(gblTrack);
                 
-                AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(isTop, isPositive, false)).fill(trackP, deltaR);
+                AIDA.defaultInstance().histogram2D(getClusterTrackMatchingRPlotName(isTop, isPositive, false)).fill(trackP, deltaR);
+                AIDA.defaultInstance().histogram2D(getClusterTrackMatchingRPlotName(isTop, isPositive, false)).fill(trackP, Math.abs(deltaX));
+                AIDA.defaultInstance().histogram2D(getClusterTrackMatchingRPlotName(isTop, isPositive, false)).fill(trackP, Math.abs(deltaY));
             }
             
             // As a debugging step, repeat this for recon clusters.
@@ -691,7 +729,9 @@ public class TriggerTuningDriver extends Driver {
                 boolean isTop = trackR[1] > 0;
                 boolean isPositive = TriggerTuningUtilityModule.isPositive(gblTrack);
                 
-                AIDA.defaultInstance().histogram2D(getClusterTrackMatchingPlotName(isTop, isPositive, true)).fill(trackP, deltaR);
+                AIDA.defaultInstance().histogram2D(getClusterTrackMatchingRPlotName(isTop, isPositive, true)).fill(trackP, deltaR);
+                AIDA.defaultInstance().histogram2D(getClusterTrackMatchingRPlotName(isTop, isPositive, true)).fill(trackP, Math.abs(deltaX));
+                AIDA.defaultInstance().histogram2D(getClusterTrackMatchingRPlotName(isTop, isPositive, true)).fill(trackP, Math.abs(deltaY));
             }
         }
     }
@@ -895,24 +935,35 @@ public class TriggerTuningDriver extends Driver {
         return Math.sqrt(Math.pow(energySum, 2) - momentumSum.magnitudeSquared());
     }
     
+    private static final boolean isValidPair(Track track0, Track track1) {
+        boolean[] isTop = { TriggerTuningUtilityModule.isTopTrack(track0), TriggerTuningUtilityModule.isTopTrack(track1) };
+        boolean[] isPositive = { TriggerTuningUtilityModule.isPositive(track0), TriggerTuningUtilityModule.isPositive(track1) };
+        
+        boolean isTopBot = (isTop[0] && !isTop[1]) || (!isTop[0] && isTop[1]);
+        boolean isPosNeg = (isPositive[0] && !isPositive[1]) || (!isPositive[0] && isPositive[1]);
+        return isTopBot && isPosNeg;
+    }
+    
+    private static final boolean isValidPair(MCParticle part0, MCParticle part1) {
+        return (part0.getCharge() > 0 && part1.getCharge() < 0) || (part0.getCharge() < 0 && part1.getCharge() > 0);
+    }
+    
     private void performInvariantMassAnalysisNoClusters(List<Track> tracks) {
         // If there are fewer than two tracks, then no analysis may
         // be performed.
         if(tracks.size() < 2) { return; }
         
-        // Get the track momenta.
-        List<Hep3Vector> momenta = new ArrayList<Hep3Vector>();
-        for(Track track : tracks) {
-            int pid = (TriggerTuningUtilityModule.isPositive(track) ? -11 : 11);
-            Hep3Vector p = new BasicHep3Vector(TriggerTuningUtilityModule.getMomentum(track, fieldMap));
-            momenta.add(p);
-            //System.out.printf("\tPID = %3d;   p = [ %10.6f, %10.6f, %10.6f ]%n", pid, p.x(), p.y(), p.z());
+        // Plot top/bottom, positive/negative track pairs.
+        for(int i = 0; i < tracks.size(); i++) {
+            for(int j = i + 1; j < tracks.size(); j++) {
+                if(!isValidPair(tracks.get(i), tracks.get(j))) { continue; };
+                List<Hep3Vector> momenta = new ArrayList<Hep3Vector>(2);
+                momenta.add(new BasicHep3Vector(TriggerTuningUtilityModule.getMomentum(tracks.get(i), fieldMap)));
+                momenta.add(new BasicHep3Vector(TriggerTuningUtilityModule.getMomentum(tracks.get(j), fieldMap)));
+                double invariantMass = getInvariantMass(momenta);
+                AIDA.defaultInstance().histogram1D(INV_MASS_REALLY_NO_CUTS).fill(invariantMass);
+            }
         }
-        
-        double mass = getInvariantMass(momenta);
-        AIDA.defaultInstance().histogram1D(INV_MASS_REALLY_NO_CUTS).fill(mass);
-        
-        //System.out.println("\tTrack Invariant Mass: " + mass);
     }
     
     private boolean isOriginParticle(MCParticle particle) {
@@ -922,28 +973,24 @@ public class TriggerTuningDriver extends Driver {
     }
     
     private void performInvariantMassAnalysisTruth(List<MCParticle> particles) {
-        // Print the A' and its children.
-        for(MCParticle particle : particles) {
-            if(particle.getPDGID() == 622) {
-                //System.out.printf("\tPID = %3d;   p = [ %10.6f, %10.6f, %10.6f ]%n", particle.getPDGID(), particle.getMomentum().x(), particle.getMomentum().y(), particle.getMomentum().z());
-                for(MCParticle child : particle.getDaughters()) {
-                    //System.out.printf("\t\tPID = %3d;   p = [ %10.6f, %10.6f, %10.6f ]%n", child.getPDGID(), child.getMomentum().x(), child.getMomentum().y(), child.getMomentum().z());
-                }
-            }
-        }
-        
         // Get all of the origin particles.
-        List<Hep3Vector> momenta = new ArrayList<Hep3Vector>();
+        List<MCParticle> originParticles = new ArrayList<MCParticle>();
         for(MCParticle particle : particles) {
             if(isOriginParticle(particle)) {
-                momenta.add(particle.getMomentum());
-                //System.out.printf("\tPID = %3d;   p = [ %10.6f, %10.6f, %10.6f ]%n", particle.getPDGID(), particle.getMomentum().x(), particle.getMomentum().y(), particle.getMomentum().z());
+                originParticles.add(particle);
             }
         }
         
-        double mass = getInvariantMass(momenta);
-        AIDA.defaultInstance().histogram1D(INV_MASS_TRUTH).fill(mass);
-        
-        //System.out.println("\tTruth Invariant Mass: " + mass);
+        // Plot top/bottom, positive/negative track pairs.
+        for(int i = 0; i < originParticles.size(); i++) {
+            for(int j = i + 1; j < originParticles.size(); j++) {
+                if(!isValidPair(originParticles.get(i), originParticles.get(j))) { continue; };
+                List<Hep3Vector> momenta = new ArrayList<Hep3Vector>(2);
+                momenta.add(originParticles.get(i).getMomentum());
+                momenta.add(originParticles.get(j).getMomentum());
+                double invariantMass = getInvariantMass(momenta);
+                AIDA.defaultInstance().histogram1D(INV_MASS_TRUTH).fill(invariantMass);
+            }
+        }
     }
 }
