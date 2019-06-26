@@ -839,69 +839,53 @@ public class TriggerTuningDriver extends Driver {
     }
     
     private void performInvariantMassAnalysis(List<Pair<Cluster, Track>> pairList) {
-        // Iterate over the tracks.
+        // If there are fewer than two tracks, then no analysis may
+        // be performed.
+        if(pairList.size() < 2) { return; }
+        
+        // Plot top/bottom, positive/negative track pairs.
         for(int i = 0; i < pairList.size(); i++) {
-            // Get the track parameters.
-            Track[] tracks = new Track[] { pairList.get(i).getSecondElement(), null };
-            boolean[] isTop = new boolean[] { TriggerTuningUtilityModule.isTopTrack(tracks[0]), false };
-            boolean[] isPositive = new boolean[] { TriggerTuningUtilityModule.isPositive(tracks[0]), false };
-            
-            // Iterate over the tracks again. Start one track after
-            // the current first track to avoid double counting.
             for(int j = i + 1; j < pairList.size(); j++) {
-                // Get the second track parameters.
-                tracks[1] = pairList.get(j).getSecondElement();
-                isTop[1] = TriggerTuningUtilityModule.isTopTrack(tracks[1]);
-                isPositive[1] = TriggerTuningUtilityModule.isPositive(tracks[1]);
+                if(!isValidPair(pairList.get(i).getSecondElement(), pairList.get(j).getSecondElement())) { continue; };
+                List<Hep3Vector> momenta = new ArrayList<Hep3Vector>(2);
+                momenta.add(new BasicHep3Vector(TriggerTuningUtilityModule.getMomentum(pairList.get(i).getSecondElement(), fieldMap)));
+                momenta.add(new BasicHep3Vector(TriggerTuningUtilityModule.getMomentum(pairList.get(j).getSecondElement(), fieldMap)));
+                double invariantMass = getInvariantMass(momenta);
+                AIDA.defaultInstance().histogram1D(INV_MASS_NO_CUTS).fill(invariantMass);
                 
-                // Check whether there are both a top and a bottom
-                // track and also  a positive and negative track.
-                boolean hasTopBottom = (isTop[0] && !isTop[1]) || (!isTop[0] && isTop[1]);
-                boolean hasPositiveNegative = (isPositive[0] && !isPositive[1]) || (!isPositive[0] && isPositive[1]);
+                // Define the COPT energy vs. position cut
+                // coefficients.
+                final double[] firCoeff95 = { 2.186811145510821,  -0.18388028895768568, 0.006550567595459063,  -0.00007997936016511498 };
+                final double[] firCoeff97 = { 1.9004592363261057, -0.1715872606352472,  0.005825593395252756,  -0.00005360623781676235 };
+                final double[] firCoeff99 = { 1.2412860734037259, -0.15417121549474627, 0.0074262012497307685, -0.00011773085302497325 };
                 
-                // Ignore cases where this is not a top/bottom and
-                // positive/negative track pair.
-                if(hasTopBottom && hasPositiveNegative) {
-                    // Get the invariant mass.
-                    double invariantMass = TriggerTuningUtilityModule.getInvarientMass(tracks[0], tracks[1], fieldMap);
+                // Get the clusters.
+                Cluster[] cluster = { pairList.get(i).getFirstElement(), pairList.get(j).getFirstElement() };
+                int[] ix = { TriggerModule.getClusterXIndex(cluster[0]), TriggerModule.getClusterXIndex(cluster[1]) };
+                
+                // Get the positron cluster. This will be the one
+                // with ix >= 2.
+                int positiveIndex = -1;
+                if(ix[0] >= 2 && ix[0] > ix[1]) { positiveIndex = 0; }
+                else if(ix[1] >= 2 && ix[1] > ix[0]) { positiveIndex = 1; }
+                
+                // If there is a positive cluster, plot it as appropriate.
+                if(positiveIndex != -1) {
+                    // Perform the COPT cuts and plot the track pair
+                    // if it passes.
+                    double threshold95 = TriggerTuningUtilityModule.polynomial(firCoeff95, ix[positiveIndex]);
+                    double threshold97 = TriggerTuningUtilityModule.polynomial(firCoeff97, ix[positiveIndex]);
+                    double threshold99 = TriggerTuningUtilityModule.polynomial(firCoeff99, ix[positiveIndex]);
                     
-                    // Populate the all plots map.
-                    AIDA.defaultInstance().histogram1D(INV_MASS_NO_CUTS).fill(invariantMass);
-                    
-                    // Define the COPT energy vs. position cut
-                    // coefficients.
-                    final double[] firCoeff95 = { 2.186811145510821,  -0.18388028895768568, 0.006550567595459063,  -0.00007997936016511498 };
-                    final double[] firCoeff97 = { 1.9004592363261057, -0.1715872606352472,  0.005825593395252756,  -0.00005360623781676235 };
-                    final double[] firCoeff99 = { 1.2412860734037259, -0.15417121549474627, 0.0074262012497307685, -0.00011773085302497325 };
-                    
-                    // Get the clusters.
-                    Cluster[] cluster = { pairList.get(i).getFirstElement(), pairList.get(j).getFirstElement() };
-                    int[] ix = { TriggerModule.getClusterXIndex(cluster[0]), TriggerModule.getClusterXIndex(cluster[1]) };
-                    
-                    // Get the positron cluster. This will be the one
-                    // with ix >= 2.
-                    int positiveIndex = -1;
-                    if(ix[0] >= 2 && ix[0] > ix[1]) { positiveIndex = 0; }
-                    else if(ix[1] >= 2 && ix[1] > ix[0]) { positiveIndex = 1; }
-                    
-                    // If there is a positive cluster, plot it as appropriate.
-                    if(positiveIndex != -1) {
-                        // Perform the COPT cuts and plot the track pair
-                        // if it passes.
-                        double threshold95 = TriggerTuningUtilityModule.polynomial(firCoeff95, ix[positiveIndex]);
-                        double threshold97 = TriggerTuningUtilityModule.polynomial(firCoeff97, ix[positiveIndex]);
-                        double threshold99 = TriggerTuningUtilityModule.polynomial(firCoeff99, ix[positiveIndex]);
-                        
-                        // Fill the relevant plots.
-                        if(cluster[positiveIndex].getEnergy() >= threshold95) {
-                            AIDA.defaultInstance().histogram1D(INV_MASS_95).fill(invariantMass);
-                        }
-                        if(cluster[positiveIndex].getEnergy() >= threshold97) {
-                            AIDA.defaultInstance().histogram1D(INV_MASS_97).fill(invariantMass);
-                        }
-                        if(cluster[positiveIndex].getEnergy() >= threshold99) {
-                            AIDA.defaultInstance().histogram1D(INV_MASS_ME).fill(invariantMass);
-                        }
+                    // Fill the relevant plots.
+                    if(cluster[positiveIndex].getEnergy() >= threshold95) {
+                        AIDA.defaultInstance().histogram1D(INV_MASS_95).fill(invariantMass);
+                    }
+                    if(cluster[positiveIndex].getEnergy() >= threshold97) {
+                        AIDA.defaultInstance().histogram1D(INV_MASS_97).fill(invariantMass);
+                    }
+                    if(cluster[positiveIndex].getEnergy() >= threshold99) {
+                        AIDA.defaultInstance().histogram1D(INV_MASS_ME).fill(invariantMass);
                     }
                 }
             }
