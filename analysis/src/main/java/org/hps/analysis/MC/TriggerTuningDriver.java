@@ -715,8 +715,8 @@ public class TriggerTuningDriver extends Driver {
                 boolean isPositive = TriggerTuningUtilityModule.isPositive(gblTrack);
                 
                 AIDA.defaultInstance().histogram2D(getClusterTrackMatchingRPlotName(isTop, isPositive, false)).fill(trackP, deltaR);
-                AIDA.defaultInstance().histogram2D(getClusterTrackMatchingRPlotName(isTop, isPositive, false)).fill(trackP, Math.abs(deltaX));
-                AIDA.defaultInstance().histogram2D(getClusterTrackMatchingRPlotName(isTop, isPositive, false)).fill(trackP, Math.abs(deltaY));
+                AIDA.defaultInstance().histogram2D(getClusterTrackMatchingXPlotName(isTop, isPositive, false)).fill(trackP, Math.abs(deltaX));
+                AIDA.defaultInstance().histogram2D(getClusterTrackMatchingYPlotName(isTop, isPositive, false)).fill(trackP, Math.abs(deltaY));
             }
             
             // As a debugging step, repeat this for recon clusters.
@@ -730,8 +730,8 @@ public class TriggerTuningDriver extends Driver {
                 boolean isPositive = TriggerTuningUtilityModule.isPositive(gblTrack);
                 
                 AIDA.defaultInstance().histogram2D(getClusterTrackMatchingRPlotName(isTop, isPositive, true)).fill(trackP, deltaR);
-                AIDA.defaultInstance().histogram2D(getClusterTrackMatchingRPlotName(isTop, isPositive, true)).fill(trackP, Math.abs(deltaX));
-                AIDA.defaultInstance().histogram2D(getClusterTrackMatchingRPlotName(isTop, isPositive, true)).fill(trackP, Math.abs(deltaY));
+                AIDA.defaultInstance().histogram2D(getClusterTrackMatchingXPlotName(isTop, isPositive, true)).fill(trackP, Math.abs(deltaX));
+                AIDA.defaultInstance().histogram2D(getClusterTrackMatchingYPlotName(isTop, isPositive, true)).fill(trackP, Math.abs(deltaY));
             }
         }
     }
