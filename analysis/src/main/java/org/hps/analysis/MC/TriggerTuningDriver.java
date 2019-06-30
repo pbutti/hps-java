@@ -893,24 +893,6 @@ public class TriggerTuningDriver extends Driver {
         }
     }
     
-    private void performInvariantMassAnalysisMatched(List<Pair<Cluster, Track>> pairList) {
-        // If there are fewer than two tracks, then no analysis may
-        // be performed.
-        if(pairList.size() < 2) { return; }
-        
-        // Plot top/bottom, positive/negative track pairs.
-        for(int i = 0; i < pairList.size(); i++) {
-            for(int j = i + 1; j < pairList.size(); j++) {
-                if(!isValidPair(pairList.get(i).getSecondElement(), pairList.get(j).getSecondElement())) { continue; };
-                List<Hep3Vector> momenta = new ArrayList<Hep3Vector>(2);
-                momenta.add(new BasicHep3Vector(TriggerTuningUtilityModule.getMomentum(pairList.get(i).getSecondElement(), fieldMap)));
-                momenta.add(new BasicHep3Vector(TriggerTuningUtilityModule.getMomentum(pairList.get(j).getSecondElement(), fieldMap)));
-                double invariantMass = getInvariantMass(momenta);
-                AIDA.defaultInstance().histogram1D(INV_MASS_NO_CUTS).fill(invariantMass);
-            }
-        }
-    }
-    
     private static final double getInvariantMass(List<Hep3Vector> momenta) {
         // Calculate gamma * m of each origin particle and sum them.
         double energySum = 0.0;
