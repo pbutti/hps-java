@@ -429,7 +429,6 @@ public class TriggerTuningUtilityModule {
      * @return Returns the track momentum as a size three array of
      * type <code>double</code>.
      */
-    @Deprecated
     public static final double[] getMomentum(Track track, FieldMap fieldMap) {
         double phi = TrackUtils.getTrackStateAtLocation(track, TrackState.AtIP).getPhi();
         double tanLambda = TrackUtils.getTrackStateAtLocation(track, TrackState.AtIP).getTanLambda();
@@ -474,8 +473,8 @@ public class TriggerTuningUtilityModule {
      * the calorimeter as a size 3 <code>double</code> array.
      */
     public static final double[] getTrackPositionAtCalorimeterFace(Track track, FieldMap fieldMap) {
-        //double[] tempP = TrackUtils.getTrackExtrapAtEcalRK(track, fieldMap).getReferencePoint();
-        double[] tempP = TrackUtils.getTrackStateAtECal(track).getReferencePoint();
+        double[] tempP = TrackUtils.getTrackExtrapAtEcalRK(track, fieldMap).getReferencePoint();
+        //double[] tempP = TrackUtils.getTrackStateAtECal(track).getReferencePoint();
         return new double[] { tempP[1], tempP[2], tempP[0] };
     }
     
