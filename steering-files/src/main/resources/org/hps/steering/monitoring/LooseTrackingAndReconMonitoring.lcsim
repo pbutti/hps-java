@@ -52,7 +52,7 @@
             <debug>false</debug>
         </driver>        
         <driver name="HelicalTrackHitDriver" type="org.hps.recon.tracking.HelicalTrackHitDriver">
-            <debug>false</debug>
+            <debug>true</debug>
             <clusterTimeCut>40.0</clusterTimeCut>
             <clusterAmplitudeCut>400.0</clusterAmplitudeCut>
             <maxDt>40.0</maxDt>

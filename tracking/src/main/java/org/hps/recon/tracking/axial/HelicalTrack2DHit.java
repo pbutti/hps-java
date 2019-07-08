@@ -34,6 +34,9 @@ public class HelicalTrack2DHit  extends HelicalTrackHit {
     public HelicalTrack2DHit(Hep3Vector pos, SymmetricMatrix cov, double dEdx, double time,
             List rawhits, String detname, int layer, BarrelEndcapFlag beflag, double zmin, double zmax, Hep3Vector axDir) {
         super(pos, cov, dEdx, time, _type, rawhits, detname, layer, beflag);
+        System.out.println("2DHit Layer = "+layer);
+        System.out.println("2DHit Position = "+pos.toString());
+        System.out.println("2DHit Covariance = "+cov.toString());
         _axmin = zmin;
         _axmax = zmax;        
         _axialDirection=axDir;

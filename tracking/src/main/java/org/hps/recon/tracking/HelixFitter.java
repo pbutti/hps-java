@@ -26,7 +26,8 @@ public class HelixFitter extends org.lcsim.recon.tracking.seedtracker.HelixFitte
     public HelixFitter(MaterialManager materialManager, boolean doIterativeHelix) {
         super(materialManager);
         _scattering = new MultipleScattering(materialManager);
-        setIterative(doIterativeHelix);
+        setIterative(doIterativeHelix);  
+//        _fitter=new HelicalTrackFitter();
     }
 
     public void setIterative(boolean value) {
