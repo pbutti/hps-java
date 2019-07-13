@@ -165,24 +165,6 @@ public class LCSimEngRunEventBuilder extends LCSimTestRunEventBuilder {
         } catch (final Exception e) {
             LOGGER.log(Level.SEVERE, "Error making ECal hits.", e);
         }
-
-        // Make RawHodoscopeHit collection, combining top and bottom section
-        // of Hodo into one list.
-        try {
-            if (hodoReader != null) {  // Skip if no hodoscope in this run period.
-                hodoReader.makeHits(evioEvent, lcsimEvent);
-            }
-        } catch (final Exception e) {
-            LOGGER.log(Level.SEVERE, "Error making Hodo hits.", e);
-        }
-
-        // Make VTP collection, combining top and bottom section
-        // into one list.
-        try {
-            vtpReader.makeHits(evioEvent, lcsimEvent);
-        } catch (final Exception e) {
-            LOGGER.log(Level.SEVERE, "Error reading VTP bank", e);
-        }
         
         // Make SVT RawTrackerHits.
         try {
