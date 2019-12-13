@@ -57,8 +57,12 @@ public class GBLStripClusterData implements GenericObject {
         public static final int OPOSX   = 22;
         public static final int OPOSY   = 23;
         public static final int OPOSZ   = 24;
+        public static final int TPOSTU = 25;
+        public static final int TPOSTV = 26;
+        public static final int TPOSTW = 27;
+        
 
-        public static final int BANK_DOUBLE_SIZE = 25;
+        public static final int BANK_DOUBLE_SIZE = 28;
 
     }
 
@@ -313,6 +317,21 @@ public class GBLStripClusterData implements GenericObject {
 
     public Hep3Vector getTrackPos() {
         return new BasicHep3Vector(getTrackPosU(), getTrackPosV(), getTrackPosW());
+    }
+
+    /**
+     * Set track position in tracking frame
+     * 
+     * @param trkpos_trk
+     */
+    public void setTrackPosTrk(Hep3Vector trkpos_trk) {
+        bank_double[GBLDOUBLE.TPOSTU] = trkpos_trk.x();
+        bank_double[GBLDOUBLE.TPOSTV] = trkpos_trk.y();
+        bank_double[GBLDOUBLE.TPOSTW] = trkpos_trk.z();
+    }
+
+    public Hep3Vector getTrackPosTrk() {
+        return new BasicHep3Vector(bank_double[GBLDOUBLE.TPOSTU],bank_double[GBLDOUBLE.TPOSTV], bank_double[GBLDOUBLE.TPOSTW]);
     }
 
     /**

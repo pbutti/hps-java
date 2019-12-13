@@ -25,12 +25,19 @@ import org.lcsim.geometry.Detector;
 import org.lcsim.lcio.LCIOConstants;
 import org.lcsim.util.Driver;
 
+//import java.io.IOException;
+//import org.lcsim.util.aida.AIDA;
+
 /**
  * A Driver which refits tracks using GBL. Does not require GBL collections to
  * be present in the event.
  */
 public class GBLRefitterDriver extends Driver {
 
+
+
+    //public AIDA aida = null;
+    private String outputPlots = "RefitterPlots.root";
     private String inputCollectionName = "MatchedTracks";
     private String outputCollectionName = "GBLTracks";
     private String trackRelationCollectionName = "MatchedToGBLTrackRelations";
@@ -49,12 +56,19 @@ public class GBLRefitterDriver extends Driver {
     private boolean writeMilleBinary = false;
     private double writeMilleChi2Cut = 20;
     private boolean includeNoHitScatters = false;
+    private MakeGblTracks trackRefitter;
     
     //Setting 0 is a single refit, 1 refit twice and so on..
     private int gblRefitIterations = 5; 
+    
+    private int refitType = 0;
 
     public void setIncludeNoHitScatters(boolean val) {
         includeNoHitScatters = val;
+    }
+
+    public void setRefitType(int val) {
+        refitType = val;
     }
     
     public void setGblRefitIterations(int val) {
@@ -139,6 +153,16 @@ public class GBLRefitterDriver extends Driver {
     protected void endOfData() {
         if (writeMilleBinary)
             mille.close();
+
+        trackRefitter.savePlots();
+        /*
+        try { 
+            aida.saveAs(outputPlots);
+        } catch  (IOException ex) {
+        
+        }
+        */
+        
     }
 
     @Override
@@ -146,6 +170,10 @@ public class GBLRefitterDriver extends Driver {
         bfield = Math.abs(TrackUtils.getBField(detector).magnitude());
         _scattering.getMaterialManager().buildModel(detector);
         _scattering.setBField(bfield); // only absolute of B is needed as it's used for momentum calculation only
+        trackRefitter = new MakeGblTracks();
+        //aida = AIDA.defaultInstance();
+        //aida.tree().cd("/");
+        
     }
 
     @Override
@@ -166,7 +194,7 @@ public class GBLRefitterDriver extends Driver {
 
         List<GBLKinkData> kinkDataCollection = new ArrayList<GBLKinkData>();
         List<LCRelation> kinkDataRelations = new ArrayList<LCRelation>();
-
+        
         List< GBLStripClusterData > gblStripClusterDataCollection =  new ArrayList<GBLStripClusterData> ();
         List<LCRelation>            gblStripClusterDataRelations  =  new ArrayList<LCRelation>();
         
@@ -176,12 +204,36 @@ public class GBLRefitterDriver extends Driver {
             if (temp.size() == 0)
                 //               System.out.println("GBLRefitterDriver::process  did not find any strip hits on this track???");
                 continue;
-
-            Pair<Pair<Track, GBLKinkData>, FittedGblTrajectory> newTrackTraj = MakeGblTracks.refitTrackWithTraj(TrackUtils.getHTF(track), temp, track.getTrackerHits(), gblRefitIterations, track.getType(), _scattering, bfield, storeTrackStates,includeNoHitScatters);
+            
+            Pair<Pair<Track,GBLKinkData>, FittedGblTrajectory> newTrackTraj = null;
+                        
+            if (refitType == 0 ) {
+                newTrackTraj = trackRefitter.refitTrackWithTraj(TrackUtils.getHTF(track), temp, track.getTrackerHits(), gblRefitIterations, track.getType(), _scattering, bfield, storeTrackStates,includeNoHitScatters);
+            }
+            /*
+            
+            else if (refitType ==1) {
+                System.out.println("NEW NEW NEW NEW NEW NEW ");
+                newTrackTraj = trackRefitter.refitTrackWithTraj_2(TrackUtils.getHTF(track), temp, track.getTrackerHits(), gblRefitIterations, track.getType(), _scattering, bfield, storeTrackStates,includeNoHitScatters);
+            }
+            
+            else {
+                System.out.println("LAST LAST LAST");
+                newTrackTraj = trackRefitter.refitTrackWithTraj_3(TrackUtils.getHTF(track), temp, track.getTrackerHits(), gblRefitIterations, track.getType(), _scattering, bfield, storeTrackStates,includeNoHitScatters);
+            }
+            
             if (newTrackTraj == null) {
                 System.out.println("GBLRefitterDriver::process() -- Aborted refit of track -- null pointer for newTrackTraj returned from MakeGblTracks.refitTrackWithTraj .");
                 continue;
             }
+            */
+            
+            
+           
+            
+            //System.out.println("Track processing time: " + duration / 1000000. + " ms");
+            
+            
             Pair<Track, GBLKinkData> newTrack = newTrackTraj.getFirst();
             if (newTrack == null)
                 continue;
