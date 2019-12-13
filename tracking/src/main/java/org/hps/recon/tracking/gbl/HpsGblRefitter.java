@@ -33,11 +33,11 @@ public class HpsGblRefitter {
 
     public void setDebug(boolean debug) {
         _debug = debug;
-        MakeGblTracks.setDebug(debug);
+        //MakeGblTracks.setDebug(debug);
     }
 
     public HpsGblRefitter() {
-        MakeGblTracks.setDebug(_debug);
+        //MakeGblTracks.setDebug(_debug);
         // System.out.println("level " + LOGGER.getLevel().toString());
     }
 
