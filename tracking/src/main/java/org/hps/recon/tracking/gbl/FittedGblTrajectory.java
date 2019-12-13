@@ -4,6 +4,8 @@ import hep.physics.matrix.SymmetricMatrix;
 import hep.physics.vec.Hep3Vector;
 import java.util.Map;
 import java.util.logging.Logger;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.commons.math3.util.Pair;
 import org.hps.recon.tracking.HpsHelicalTrackFit;
