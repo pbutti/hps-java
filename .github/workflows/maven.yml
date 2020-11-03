@@ -22,3 +22,5 @@ jobs:
         java-version: 1.8
     - name: Build with Maven with 4 cores
       run: mvn -T 4 clean install -DskipTests=true
+    - name: Test tracking
+      run: cd tracking; mvn
