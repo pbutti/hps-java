@@ -13,6 +13,7 @@ import org.lcsim.event.TrackerHit;
 import org.lcsim.recon.tracking.seedtracker.SeedTrack;
 
 /**
+ *
  * Chooses between potentially-redundant tracks. Keeps lists of: operable
  * tracks, tracks discarded because they're duplicates of operable tracks,
  * tracks discarded because they're sub-tracks of operable tracks, tracks
